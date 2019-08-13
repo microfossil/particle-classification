@@ -1,0 +1,16 @@
+dill
+h5py
+bz2
+hashlib
+Keras>=2.2.4
+lxml>=4.2.6
+matplotlib>=3.0.2
+numpy>=1.16.2
+pandas>=0.24.0
+Pillow>=5.4.1
+scikit-image>=0.14.2
+scikit-learn>=0.20.2
+scipy>=1.1.0
+image-classifiers>0.2.2
+segmentation-models>=0.2.1
+tensorflow-gpu>1.14.0,<2
