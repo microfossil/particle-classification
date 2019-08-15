@@ -74,7 +74,7 @@ def default_params():
     params['alr_drops'] = 4
 
     # Data
-    params['input_dir'] = None
+    params['input_source'] = None
     params['output_dir'] = None
     params['data_min_count'] = 40
     params['data_split'] = 0.25

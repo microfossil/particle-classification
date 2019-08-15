@@ -4,7 +4,7 @@ from tensorflow.keras.models import Model, Sequential
 import miso.layers.cyclic as cyclic
 
 
-def marchitto_transfer(nb_classes):
+def transfer_learning_dense_layers(nb_classes):
     model = Sequential()
     model.add(Dropout(0.05))
     model.add(Dense(512, activation='relu'))

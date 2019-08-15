@@ -81,8 +81,6 @@ def plot_confusion_accuracy_matrix(y_true,
         figsize = (len(cls_labels) / 2.75 + 2, len(cls_labels) / 2.75 + 2)
     # Calculate precision, recall, etc
     p, r, f1, s = precision_recall_fscore_support(y_true, y_pred, labels=range(len(cls_labels)))
-    print(p)
-    print(r)
     # Calculate confusion matrix
     cm = confusion_matrix(y_true=y_true,
                           y_pred=y_pred,
@@ -133,9 +131,9 @@ def plot_confusion_accuracy_matrix(y_true,
             ax_cm.text(j, i + 0.25, cm[i, j],
                        horizontalalignment="center",
                        color="white" if cm[i, j] > thresh else "black")
-    p = PatchCollection(patches, alpha=1, cmap=cmap)
-    p.set_array(np.array(colors))
-    ax_cm.add_collection(p)
+    patcol = PatchCollection(patches, alpha=1, cmap=cmap)
+    patcol.set_array(np.array(colors))
+    ax_cm.add_collection(patcol)
     # Grid
     if style == 'grid':
         for i in range(len(cls_labels)-1):
@@ -146,9 +144,9 @@ def plot_confusion_accuracy_matrix(y_true,
     # Labels
     ax_cm.set_ylabel('True label')
     ax_cm.set_xlabel('Predicted label')
-    ax_left.set_ylabel('Recall')
+    ax_left.set_ylabel('Recall {:.2f}%'.format(np.mean(r)*100))
     ax_left.yaxis.set_label_position('right')
-    ax_bot.set_xlabel('Precision')
+    ax_bot.set_ylabel('Precision {:.2f}%'.format(np.mean(p)*100))
     ax_bot.xaxis.set_label_position('top')
     ax_cm.set_zorder(100)
     plt.tight_layout()

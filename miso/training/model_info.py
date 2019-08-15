@@ -18,7 +18,8 @@ class ModelInfo:
                  inputs: OrderedDict,
                  outputs: OrderedDict,
                  labels: List[str],
-                 prepro: List,
+                 prepro_name: str,
+                 prepro_params: List,
                  source_data: str,
                  accuracy: float,
                  precision: float,
@@ -33,7 +34,8 @@ class ModelInfo:
         self.inputs = inputs
         self.outputs = outputs
         self.labels = labels
-        self.prepro = prepro
+        self.prepro_name = prepro_name
+        self.prepro_params = prepro_params
         self.protobuf = protobuf
         self.source_data = source_data
         self.accuracy = accuracy
@@ -94,7 +96,9 @@ class ModelInfo:
             ET.SubElement(parent_node, "label").text = str(value)
 
         parent_node = ET.SubElement(root, "prepro")
-        for idx, value in enumerate(self.prepro):
+        ET.SubElement(parent_node, "name").text = self.prepro_name
+        parent_node = ET.SubElement(parent_node, "params")
+        for idx, value in enumerate(self.prepro_params):
             ET.SubElement(parent_node, "param").text = str(value)
 
         ET.SubElement(root, "source_data").text = str(self.source_data)

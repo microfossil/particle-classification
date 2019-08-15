@@ -4,3 +4,5 @@
 *.index
 *.xml
 *.h5
+test_scripts/datasets/
+test_scripts/output/

@@ -1,29 +1,22 @@
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPooling2D, Input, Activation, \
                                     GlobalMaxPooling2D, GlobalAveragePooling2D, Lambda
-# from miso.layers.batch_normalisation_tf2 import BatchNormalizationBase
 from tensorflow.keras.layers import BatchNormalization
 from tensorflow.keras.models import Model
 
-
 from miso.layers import cyclic
-from miso.layers.group_normalisation import GroupNormalization
-from tensorflow.python.tools import freeze_graph
-from miso.models.bn_old import BatchNormalizationV2
-
-from miso.layers.batch_instance_normalisation import batch_instance_norm, BatchInstanceNormalisation
 
 
-def BaseCyclic(input_shape,
-               nb_classes,
-               filters=4,
-               blocks=4,
-               dropout=0.5,
-               dense=512,
-               conv_padding='same',
-               conv_activation='relu',
-               use_batch_norm=True,
-               global_pooling=None):
+def base_cyclic(input_shape,
+                nb_classes,
+                filters=4,
+                blocks=4,
+                dropout=0.5,
+                dense=512,
+                conv_padding='same',
+                conv_activation='relu',
+                use_batch_norm=True,
+                global_pooling=None):
 
     default_bn_params = {
         'axis': 3,

@@ -6,7 +6,7 @@ import tensorflow as tf
 from tensorflow.keras.models import Model
 from tensorflow.python.platform import gfile
 from tensorflow.python.tools import freeze_graph
-# from miso.export import freeze_graph
+# from miso.save import freeze_graph
 from miso.training.model_info import ModelInfo
 import tensorflow.keras.backend as K
 try:

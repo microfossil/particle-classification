@@ -12,6 +12,7 @@ from tensorflow.keras.utils import to_categorical
 from collections import OrderedDict
 from miso.data.generators import image_generator_from_dataframe
 from scipy.stats.mstats import gmean
+from miso.data.download import download_images
 
 
 class DataSource:
@@ -54,7 +55,8 @@ class DataSource:
 
     def load_images(self,
                     img_size,
-                    rescale_params=(255, 0, 1),
+                    prepro_type=None,
+                    prepro_params=(255, 0, 1),
                     color_mode='rgb',
                     split=0.25,
                     print_status=False,
@@ -92,9 +94,9 @@ class DataSource:
             # Rescale according to params
             # e.g. to take a [0,255] range image to [-1,1] params would be 255,-0.5,2
             # I' = (I / 255 - 0.5) * 2
-            im = np.divide(im, rescale_params[0])
-            im = np.subtract(im, rescale_params[1])
-            im = np.multiply(im, rescale_params[2])
+            im = np.divide(im, prepro_params[0])
+            im = np.subtract(im, prepro_params[1])
+            im = np.multiply(im, prepro_params[2])
             # Convert to float
             im = im.astype(np.float32)
             images.append(im)
@@ -148,7 +150,7 @@ class DataSource:
                              random_state=seed)
 
     def set_directory_source(self,
-                             directory,
+                             source,
                              min_count,
                              max_count=None,
                              min_count_to_others=False,
@@ -179,11 +181,18 @@ class DataSource:
         :param ignore_list: List of classes that will be ignored, and their images not loaded
         :return:
         """
-        self.source_directory = directory
+        if source.startswith("http"):
+            print("@Downloading dataset " + source + "...")
+            dir_for_download = os.path.join(os.getcwd(), 'datasets')
+            os.makedirs(dir_for_download, exist_ok=True)
+            dir_path = download_images(source, dir_for_download)
+            self.source_directory = dir_path
+        else:
+            self.source_directory = source
 
         print("@Parsing image directory...")
         # Get alphabetically sorted list of class directories
-        class_dirs = sorted(glob.glob(os.path.join(directory, "*")))
+        class_dirs = sorted(glob.glob(os.path.join(self.source_directory, "*")))
         # print(class_dirs)
 
         # Load images from each class and place into a dictionary
