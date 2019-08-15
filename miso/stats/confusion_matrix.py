@@ -146,7 +146,7 @@ def plot_confusion_accuracy_matrix(y_true,
     ax_cm.set_xlabel('Predicted label')
     ax_left.set_ylabel('Recall {:.2f}%'.format(np.mean(r)*100))
     ax_left.yaxis.set_label_position('right')
-    ax_bot.set_ylabel('Precision {:.2f}%'.format(np.mean(p)*100))
+    ax_bot.set_xlabel('Precision {:.2f}%'.format(np.mean(p)*100))
     ax_bot.xaxis.set_label_position('top')
     ax_cm.set_zorder(100)
     plt.tight_layout()
