@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 from sklearn.neighbors import KNeighborsClassifier
 import numpy as np
 from sklearn.utils.extmath import weighted_mode
+from sklearn.preprocessing import normalize
 import os
 
 
@@ -13,6 +14,8 @@ def plot_mislabelled(images,
                      output_dir,
                      num_neighbours=11
                      ):
+    # Normalise vectors
+    vectors = normalize(vectors, axis=1)
     # Nearest neighbours fit
     neigh = KNeighborsClassifier(n_neighbors=num_neighbours + 1)
     neigh.fit(vectors, cls)

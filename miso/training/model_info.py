@@ -1,8 +1,8 @@
 import datetime
 from typing import List, Dict
 from lxml import etree as ET
-import tensorflow as tf
 import os
+import numpy as np
 from collections import OrderedDict
 
 
@@ -17,14 +17,16 @@ class ModelInfo:
                  params: Dict,
                  inputs: OrderedDict,
                  outputs: OrderedDict,
+                 data_source_name: str,
                  labels: List[str],
+                 counts: List[int],
                  prepro_name: str,
                  prepro_params: List,
-                 source_data: str,
                  accuracy: float,
                  precision: float,
                  recall: float,
-                 f1score: float):
+                 f1score: float,
+                 support: float):
 
         self.name = name
         self.description = description
@@ -33,15 +35,17 @@ class ModelInfo:
         self.params = params
         self.inputs = inputs
         self.outputs = outputs
+        self.data_source_name = data_source_name
         self.labels = labels
+        self.counts = counts
         self.prepro_name = prepro_name
         self.prepro_params = prepro_params
         self.protobuf = protobuf
-        self.source_data = source_data
         self.accuracy = accuracy
         self.precision = precision
         self.recall = recall
         self.f1score = f1score
+        self.support = support
 
     def save(self, filename):
         os.makedirs(os.path.dirname(filename), exist_ok=True)
@@ -91,9 +95,17 @@ class ModelInfo:
             else:
                 ET.SubElement(node, "channels").text = "0"
 
+        ET.SubElement(root, "source_data").text = str(self.data_source_name)
         parent_node = ET.SubElement(root, "labels")
         for idx, value in enumerate(self.labels):
-            ET.SubElement(parent_node, "label").text = str(value)
+            node = ET.SubElement(parent_node, "label")
+            ET.SubElement(node, "code").text = value
+            ET.SubElement(node, "count").text = str(self.counts[idx])
+            ET.SubElement(node, "precision").text = str(self.precision[idx])
+            ET.SubElement(node, "recall").text = str(self.recall[idx])
+            ET.SubElement(node, "f1score").text = str(self.f1score[idx])
+            ET.SubElement(node, "support").text = str(self.support[idx])
+
 
         parent_node = ET.SubElement(root, "prepro")
         ET.SubElement(parent_node, "name").text = self.prepro_name
@@ -101,31 +113,9 @@ class ModelInfo:
         for idx, value in enumerate(self.prepro_params):
             ET.SubElement(parent_node, "param").text = str(value)
 
-        ET.SubElement(root, "source_data").text = str(self.source_data)
         ET.SubElement(root, "accuracy").text = str(self.accuracy)
-        ET.SubElement(root, "precision").text = str(self.precision)
-        ET.SubElement(root, "recall").text = str(self.recall)
-        ET.SubElement(root, "f1score").text = str(self.f1score)
+        ET.SubElement(root, "precision").text = str(np.mean(self.precision))
+        ET.SubElement(root, "recall").text = str(np.mean(self.recall))
+        ET.SubElement(root, "f1score").text = str(np.mean(self.f1score))
 
         return ET.tostring(root, pretty_print=True)
-
-
-if __name__ == "__main__":
-    input = tf.zeros((1, 256, 128, 3), dtype=tf.float32)
-    output = tf.zeros((1, 256), dtype=tf.int16)
-    info = ModelInfo("test",
-                     "test of the model info xml parsing",
-                     "not a network",
-                     datetime.datetime.now(),
-                     "frozen_model.pb",
-                     {"topo": "hello", "style": 12, "alist": [1, 2, 3, 4]},
-                     [input],
-                     [output],
-                     ["label_1", "label_2"],
-                     [255, 0, 1],
-                     "",
-                     99.0,
-                     85.3,
-                     45.2,
-                     11.0)
-    info.save("test_model_info.xml")

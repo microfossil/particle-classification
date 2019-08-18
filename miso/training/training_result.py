@@ -30,7 +30,7 @@ class TrainingResult:
         self.f1_score = f1
         self.support = s
 
-        # Test predictions (for later analysis
+        # Test predictions (for later analysis)
         self.y_true = y_true
         self.y_pred = y_pred
         self.y_prob = y_prob

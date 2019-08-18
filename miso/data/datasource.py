@@ -20,7 +20,8 @@ class DataSource:
     def __init__(self):
         self.num_classes = 0
         self.cls_labels = []
-        self.source_directory = ""
+        self.cls_counts = []
+        self.source_name = ""
 
         self.data_df = None
         self.train_df = None
@@ -149,16 +150,16 @@ class DataSource:
                              test_size=split,
                              random_state=seed)
 
-    def set_directory_source(self,
-                             source,
-                             min_count,
-                             max_count=None,
-                             min_count_to_others=False,
-                             extension=None,
-                             mapping: dict = None,
-                             map_others=True,
-                             must_contain: str = None,
-                             ignore_list: list = None):
+    def set_source(self,
+                   source,
+                   min_count,
+                   max_count=None,
+                   min_count_to_others=False,
+                   extension=None,
+                   mapping: dict = None,
+                   map_others=True,
+                   must_contain: str = None,
+                   ignore_list: list = None):
         """
         Loads images from from a directory where each sub-directories contains images for a single class, e.g.:
 
@@ -186,14 +187,13 @@ class DataSource:
             dir_for_download = os.path.join(os.getcwd(), 'datasets')
             os.makedirs(dir_for_download, exist_ok=True)
             dir_path = download_images(source, dir_for_download)
-            self.source_directory = dir_path
+            self.source_name = dir_path
         else:
-            self.source_directory = source
+            self.source_name = source
 
         print("@Parsing image directory...")
         # Get alphabetically sorted list of class directories
-        class_dirs = sorted(glob.glob(os.path.join(self.source_directory, "*")))
-        # print(class_dirs)
+        class_dirs = sorted(glob.glob(os.path.join(self.source_name, "*")))
 
         # Load images from each class and place into a dictionary
         filenames = OrderedDict()
@@ -203,9 +203,6 @@ class DataSource:
 
             # Get the class name
             class_name = os.path.basename(class_dir)
-            # print(class_name)
-
-            # print(glob.glob(os.path.join(class_dir, "*.png")))
 
             # Get the files
             files = []
@@ -292,6 +289,7 @@ class DataSource:
         # Finally, create a list for each (make sure 'other' is last class
         cls_index = []
         cls_labels = []
+        cls_counts = []
         long_filenames = []
         short_filenames = []
         self.cls_labels = []
@@ -324,6 +322,11 @@ class DataSource:
         self.data_df = pd.DataFrame(df)
         self.num_classes = len(self.cls_labels)
         print("@{} images in {} classes".format(len(cls_index), self.num_classes))
+
+        for idx in range(self.num_classes):
+            cls_counts.append(len(self.data_df[self.data_df['cls'] == idx]))
+            # print(cls_counts)
+        self.cls_counts = cls_counts
 
         # print(self.data_df)
 

@@ -1,12 +1,12 @@
 import math
-
-from tensorflow.keras.models import Model
-from miso.models.marchitto_transfer import transfer_learning_dense_layers
-from miso.models.resnet50_tl import resnet50_transfer_learning, resnet50_transfer_learning_head
+from tensorflow.keras.models import Model as ModelK
+from keras.models import Model as ModelJ
+from miso.models.transfer_learning import *
 from miso.models.base_cyclic import *
 from classification_models import Classifiers
 
-def generate(params: dict()):
+
+def generate(params: dict):
     # Network
     type = params.get('type')
 
@@ -33,11 +33,9 @@ def generate(params: dict()):
     # Uses the pre-trained ResNet50 network from tf.keras with full image input and augmentation
     # Has a lambda layer to rescale the normal image input (range 0-1) to that expected by the pre-trained network
     elif type == 'resnet50_tl':
-        model_tl = resnet50_transfer_learning_head(input_shape=(img_height, img_width, img_channels),
-                                                   nb_classes=params['num_classes'])
-        model_dense = transfer_learning_dense_layers(params['num_classes'])
-        outputs = model_dense(model_tl.outputs[0])
-        model = Model(model_tl.inputs[0], outputs)
+        model_head, model_tail = generate_tl(params)
+        outputs = model_tail(model_head.outputs[0])
+        model = Model(model_head.inputs[0], outputs)
         return model
     # ResNet, SEResNet and DenseNet from the image-classifiers python package
     # Uses normal keras
@@ -51,3 +49,41 @@ def generate(params: dict()):
     model.summary()
 
     return model
+
+
+def generate_tl(params: dict):
+    # Network
+    type = params.get('type')
+
+    # Input
+    img_height = params.get('img_height')
+    img_width = params.get('img_width')
+    img_channels = params.get('img_channels')
+    input_shape = (img_height, img_width, img_channels)
+
+    if type == 'resnet50_tl':
+        model_head = resnet50_head(input_shape=(img_height, img_width, img_channels))
+        model_tail = marchitto_tail(params['num_classes'])
+
+    return model_head, model_tail
+
+
+def generate_vector(model, params: dict):
+    cnn_type = params['type']
+
+    if cnn_type == "resnet50_tl":
+        vector_layer = model.layers[-1].layers[-2]
+        vector_model = ModelK(model.inputs, vector_layer.output)
+    elif cnn_type.startswith("base_cyclic"):
+        vector_layer = model.get_layer(index=-2)
+        vector_model = ModelK(model.inputs, vector_layer.output)
+    elif cnn_type.startswith("resnet") or cnn_type.startswith("seresnet"):
+        vector_layer = model.get_layer(index=-3)
+        vector_model = ModelJ(model.inputs, vector_layer.output)
+    elif cnn_type.startswith("vgg") or cnn_type.startswith("densenet"):
+        vector_layer = model.get_layer(index=-2)
+        vector_model = ModelJ(model.inputs, vector_layer.output)
+    else:
+        raise ValueError("The network type, {}, is not valid".format(cnn_type))
+
+    return vector_model
