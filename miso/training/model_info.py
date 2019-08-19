@@ -47,6 +47,8 @@ class ModelInfo:
         self.f1score = f1score
         self.support = support
 
+        self.version = "2.0"
+
     def save(self, filename):
         os.makedirs(os.path.dirname(filename), exist_ok=True)
         f = open(filename, 'wb')
@@ -54,7 +56,7 @@ class ModelInfo:
         f.close()
 
     def to_xml(self):
-        root = ET.Element("network")
+        root = ET.Element("network", version=self.version)
         ET.SubElement(root, "name").text = self.name
         ET.SubElement(root, "description").text = self.description
         ET.SubElement(root, "type").text = self.type
@@ -105,7 +107,6 @@ class ModelInfo:
             ET.SubElement(node, "recall").text = str(self.recall[idx])
             ET.SubElement(node, "f1score").text = str(self.f1score[idx])
             ET.SubElement(node, "support").text = str(self.support[idx])
-
 
         parent_node = ET.SubElement(root, "prepro")
         ET.SubElement(parent_node, "name").text = self.prepro_name
