@@ -247,6 +247,7 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
     print("@Saving model")
     # Convert if necessary to fix TF batch normalisation issues
     model = convert_to_inference_mode(model, lambda: generate(params))
+    vector_model = generate_vector(model, params)
 
     # Generate description
     if description is None:
@@ -299,7 +300,7 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
     info.save(os.path.join(save_dir, "model", "network_info.xml"))
 
     print("@Complete")
-    return model, data_source, result
+    return model, vector_model, data_source, result
 
 # tensorboard_cb = TensorBoard(log_dir='./tensorboard',
 #                              histogram_freq=0,

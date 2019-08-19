@@ -5,6 +5,7 @@
     <orderEntry type="jdk" jdkName="Python 3.6 (cnn)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="ParticleClassification" />
+    <orderEntry type="module" module-name="particle-classification-examples" />
   </component>
   <component name="PyDocumentationSettings">
     <option name="renderExternalDocumentation" value="true" />

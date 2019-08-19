@@ -1,4 +1,18 @@
 from sklearn import discriminant_analysis, manifold
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import normalize
+import numpy as np
+
+
+def pca(X, nr_components=16, normalise_vectors=True):
+
+    if normalise_vectors:
+        X = normalize(X, axis=1)
+    p = PCA(n_components=nr_components)
+    p.fit(X)
+    print(p.explained_variance_ratio_)
+    print(np.sum(p.explained_variance_ratio_))
+    return p.transform(X)
 
 
 def lda(X, y, nr_components=2):

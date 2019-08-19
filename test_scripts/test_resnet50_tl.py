@@ -62,4 +62,4 @@ params['output_dir'] = r'output/'
 params['save_model'] = 'frozen'
 params['save_mislabeled'] = True
 
-model, data_source, result = train_image_classification_model(params)
+model, vector_model, data_source, result = train_image_classification_model(params)
