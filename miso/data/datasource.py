@@ -13,6 +13,7 @@ from collections import OrderedDict
 from miso.data.generators import image_generator_from_dataframe
 from scipy.stats.mstats import gmean
 from miso.data.download import download_images
+import lxml.etree as ET
 
 
 class DataSource:
@@ -27,20 +28,22 @@ class DataSource:
         self.train_df = None
         self.test_df = None
 
+        self.random_idx = None
+
+        self.images = None
+        self.cls = None
+        self.onehots = None
+        self.vectors = None
+
         self.train_images = None
         self.train_cls = None
         self.train_onehots = None
         self.train_vectors = None
+
         self.test_images = None
         self.test_cls = None
         self.test_onehots = None
         self.test_vectors = None
-
-    def get_images(self):
-        return np.concatenate((self.train_images, self.test_images), axis=0)
-
-    def get_classes(self):
-        return np.concatenate((self.train_cls, self.test_cls), axis=0)
 
     def get_class_weights(self):
         count = np.bincount(self.data_df['cls'])
@@ -50,9 +53,9 @@ class DataSource:
     def get_short_filenames(self):
         return pd.concat((self.train_df.short_filenames, self.test_df.short_filenames))
 
-    def get_dataframe_hash(self, img_size, color_mode):
-        hash_str = hashlib.sha256(pd.util.hash_pandas_object(self.data_df, index=True).values).hexdigest()
-        return "{}_{}_{}_{}".format(hash_str, img_size[0], img_size[1], color_mode)
+    # def get_dataframe_hash(self, img_size, color_mode):
+    #     hash_str = hashlib.sha256(pd.util.hash_pandas_object(self.data_df, index=True).values).hexdigest()
+    #     return "{}_{}_{}_{}".format(hash_str, img_size[0], img_size[1], color_mode)
 
     def load_images(self,
                     img_size,
@@ -61,10 +64,10 @@ class DataSource:
                     color_mode='rgb',
                     split=0.25,
                     print_status=False,
-                    seed=None):
+                    seed=None,
+                    split_index=0):
 
         # hashed_filename = os.path.join(self.source_directory, self.get_dataframe_hash(img_size, color_mode) + ".pkl")
-
         # try:
         #     with open(hashed_filename, 'rb') as file:
         #         images = dill.load(file)
@@ -112,13 +115,9 @@ class DataSource:
         if images.ndim == 3:
             images = images[:, :, :, np.newaxis]
         # Split into test and training sets
-        self.split(images, split, seed)
-        # with bz2.BZ2File(hashed_filename, 'w') as file:
-        # with open(hashed_filename, 'wb') as file:
-        #     print("@Saving processed images to " + hashed_filename)
-        #     dill.dump(images, file)
+        self.split(images, split, split_index, seed)
 
-    def load_images_using_datagen(self, img_size, datagen, color_mode='rgb', split=0.25, seed=None):
+    def load_images_using_datagen(self, img_size, datagen, color_mode='rgb', split=0.25, split_offset=0, seed=None):
         """
         Loads images from disk using an ImageDataGenerator. Images are resize and the colour changed if necessary.
         :param img_size: Images will be transformed to this size
@@ -135,20 +134,29 @@ class DataSource:
                                              datagen,
                                              color_mode)
         gen.shuffle = False
-        images, _ = next(gen)
-        self.split(images, split, seed)
+        self.images, _ = next(gen)
+        self.split(split, split_offset, seed)
 
-    def split(self, images, split=0.25, seed=None):
-        self.train_images, self.test_images, \
-        self.train_cls, self.test_cls, \
-        self.train_onehots, self.test_onehots, \
-        self.train_df, self.test_df = \
-            train_test_split(images,
-                             self.data_df['cls'],
-                             to_categorical(self.data_df['cls']),
-                             self.data_df,
-                             test_size=split,
-                             random_state=seed)
+    def split(self, split=0.25, split_offset=0, seed=None):
+        # Create new random index if necessary
+        if self.random_idx is None:
+            np.random.seed(seed)
+            self.random_idx = np.random.permutation(len(self.images))
+        # Roll according to offset
+        roll = np.round(len(self.images) * split_offset)
+        np.roll(self.random_idx, roll)
+        # Now split
+        test_len = np.round(len(self.images) * split)
+        test_idx = np.arange(0, test_len)
+        train_idx = np.arange()
+        self.train_images = self.images[train_idx]
+        self.test_images = self.images[test_idx]
+        self.train_cls = self.cls[train_idx]
+        self.test_cls = self.cls[test_idx]
+        self.train_onehots = self.onehots[train_idx]
+        self.test_onehots = self.onehots[test_idx]
+        self.train_df = self.data_df[train_idx]
+        self.test_df = self.data_df[test_idx]
 
     def set_source(self,
                    source,
@@ -191,36 +199,40 @@ class DataSource:
         else:
             self.source_name = source
 
-        print("@Parsing image directory...")
-        # Get alphabetically sorted list of class directories
-        class_dirs = sorted(glob.glob(os.path.join(self.source_name, "*")))
+        if self.source_name.endswith("xml"):
+            print("@Parsing project file...")
+            filenames = self.parse_xml(self.source_name)
+        else:
+            print("@Parsing image directory...")
+            # Get alphabetically sorted list of class directories
+            class_dirs = sorted(glob.glob(os.path.join(self.source_name, "*")))
 
-        # Load images from each class and place into a dictionary
-        filenames = OrderedDict()
-        for class_dir in class_dirs:
-            if os.path.isdir(class_dir) is False:
-                continue
+            # Load images from each class and place into a dictionary
+            filenames = OrderedDict()
+            for class_dir in class_dirs:
+                if os.path.isdir(class_dir) is False:
+                    continue
 
-            # Get the class name
-            class_name = os.path.basename(class_dir)
+                # Get the class name
+                class_name = os.path.basename(class_dir)
 
-            # Get the files
-            files = []
-            if extension is None:
-                for ext in ["*.jpg", "*.jpeg", "*.png", "*.tif", "*.tiff", "*.bmp"]:
-                    if must_contain is not None:
-                        files.extend(glob.glob(os.path.join(class_dir, "*" + must_contain + ext)))
-                    else:
-                        files.extend(glob.glob(os.path.join(class_dir, ext)))
-                files = sorted(files)
-            else:
-                if must_contain is not None:
-                    files = sorted(glob.glob(os.path.join(class_dir, "*" + must_contain + "*." + extension)))
+                # Get the files
+                files = []
+                if extension is None:
+                    for ext in ["*.jpg", "*.jpeg", "*.png", "*.tif", "*.tiff", "*.bmp"]:
+                        if must_contain is not None:
+                            files.extend(glob.glob(os.path.join(class_dir, "*" + must_contain + ext)))
+                        else:
+                            files.extend(glob.glob(os.path.join(class_dir, ext)))
+                    files = sorted(files)
                 else:
-                    files = sorted(glob.glob(os.path.join(class_dir, "*." + extension)))
+                    if must_contain is not None:
+                        files = sorted(glob.glob(os.path.join(class_dir, "*" + must_contain + "*." + extension)))
+                    else:
+                        files = sorted(glob.glob(os.path.join(class_dir, "*." + extension)))
 
-            # Add to dictionary
-            filenames[class_name] = files
+                # Add to dictionary
+                filenames[class_name] = files
 
         # Map the classes into overall classes if mapping is enabled
         if mapping is not None:
@@ -301,7 +313,6 @@ class DataSource:
 
         index = 0
         for cls, cls_filenames in filenames.items():
-
             for filename in cls_filenames:
                 if cls != 'other':
                     cls_index.append(index)
@@ -327,6 +338,8 @@ class DataSource:
             cls_counts.append(len(self.data_df[self.data_df['cls'] == idx]))
             # print(cls_counts)
         self.cls_counts = cls_counts
+        self.cls = self.data_df['cls']
+        self.onehots = to_categorical(self.data_df['cls'])
 
         # print(self.data_df)
 
@@ -351,46 +364,50 @@ class DataSource:
             axis=2)
         return im
 
-    def set_xml_source(self, filename):
-        pass
+    def parse_xml(self, xml_filename):
+        project = ET.parse(xml_filename).getroot()
 
-# def load_from_project_xml(xml_file, width):
-#     project = ET.parse(xml_file).getroot()
-#
-#     images = []
-#     cls = []
-#     filenames = []
-#
-#     images_xml = project.find('images')
-#     morphology_xml = []
-#     for i, image_xml in enumerate(images_xml.iter('image')):
-#         relfile = image_xml.find('source').find('filename').text
-#         absfile = os.path.abspath(os.path.join(os.path.dirname(xml_file), relfile))
-#         clsname = os.path.basename(os.path.dirname(absfile))
-#
-#         if os.path.exists(absfile):
-#             im, sz = process_image(absfile, width)
-#             images.append(im)
-#             cls.append(clsname)
-#             filenames.append(absfile)
-#
-#             values = dict()
-#             for m in image_xml.find('morphology').findall('./'):
-#                 values[m.tag] = m.text
-#             morphology_xml.append(values)
-#
-#             if i % 100 == 0:
-#                 print("{} images processed".format(i))
-#
-#     morphology_pd = pd.DataFrame.from_records(morphology_xml)
-#     morphology = morphology_pd.values
-#     morphology = normalize(morphology, norm='max', axis=0)
-#
-#     le = LabelEncoder()
-#     le.fit(cls)
-#     labels = le.classes_
-#     cls = le.transform(cls)
-#     images = np.asarray(images)
-#     num_classes = len(labels)
-#
-#     return images, cls, labels, num_classes, filenames, morphology
+        filenames = []
+        cls = []
+        cls_labels = []
+
+        filenames_dict = OrderedDict()
+
+        images_xml = project.find('images')
+        for i, image_xml in enumerate(images_xml.iter('image')):
+            relfile = image_xml.find('source').find('filename').text
+            if os.path.isabs(relfile):
+                absfile = relfile
+            else:
+                absfile = os.path.abspath(os.path.join(os.path.dirname(xml_filename), relfile))
+            filenames.append(absfile)
+
+            cls_names = []
+            cls_scores = []
+            cls_base = image_xml.find('classifications')
+            for cls_val in cls_base.iter('classification'):
+                cls_names.append(cls_val.find('code').text)
+                cls_scores.append(float(cls_val.find('value').text))
+            cls.append(cls_names[np.argmax(cls_scores)])
+
+        for taxon_xml in project.find('taxons').iter('taxon'):
+            if taxon_xml.find('isClass').text == 'true':
+                cls_labels.append(taxon_xml.find('code').text)
+
+        cls_labels = sorted(cls_labels)
+
+        df = pd.DataFrame({'filenames': filenames, 'cls': cls})
+
+        for label in cls_labels:
+            print(label)
+            print(len(filenames))
+            print(len(cls))
+            print(np.sum(cls == label))
+            filenames_dict[label] = df.filenames[df.cls == label]
+
+        return filenames_dict
+
+
+# if __name__ == "__main__":
+ds = DataSource()
+ds.set_source(r"C:\Users\rossm\Documents\Data\Foraminifera\BenthicPlanktic\Benthic_Planktic_Source_v2\project.xml", 40)

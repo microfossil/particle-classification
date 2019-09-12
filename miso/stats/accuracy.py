@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from sklearn.metrics import precision_recall_fscore_support
+from sklearn.metrics import precision_recall_fscore_support, accuracy_score
 
 
 def plot_precision_recall(y_true,
@@ -31,6 +31,7 @@ def plot_precision_recall(y_true,
                 'f1: {0:.1f}'.format(100 * np.mean(f1))],
                loc=(0, 1.04),
                ncol=3)
+    plt.title('Accuracy {}'.format(accuracy_score(y_true, y_pred)))
     plt.tight_layout()
     # plt.subplots_adjust(top=0.85)
     if show:

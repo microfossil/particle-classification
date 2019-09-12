@@ -78,6 +78,7 @@ def default_params():
     params['output_dir'] = None
     params['data_min_count'] = 40
     params['data_split'] = 0.25
+    params['data_split_offset'] = 0
     params['seed'] = None
     params['use_class_weights'] = True
 

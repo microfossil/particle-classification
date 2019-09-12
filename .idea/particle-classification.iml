@@ -6,6 +6,7 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="ParticleClassification" />
     <orderEntry type="module" module-name="particle-classification-examples" />
+    <orderEntry type="module" module-name="particle-classification-experiments" />
   </component>
   <component name="PyDocumentationSettings">
     <option name="renderExternalDocumentation" value="true" />

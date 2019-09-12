@@ -56,6 +56,7 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
     input_dir = params.get('input_source')
     data_min_count = params.get('data_min_count')
     data_split = params.get('data_split')
+    data_split_offset = params.get('data_split_offset')
 
     # Output
     output_dir = params.get('output_dir')
@@ -67,15 +68,17 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
     else:
         color_mode = 'grayscale'
 
-    data_source = DataSource()
-    data_source.set_source(input_dir, data_min_count)
-    data_source.load_images(img_size=(img_height, img_width),
-                            prepro_type=None,
-                            prepro_params=(255, 0, 1),
-                            color_mode=color_mode,
-                            split=data_split,
-                            seed=params['seed'],
-                            print_status=True)
+    if data_source is None:
+        data_source = DataSource()
+        data_source.set_source(input_dir, data_min_count)
+        data_source.load_images(img_size=(img_height, img_width),
+                                prepro_type=None,
+                                prepro_params=(255, 0, 1),
+                                color_mode=color_mode,
+                                split=data_split,
+                                seed=params['seed'],
+                                print_status=True)
+    data_source.split(data_split, data_split_offset)
 
     if params['use_class_weights'] is True:
         params['class_weights'] = data_source.get_class_weights()
@@ -235,9 +238,9 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
     if params['save_mislabeled'] is True:
         print("@Estimating mislabeled")
         vectors = vector_model.predict(np.concatenate((data_source.train_images, data_source.test_images), axis=0))
-        plot_mislabelled(data_source.get_images(),
+        plot_mislabelled(data_source.images,
                          vectors,
-                         data_source.get_classes(),
+                         data_source.cls,
                          data_source.cls_labels,
                          data_source.get_short_filenames(),
                          save_dir,
