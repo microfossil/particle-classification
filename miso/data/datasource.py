@@ -78,7 +78,7 @@ class DataSource:
         #     pass
 
         filenames = self.data_df['filenames']
-        images = []
+        self.images = []
         idx = 0
         # Load each image
         print("@Loading images...")
@@ -103,7 +103,7 @@ class DataSource:
             im = np.multiply(im, prepro_params[2])
             # Convert to float
             im = im.astype(np.float32)
-            images.append(im)
+            self.images.append(im)
             idx += 1
             if idx % 100 == 0:
                 if print_status:
@@ -111,11 +111,11 @@ class DataSource:
                 else:
                     print("\r{} of {} processed".format(idx, len(filenames)), end='')
         # Convert all to a numpy array
-        images = np.asarray(images)
-        if images.ndim == 3:
-            images = images[:, :, :, np.newaxis]
+        self.images = np.asarray(self.images)
+        if self.images.ndim == 3:
+            images = self.images[:, :, :, np.newaxis]
         # Split into test and training sets
-        self.split(images, split, split_index, seed)
+        #self.split(images, split, split_index, seed)
 
     def load_images_using_datagen(self, img_size, datagen, color_mode='rgb', split=0.25, split_offset=0, seed=None):
         """
@@ -147,16 +147,16 @@ class DataSource:
         np.roll(self.random_idx, roll)
         # Now split
         test_len = np.round(len(self.images) * split)
-        test_idx = np.arange(0, test_len)
-        train_idx = np.arange()
+        test_idx = self.random_idx[0:int(test_len)]
+        train_idx = self.random_idx[int(test_len):]
         self.train_images = self.images[train_idx]
         self.test_images = self.images[test_idx]
         self.train_cls = self.cls[train_idx]
         self.test_cls = self.cls[test_idx]
         self.train_onehots = self.onehots[train_idx]
         self.test_onehots = self.onehots[test_idx]
-        self.train_df = self.data_df[train_idx]
-        self.test_df = self.data_df[test_idx]
+        self.train_df = self.data_df.iloc[train_idx,:]
+        self.test_df = self.data_df.iloc[test_idx,:]
 
     def set_source(self,
                    source,
@@ -409,5 +409,5 @@ class DataSource:
 
 
 # if __name__ == "__main__":
-ds = DataSource()
-ds.set_source(r"C:\Users\rossm\Documents\Data\Foraminifera\BenthicPlanktic\Benthic_Planktic_Source_v2\project.xml", 40)
+# ds = DataSource()
+# ds.set_source(r"C:\Users\rossm\Documents\Data\Foraminifera\BenthicPlanktic\Benthic_Planktic_Source_v2\project.xml", 40)
