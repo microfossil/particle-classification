@@ -26,12 +26,12 @@ def plot_precision_recall(y_true,
     plt.ylim(0, 100)
     plt.xlim(x[0]-0.5, x[-1]+0.5)
     plt.legend((h1[0], h2[0], h3[0]),
-               ['recall: {0:.1f}'.format(np.mean(r) * 100),
-                'precision: {0:.1f}'.format(100 * np.mean(p)),
-                'f1: {0:.1f}'.format(100 * np.mean(f1))],
+               ['recall: {0:.1f}%'.format(np.mean(r) * 100),
+                'precision: {0:.1f}%'.format(100 * np.mean(p)),
+                'f1: {0:.1f}%'.format(100 * np.mean(f1))],
                loc=(0, 1.04),
                ncol=3)
-    plt.title('Accuracy {}'.format(accuracy_score(y_true, y_pred)))
+    plt.xlabel('Accuracy {0:.1f}%'.format(accuracy_score(y_true, y_pred)*100))
     plt.tight_layout()
     # plt.subplots_adjust(top=0.85)
     if show:

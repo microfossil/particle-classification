@@ -41,7 +41,7 @@ def generate(params: dict):
     # Uses normal keras
     else:
         classifier, preprocess_input = Classifiers.get(type)
-        model = classifier(input_shape=(img_height, img_width, 1),
+        model = classifier(input_shape=(img_height, img_width, img_channels),
                            weights=None,
                            classes=params['num_classes'])
 

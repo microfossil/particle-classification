@@ -27,6 +27,9 @@ class RollingBuffer:
     def clear(self):
         self.__counter = 0
 
+    def length(self):
+        return self.__buffer_len
+
     def full(self):
         return self.__counter == self.__buffer_len
 

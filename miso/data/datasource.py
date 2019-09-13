@@ -29,6 +29,7 @@ class DataSource:
         self.test_df = None
 
         self.random_idx = None
+        self.random_idx_init = None
 
         self.images = None
         self.cls = None
@@ -139,12 +140,12 @@ class DataSource:
 
     def split(self, split=0.25, split_offset=0, seed=None):
         # Create new random index if necessary
-        if self.random_idx is None:
+        if self.random_idx_init is None:
             np.random.seed(seed)
-            self.random_idx = np.random.permutation(len(self.images))
+            self.random_idx_init = np.random.permutation(len(self.images))
         # Roll according to offset
-        roll = np.round(len(self.images) * split_offset)
-        np.roll(self.random_idx, roll)
+        roll = int(np.round(len(self.images) * split_offset))
+        self.random_idx = np.roll(self.random_idx_init, roll)
         # Now split
         test_len = np.round(len(self.images) * split)
         test_idx = self.random_idx[0:int(test_len)]

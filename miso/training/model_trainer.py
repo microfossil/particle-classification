@@ -27,6 +27,8 @@ from miso.training.model_factory import *
 
 def train_image_classification_model(params: dict, data_source: DataSource = None):
     # Make both backends use the same session
+    K.clear_session()
+    J.clear_session()
     J.set_session(K.get_session())
 
     # Params -----------------------------------------------------------------------------------------------------------
@@ -249,7 +251,7 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
     # Save model -------------------------------------------------------------------------------------------------------
     print("@Saving model")
     # Convert if necessary to fix TF batch normalisation issues
-    model = convert_to_inference_mode(model, lambda: generate(params))
+    model = convert_to_inference_mode(model, lambda: generate(params), model_uses_tf_keras)
     vector_model = generate_vector(model, params)
 
     # Generate description

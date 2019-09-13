@@ -99,7 +99,7 @@ class AdaptiveLearningRateScheduler(Callback):
         self.buffer.append(monitor_value)
         self.current_batch += 1
 
-        if self.buffer.full() and self.finished is False:
+        if self.current_batch > self.buffer.length() * 3 and self.buffer.full() and self.finished is False:
             if self.buffer.slope_probability_less_than(0) < 0.50:
 
                 if self.tf_keras:
