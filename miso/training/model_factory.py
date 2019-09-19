@@ -32,7 +32,7 @@ def generate(params: dict):
     # ResNet50 Transfer Learning
     # Uses the pre-trained ResNet50 network from tf.keras with full image input and augmentation
     # Has a lambda layer to rescale the normal image input (range 0-1) to that expected by the pre-trained network
-    elif type == 'resnet50_tl':
+    elif type.endswith('tl'):
         model_head, model_tail = generate_tl(params)
         outputs = model_tail(model_head.outputs[0])
         model = Model(model_head.inputs[0], outputs)
@@ -64,6 +64,12 @@ def generate_tl(params: dict):
     if type == 'resnet50_tl':
         model_head = resnet50_head(input_shape=(img_height, img_width, img_channels))
         model_tail = marchitto_tail(params['num_classes'])
+    elif type == 'resnet50_cyclic_tl':
+        model_head = resnet50_cyclic_head(input_shape=(img_height, img_width, img_channels))
+        model_tail = marchitto_tail(params['num_classes'])
+    elif type == 'resnet50_cyclic_gain_tl':
+        model_head = resnet50_cyclic_gain_head(input_shape=(img_height, img_width, img_channels))
+        model_tail = marchitto_tail(params['num_classes'])
 
     return model_head, model_tail
 
@@ -71,7 +77,7 @@ def generate_tl(params: dict):
 def generate_vector(model, params: dict):
     cnn_type = params['type']
 
-    if cnn_type == "resnet50_tl":
+    if cnn_type.endswith("tl"):
         vector_layer = model.layers[-1].layers[-2]
         vector_model = ModelK(model.inputs, vector_layer.output)
     elif cnn_type.startswith("base_cyclic"):

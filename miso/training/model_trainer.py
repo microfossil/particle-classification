@@ -59,6 +59,7 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
     data_min_count = params.get('data_min_count')
     data_split = params.get('data_split')
     data_split_offset = params.get('data_split_offset')
+    seed = params.get('seed')
 
     # Output
     output_dir = params.get('output_dir')
@@ -77,10 +78,8 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
                                 prepro_type=None,
                                 prepro_params=(255, 0, 1),
                                 color_mode=color_mode,
-                                split=data_split,
-                                seed=params['seed'],
                                 print_status=True)
-    data_source.split(data_split, data_split_offset)
+    data_source.split(data_split, data_split_offset, seed)
 
     if params['use_class_weights'] is True:
         params['class_weights'] = data_source.get_class_weights()
@@ -88,7 +87,7 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
         params['class_weights'] = None
     params['num_classes'] = data_source.num_classes
 
-    if cnn_type == 'resnet50_tl':
+    if cnn_type.endswith('tl'):
         # Model --------------------------------------------------------------------------------------------------------
         print("@Generating model")
         model_uses_tf_keras = True

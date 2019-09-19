@@ -63,10 +63,7 @@ class DataSource:
                     prepro_type=None,
                     prepro_params=(255, 0, 1),
                     color_mode='rgb',
-                    split=0.25,
-                    print_status=False,
-                    seed=None,
-                    split_index=0):
+                    print_status=False):
 
         # hashed_filename = os.path.join(self.source_directory, self.get_dataframe_hash(img_size, color_mode) + ".pkl")
         # try:
@@ -94,8 +91,21 @@ class DataSource:
                 im = np.expand_dims(im, -1)
                 if color_mode == 'rgb':
                     im = np.repeat(im, repeats=3, axis=-1)
+
+            height = im.shape[0]
+            width = im.shape[1]
+            new_height = img_size[0]
+            new_width = img_size[1]
+            if height > width:
+                new_width = int(np.round(width * new_height / height))
+            elif width > height:
+                new_height = int(np.round(height * new_width / width))
+
+            im = resize(im, (new_height, new_width), order=1)
             im = self.make_image_square(im)
-            im = resize(im, img_size, order=1)
+
+            # im = np.ones((224,224,3))
+
             # Rescale according to params
             # e.g. to take a [0,255] range image to [-1,1] params would be 255,-0.5,2
             # I' = (I / 255 - 0.5) * 2
@@ -222,10 +232,9 @@ class DataSource:
                 if extension is None:
                     for ext in ["*.jpg", "*.jpeg", "*.png", "*.tif", "*.tiff", "*.bmp"]:
                         if must_contain is not None:
-                            files.extend(glob.glob(os.path.join(class_dir, "*" + must_contain + ext)))
+                            files.extend(sorted(glob.glob(os.path.join(class_dir, "*" + must_contain + ext))))
                         else:
-                            files.extend(glob.glob(os.path.join(class_dir, ext)))
-                    files = sorted(files)
+                            files.extend(sorted(glob.glob(os.path.join(class_dir, ext))))
                 else:
                     if must_contain is not None:
                         files = sorted(glob.glob(os.path.join(class_dir, "*" + must_contain + "*." + extension)))
@@ -347,6 +356,7 @@ class DataSource:
     def make_image_square(self, im):
         if im.shape[0] == im.shape[1]:
             return im
+        print("not_square {} {}".format(im.shape[0],im.shape[1]))
         height = im.shape[0]
         width = im.shape[1]
         half = max(height, width)
