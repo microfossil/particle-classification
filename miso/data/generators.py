@@ -46,6 +46,7 @@ def tf_augmented_image_generator(images,
                                  onehots,
                                  batch_size,
                                  map_fn,
+                                 shuffle_size=1000,
                                  num_parallel_calls=tf.data.experimental.AUTOTUNE):
     """
     Create a generator suing a tf.data.Dataframe with augmentation via a map function.
@@ -77,8 +78,7 @@ def tf_augmented_image_generator(images,
     dataset = tf.data.Dataset.from_tensor_slices((images_tensor, onehots_tensor))
     if map_fn is not None:
         dataset = dataset.map(lambda x, y: (map_fn(x), y), num_parallel_calls=num_parallel_calls)
-    dataset = dataset.apply(
-        tf.data.experimental.shuffle_and_repeat(len(images), None))  # Combined shuffle and infinite repeat
+    dataset = dataset.shuffle(shuffle_size, reshuffle_each_iteration=True).repeat()
     dataset = dataset.batch(batch_size)
     dataset = dataset.prefetch(1)
 
@@ -141,6 +141,7 @@ def tf_augmented_image_generator_for_segmentation(images,
                                                   batch_size,
                                                   map_fn,
                                                   augment_targets=False,
+                                                  shuffle_size=1000,
                                                   num_parallel_calls=tf.data.experimental.AUTOTUNE):
     # Get shapes from input data
     img_size = images.shape
@@ -157,8 +158,7 @@ def tf_augmented_image_generator_for_segmentation(images,
             dataset = dataset.map(lambda x, y: (map_fn(x), y), num_parallel_calls=num_parallel_calls)
         else:
             dataset = dataset.map(lambda x, y: map_fn(x, y), num_parallel_calls=num_parallel_calls)
-    dataset = dataset.apply(
-        tf.data.experimental.shuffle_and_repeat(len(images), None))  # Combined shuffle and infinite repeat
+    dataset = dataset.shuffle(shuffle_size, reshuffle_each_iteration=True).repeat()
     dataset = dataset.batch(batch_size)
     dataset = dataset.prefetch(1)
 

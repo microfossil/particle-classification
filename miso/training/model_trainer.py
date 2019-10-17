@@ -37,11 +37,6 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
 
     # Network
     cnn_type = params.get('type')
-    # - channels must be 3 for resnet50 transfer learning
-    if cnn_type is 'resnet50_tl':
-        params['img_height'] = 224
-        params['img_width'] = 224
-        params['img_channels'] = 3
 
     # Input
     img_height = params.get('img_height')
@@ -73,7 +68,7 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
 
     if data_source is None:
         data_source = DataSource()
-        data_source.set_source(input_dir, data_min_count)
+        data_source.set_source(input_dir, data_min_count, mapping=params['class_mapping'])
         data_source.load_images(img_size=(img_height, img_width),
                                 prepro_type=None,
                                 prepro_params=(255, 0, 1),
@@ -90,6 +85,7 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
     if cnn_type.endswith('tl'):
         # Model --------------------------------------------------------------------------------------------------------
         print("@Generating model")
+        start = time.time()
         model_uses_tf_keras = True
         # Get head and tail
         model_head, model_tail = generate_tl(params)
@@ -116,7 +112,6 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
                                                nb_drops=alr_drops,
                                                tf_keras=model_uses_tf_keras)
         print("@Training")
-        start = time.time()
         history = model_tail.fit(train_vector,
                                  data_source.train_onehots,
                                  validation_data=(test_vector, data_source.test_onehots),
@@ -144,14 +139,14 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
     else:
         # Model --------------------------------------------------------------------------------------------------------
         print("@Generating model")
+        start = time.time()
         if cnn_type.startswith("base_cyclic"):
+            model_uses_tf_keras = True
+        elif cnn_type.startswith("resnet_cyclic"):
             model_uses_tf_keras = True
         else:
             model_uses_tf_keras = False
         model = generate(params)
-
-        # Vector -------------------------------------------------------------------------------------------------------
-        vector_model = generate_vector(model, params)
 
         # Augmentation -------------------------------------------------------------------------------------------------
         if params['aug_rotation'] is True:
@@ -188,7 +183,6 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
                                                nb_drops=alr_drops,
                                                tf_keras=model_uses_tf_keras)
         print("@Training")
-        start = time.time()
         history = model.fit_generator(
             train_gen,
             steps_per_epoch=math.ceil(len(data_source.train_images) // batch_size),
@@ -205,11 +199,17 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
         print("@Training time: {}s".format(training_time))
         time.sleep(3)
 
+        # Vector -------------------------------------------------------------------------------------------------------
+        vector_model = generate_vector(model, params)
+
     # Graphs -----------------------------------------------------------------------------------------------------------
     print("@Generating results")
     # Calculate test set scores
     y_true = data_source.test_cls
+    start = time.time()
     y_prob = model.predict(data_source.test_images)
+    end = time.time()
+    inference_time = (end - start) / len(data_source.test_images) * 1000
     y_pred = y_prob.argmax(axis=1)
 
     # Store results
@@ -219,7 +219,8 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
                             y_pred,
                             y_prob,
                             data_source.cls_labels,
-                            training_time)
+                            training_time,
+                            inference_time)
 
     # Save the results
     now = datetime.datetime.now()
@@ -290,7 +291,11 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
                      result.precision,
                      result.recall,
                      result.f1_score,
-                     result.support)
+                     result.support,
+                     result.epochs[-1],
+                     training_time,
+                     params['data_split'],
+                     inference_time)
 
     # Freeze and save graph
     if params['save_model'] is not None:

@@ -101,7 +101,6 @@ class AdaptiveLearningRateScheduler(Callback):
 
         if self.current_batch > self.buffer.length() * 3 and self.buffer.full() and self.finished is False:
             if self.buffer.slope_probability_less_than(0) < 0.50:
-
                 if self.tf_keras:
                     lr = float(K.get_value(self.model.optimizer.lr))
                     new_lr = lr * self.drop_rate

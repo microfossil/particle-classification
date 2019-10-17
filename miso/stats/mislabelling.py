@@ -17,7 +17,7 @@ def plot_mislabelled(images,
     # Normalise vectors
     vectors = normalize(vectors, axis=1)
     # Nearest neighbours fit
-    neigh = KNeighborsClassifier(n_neighbors=num_neighbours + 1)
+    neigh = KNeighborsClassifier(n_neighbors=num_neighbours + 1, algorithm='brute')
     neigh.fit(vectors, cls)
 
     # Find the k nearest vectors

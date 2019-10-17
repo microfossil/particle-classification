@@ -3,7 +3,7 @@ import itertools
 import matplotlib.pyplot as plt
 import matplotlib.patches as pch
 import matplotlib.lines as lines
-from sklearn.metrics import confusion_matrix, precision_recall_fscore_support
+from sklearn.metrics import confusion_matrix, precision_recall_fscore_support, accuracy_score
 from matplotlib.collections import PatchCollection
 
 
@@ -70,7 +70,7 @@ def plot_confusion_accuracy_matrix(y_true,
                                    title='Confusion matrix',
                                    cmap=plt.cm.Blues,
                                    figsize=None,
-                                   style='checker',
+                                   style='grid5',
                                    show=False):
     """
     This function prints and plots the confusion matrix.
@@ -96,10 +96,13 @@ def plot_confusion_accuracy_matrix(y_true,
                                       'wspace': 0,
                                       'hspace': 0},
                          figsize=figsize)
+    # Add counts to class labels
+    cls_labels = ['{} ({})'.format(cls_labels[i], s[i]) for i in range(len(cls_labels))]
+    thresh = cm.max() / 2.
     # Axes
     ax_cm = ax[1, 0]
-    ax_left = ax[1, 1]
-    ax_bot = ax[0, 0]
+    ax_right = ax[1, 1]
+    ax_top = ax[0, 0]
     ax_unused = ax[0, 1]
     ax_unused.axis('off')
     # Axes labels
@@ -113,24 +116,35 @@ def plot_confusion_accuracy_matrix(y_true,
     ax_cm.set_ylim(-0.5, len(cls_labels) - 0.5)
     ax_cm.invert_yaxis()
     # Bar plots
-    remove_frame(ax_bot)
-    ax_bot.bar(tick_marks, p, width=0.8, color=cmap(p), edgecolor=(0,0,0,0.6))
-    ax_bot.set_xlim((-0.5, len(tick_marks) - 0.5))
-    remove_frame(ax_left)
-    ax_left.barh(tick_marks, r, height=0.8, color=cmap(r), edgecolor=(0,0,0,0.6))
-    ax_left.set_ylim((-0.5, len(tick_marks) - 0.5))
-    ax_left.invert_yaxis()
+    remove_frame(ax_top)
+    ax_top.bar(tick_marks, p, width=0.8, color=cmap(p), edgecolor=(0,0,0,0.6))
+    ax_top.set_xlim((-0.5, len(tick_marks) - 0.5))
+    for i, v in enumerate(p):
+        if np.mean(cmap(v)[:-1]) < 0.5:
+            clr = 'white'
+        else:
+            clr = 'black'
+        ax_top.text(i, 0.15, '{:.1f}'.format(v*100), color=clr, ha='center', rotation=90, alpha=0.7)
+    remove_frame(ax_right)
+    ax_right.barh(tick_marks, r, height=0.8, color=cmap(r), edgecolor=(0,0,0,0.6))
+    ax_right.set_ylim((-0.5, len(tick_marks) - 0.5))
+    for i, v in enumerate(r):
+        if np.mean(cmap(v)[:-1]) < 0.5:
+            clr = 'white'
+        else:
+            clr = 'black'
+        ax_right.text(0.05, i, '{:.1f}'.format(v*100), color=clr, va='center', alpha=0.7)
+    ax_right.invert_yaxis()
     # Confusion matrix
-    thresh = cm.max() / 2.
     patches = []
     colors = []
     for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
         patches.append(pch.Rectangle((j-0.5, i-0.5), 1, 1))
         colors.append(cm[i, j] / 100)
-        if cm[i, j] != 0 or style == 'checker':
-            ax_cm.text(j, i + 0.25, cm[i, j],
-                       horizontalalignment="center",
-                       color="white" if cm[i, j] > thresh else "black")
+        # if cm[i, j] != 0 or style == 'checker':
+        ax_cm.text(j, i + 0.25, cm[i, j],
+                   horizontalalignment="center",
+                   color="white" if cm[i, j] > thresh else "black")
     patcol = PatchCollection(patches, alpha=1, cmap=cmap)
     patcol.set_array(np.array(colors))
     ax_cm.add_collection(patcol)
@@ -141,13 +155,21 @@ def plot_confusion_accuracy_matrix(y_true,
             line2 = lines.Line2D([-0.5, len(cls_labels) + 0.5],[i + 0.5, i + 0.5], color=(0, 0, 0, 0.05))
             ax_cm.add_line(line1)
             ax_cm.add_line(line2)
+    if style == 'grid5':
+        for i in range(len(cls_labels)-1):
+            if i % 5 == 4:
+                line1 = lines.Line2D([i+0.5,i+0.5],[-0.5,len(cls_labels)+0.5], color=(0,0,0,0.2))
+                line2 = lines.Line2D([-0.5, len(cls_labels) + 0.5],[i + 0.5, i + 0.5], color=(0, 0, 0, 0.2))
+                ax_cm.add_line(line1)
+                ax_cm.add_line(line2)
     # Labels
     ax_cm.set_ylabel('True label')
     ax_cm.set_xlabel('Predicted label')
-    ax_left.set_ylabel('Recall {:.2f}%'.format(np.mean(r)*100))
-    ax_left.yaxis.set_label_position('right')
-    ax_bot.set_xlabel('Precision {:.2f}%'.format(np.mean(p)*100))
-    ax_bot.xaxis.set_label_position('top')
+    ax_right.set_ylabel('Recall {:.1f}%'.format(np.mean(r)*100))
+    ax_right.yaxis.set_label_position('right')
+    ax_top.set_xlabel('Precision {:.1f}%'.format(np.mean(p)*100))
+    ax_top.xaxis.set_label_position('top')
+    ax_top.set_title('Overall accuracy {:.1f}%'.format(accuracy_score(y_true, y_pred)*100))
     ax_cm.set_zorder(100)
     plt.tight_layout()
     if show is True:

@@ -3,6 +3,7 @@ from tensorflow.keras.models import Model as ModelK
 from keras.models import Model as ModelJ
 from miso.models.transfer_learning import *
 from miso.models.base_cyclic import *
+from miso.models.resnet import *
 from classification_models import Classifiers
 
 
@@ -29,6 +30,18 @@ def generate(params: dict):
                             conv_activation=params['activation'],
                             use_batch_norm=params['use_batch_norm'],
                             global_pooling=params['global_pooling'])
+    # ResNet Cyclic
+    elif type.startswith("resnet_cyclic"):
+        blocks = int(math.log2(img_height) - 2)
+        blocks -= 1     # Resnet has one block to start with already
+        resnet_params = ModelParams('resnet_cyclic',
+                                    params['filters'],
+                                    [1 for i in range(4)],
+                                    residual_conv_block,
+                                    None,
+                                    use_cyclic=True)
+        model = ResNetCyclic(resnet_params, input_shape, None, True, params['num_classes'])
+
     # ResNet50 Transfer Learning
     # Uses the pre-trained ResNet50 network from tf.keras with full image input and augmentation
     # Has a lambda layer to rescale the normal image input (range 0-1) to that expected by the pre-trained network
@@ -53,7 +66,7 @@ def generate(params: dict):
 
 def generate_tl(params: dict):
     # Network
-    type = params.get('type')
+    cnn_type = params.get('type')
 
     # Input
     img_height = params.get('img_height')
@@ -61,15 +74,8 @@ def generate_tl(params: dict):
     img_channels = params.get('img_channels')
     input_shape = (img_height, img_width, img_channels)
 
-    if type == 'resnet50_tl':
-        model_head = resnet50_head(input_shape=(img_height, img_width, img_channels))
-        model_tail = marchitto_tail(params['num_classes'])
-    elif type == 'resnet50_cyclic_tl':
-        model_head = resnet50_cyclic_head(input_shape=(img_height, img_width, img_channels))
-        model_tail = marchitto_tail(params['num_classes'])
-    elif type == 'resnet50_cyclic_gain_tl':
-        model_head = resnet50_cyclic_gain_head(input_shape=(img_height, img_width, img_channels))
-        model_tail = marchitto_tail(params['num_classes'])
+    model_head = head(cnn_type, input_shape=input_shape)
+    model_tail = tail(params['num_classes'])
 
     return model_head, model_tail
 
@@ -81,6 +87,9 @@ def generate_vector(model, params: dict):
         vector_layer = model.layers[-1].layers[-2]
         vector_model = ModelK(model.inputs, vector_layer.output)
     elif cnn_type.startswith("base_cyclic"):
+        vector_layer = model.get_layer(index=-2)
+        vector_model = ModelK(model.inputs, vector_layer.output)
+    elif cnn_type.startswith("resnet_cyclic"):
         vector_layer = model.get_layer(index=-2)
         vector_model = ModelK(model.inputs, vector_layer.output)
     elif cnn_type.startswith("resnet") or cnn_type.startswith("seresnet"):

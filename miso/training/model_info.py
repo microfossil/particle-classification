@@ -26,7 +26,11 @@ class ModelInfo:
                  precision: float,
                  recall: float,
                  f1score: float,
-                 support: float):
+                 support: float,
+                 training_epochs: int,
+                 training_time: float,
+                 training_split: float,
+                 inference_time_per_image: float):
 
         self.name = name
         self.description = description
@@ -46,8 +50,11 @@ class ModelInfo:
         self.recall = recall
         self.f1score = f1score
         self.support = support
-
-        self.version = "2.0"
+        self.training_epochs = training_epochs
+        self.training_time = training_time
+        self.training_split = training_split
+        self.inference_time_per_image = inference_time_per_image
+        self.version = "2.1"
 
     def save(self, filename):
         os.makedirs(os.path.dirname(filename), exist_ok=True)
@@ -98,6 +105,7 @@ class ModelInfo:
                 ET.SubElement(node, "channels").text = "0"
 
         ET.SubElement(root, "source_data").text = str(self.data_source_name)
+        ET.SubElement(root, "source_size").text = str(np.sum(self.counts))
         parent_node = ET.SubElement(root, "labels")
         for idx, value in enumerate(self.labels):
             node = ET.SubElement(parent_node, "label")
@@ -118,5 +126,12 @@ class ModelInfo:
         ET.SubElement(root, "precision").text = str(np.mean(self.precision))
         ET.SubElement(root, "recall").text = str(np.mean(self.recall))
         ET.SubElement(root, "f1score").text = str(np.mean(self.f1score))
+
+        parent_node = ET.SubElement(root, "load")
+        ET.SubElement(parent_node, "training_epochs").text = str(self.training_epochs)
+        ET.SubElement(parent_node, "training_time").text = str(self.training_time)
+        ET.SubElement(parent_node, "training_split").text = str(self.training_split)
+        ET.SubElement(parent_node, "training_time_per_image").text = str(self.training_time / self.training_epochs / (np.sum(self.counts) * (1 - self.training_split)))
+        ET.SubElement(parent_node, "inference_time_per_image").text = str(np.mean(self.f1score))
 
         return ET.tostring(root, pretty_print=True)

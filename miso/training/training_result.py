@@ -4,7 +4,7 @@ from sklearn.metrics import precision_recall_fscore_support, accuracy_score
 
 class TrainingResult:
 
-    def __init__(self, model_params, history, y_true, y_pred, y_prob, cls_labels, training_time):
+    def __init__(self, model_params, history, y_true, y_pred, y_prob, cls_labels, training_time, inference_time):
 
         # Model configuration
         self.model_params = model_params
@@ -12,6 +12,7 @@ class TrainingResult:
 
         # Training statistics
         self.training_time = training_time
+        self.inference_time = inference_time
 
         # Overall accuracy
         self.accuracy = accuracy_score(y_true, y_pred)

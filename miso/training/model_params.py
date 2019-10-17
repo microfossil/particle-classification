@@ -81,6 +81,7 @@ def default_params():
     params['data_split_offset'] = 0
     params['seed'] = None
     params['use_class_weights'] = True
+    params['class_mapping'] = None
 
     # What to save
     # save_model:
