@@ -266,8 +266,7 @@ class DataSource:
         if self.source_name.endswith("xml"):
             print("@Parsing project file " + self.source_name)
             filenames = self.parse_xml(self.source_name)
-            print(filenames)
-            self.mmap_directory = os.path.pardir(self.source_name)
+            self.mmap_directory = os.path.dirname(self.source_name)
         else:
             print("@Parsing image directory...")
             # Get alphabetically sorted list of class directories
@@ -469,10 +468,10 @@ class DataSource:
         df = pd.DataFrame({'filenames': filenames, 'cls': cls})
 
         for label in cls_labels:
-            print(label)
-            print(len(filenames))
-            print(len(cls))
-            print(np.sum(cls == label))
+            # print(label)
+            # print(len(filenames))
+            # print(len(cls))
+            # print(np.sum(cls == label))
             filenames_dict[label] = df.filenames[df.cls == label]
 
         return filenames_dict
