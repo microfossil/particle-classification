@@ -415,7 +415,7 @@ class DataSource:
     def make_image_square(self, im):
         if im.shape[0] == im.shape[1]:
             return im
-        print("not_square {} {}".format(im.shape[0],im.shape[1]))
+        #print("not_square {} {}".format(im.shape[0],im.shape[1]))
         height = im.shape[0]
         width = im.shape[1]
         half = max(height, width)
