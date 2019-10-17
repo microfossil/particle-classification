@@ -213,7 +213,7 @@ class DataSource:
         for i in range(len(test_idx)):
             self.test_images[i] = self.images[test_idx[i]]
         # self.test_images = self.images[test_idx]
-        # self.train_cls = self.cls[train_idx]
+        self.train_cls = self.cls[train_idx]
         self.test_cls = self.cls[test_idx]
         self.train_onehots = self.onehots[train_idx]
         self.test_onehots = self.onehots[test_idx]
@@ -407,7 +407,7 @@ class DataSource:
             cls_counts.append(len(self.data_df[self.data_df['cls'] == idx]))
             # print(cls_counts)
         self.cls_counts = cls_counts
-        self.cls = self.data_df['cls']
+        self.cls = self.data_df['cls'].to_numpy()
         self.onehots = to_categorical(self.data_df['cls'])
 
         # print(self.data_df)
@@ -478,6 +478,6 @@ class DataSource:
         return filenames_dict
 
 
-# if __name__ == "__main__":
-# ds = DataSource()
-# ds.set_source(r"C:\Users\rossm\Documents\Data\Foraminifera\BenthicPlanktic\Benthic_Planktic_Source_v2\project.xml", 40)
+if __name__ == "__main__":
+    ds = DataSource()
+    ds.set_source(r"C:\Users\rossm\Documents\Data\Foraminifera\BenthicPlanktic\Benthic_Planktic_Source_v2\project.xml", 40)
