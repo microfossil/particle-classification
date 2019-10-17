@@ -69,7 +69,7 @@ class DataSource:
                     prepro_params=(255, 0, 1),
                     color_mode='rgb',
                     print_status=False,
-                    dtype=np.float16):
+                    dtype=np.float32):
 
         # hashed_filename = os.path.join(self.source_directory, self.get_dataframe_hash(img_size, color_mode) + ".pkl")
         # try:
@@ -102,10 +102,10 @@ class DataSource:
         self.images_mmap_filename = os.path.join(self.mmap_directory, unique_id)
 
         if os.path.exists(self.images_mmap_filename):
-            self.images = open_memmap(self.images_mmap_filename, dtype=np.float16, mode='r+', shape=(image_count, img_size[0], img_size[1], channels))
+            self.images = open_memmap(self.images_mmap_filename, dtype=dtype, mode='r+', shape=(image_count, img_size[0], img_size[1], channels))
             return
 
-        self.images = open_memmap(self.images_mmap_filename, dtype=np.float16, mode='w+',  shape=(image_count, img_size[0], img_size[1], channels))
+        self.images = open_memmap(self.images_mmap_filename, dtype=dtype, mode='w+',  shape=(image_count, img_size[0], img_size[1], channels))
         idx = 0
         # Load each image
         print("@Loading images...")
@@ -181,7 +181,23 @@ class DataSource:
     #     self.images, _ = next(gen)
     #     self.split(split, split_offset, seed)
 
-    def split(self, split=0.25, split_offset=0, seed=None):
+    def delete_memmap_files(self):
+        train_filename = os.path.join(self.mmap_directory, "train.npy")
+        test_filename = os.path.join(self.mmap_directory, "test.npy")
+        if os.path.exists(train_filename):
+            del self.train_images
+            gc.collect()
+            os.remove(train_filename)
+        if os.path.exists(test_filename):
+            del self.test_images
+            gc.collect()
+            os.remove(test_filename)
+        if os.path.exists(self.images_mmap_filename):
+            del self.images
+            gc.collect()
+            os.remove(self.images_mmap_filename)
+
+    def split(self, split=0.25, split_offset=0, seed=None, dtype=np.float32):
         # Create new random index if necessary
         if self.random_idx_init is None:
             np.random.seed(seed)
@@ -206,8 +222,8 @@ class DataSource:
             del self.test_images
             gc.collect()
             os.remove(test_filename)
-        self.train_images = open_memmap(train_filename, dtype=np.float16, mode='w+', shape=(len(train_idx), img_size[0], img_size[1], img_size[2]))
-        self.test_images = open_memmap(test_filename, dtype=np.float16, mode='w+', shape=(len(test_idx), img_size[0], img_size[1], img_size[2]))
+        self.train_images = open_memmap(train_filename, dtype=dtype, mode='w+', shape=(len(train_idx), img_size[0], img_size[1], img_size[2]))
+        self.test_images = open_memmap(test_filename, dtype=dtype, mode='w+', shape=(len(test_idx), img_size[0], img_size[1], img_size[2]))
         for i in range(len(train_idx)):
             self.train_images[i] = self.images[train_idx[i]]
         for i in range(len(test_idx)):
@@ -407,6 +423,7 @@ class DataSource:
             cls_counts.append(len(self.data_df[self.data_df['cls'] == idx]))
             # print(cls_counts)
         self.cls_counts = cls_counts
+        self.cls = self.data_df['cls']
         self.cls = self.data_df['cls'].to_numpy()
         self.onehots = to_categorical(self.data_df['cls'])
 

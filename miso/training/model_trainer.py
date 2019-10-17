@@ -239,7 +239,7 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
 
     if params['save_mislabeled'] is True:
         print("@Estimating mislabeled")
-        vectors = vector_model.predict(np.concatenate((data_source.train_images, data_source.test_images), axis=0))
+        vectors = vector_model.predict(data_source.images)
         plot_mislabelled(data_source.images,
                          vectors,
                          data_source.cls,
@@ -307,6 +307,10 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
 
     # Save info
     info.save(os.path.join(save_dir, "model", "network_info.xml"))
+
+    if params['delete_mmap_files']:
+        print("@Deleting temporary files")
+        data_source.delete_memmap_files()
 
     print("@Complete")
     return model, vector_model, data_source, result

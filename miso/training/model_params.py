@@ -82,6 +82,7 @@ def default_params():
     params['seed'] = None
     params['use_class_weights'] = True
     params['class_mapping'] = None
+    params['delete_mmap_files'] = True
 
     # What to save
     # save_model:
