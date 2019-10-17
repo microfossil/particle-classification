@@ -264,8 +264,9 @@ class DataSource:
             self.mmap_directory = source
 
         if self.source_name.endswith("xml"):
-            print("@Parsing project file...")
+            print("@Parsing project file " + self.source_name)
             filenames = self.parse_xml(self.source_name)
+            print(filenames)
             self.mmap_directory = os.path.pardir(self.source_name)
         else:
             print("@Parsing image directory...")
