@@ -99,7 +99,7 @@ class DataSource:
         # Memory map
         hash = hashlib.sha256(pd.util.hash_pandas_object(self.data_df, index=True).values).hexdigest()
         unique_id = "{}_{}_{}_{}_{}.npy".format(hash, img_size[0], img_size[1], color_mode, byte_count)
-        self.images_mmap_filename = os.path.join(self.source_name, unique_id)
+        self.images_mmap_filename = os.path.join(self.mmap_directory, unique_id)
 
         if os.path.exists(self.images_mmap_filename):
             self.images = open_memmap(self.images_mmap_filename, dtype=np.float16, mode='r+', shape=(image_count, img_size[0], img_size[1], channels))
@@ -267,6 +267,7 @@ class DataSource:
             print("@Parsing project file " + self.source_name)
             filenames = self.parse_xml(self.source_name)
             self.mmap_directory = os.path.dirname(self.source_name)
+            print(self.mmap_directory)
         else:
             print("@Parsing image directory...")
             # Get alphabetically sorted list of class directories
