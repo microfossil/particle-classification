@@ -71,9 +71,9 @@ class AdaptiveLearningRateScheduler(Callback):
     def on_epoch_end(self, epoch, logs=None):
         loss = logs.get("loss")
         acc = logs.get("acc") or logs.get('accuracy') or logs.get('iou_score') or logs.get('cosine_proximity')
-        val_loss = logs.get("val_loss")
+        val_loss = logs.get("val_loss") or 0
         val_acc = logs.get("val_acc") or logs.get('val_accuracy') or logs.get('val_iou_score') or logs.get(
-            'val_cosine_proximity')
+            'val_cosine_proximity') or 0
 
         if 'cosine_proximity' in logs:
             acc += 1

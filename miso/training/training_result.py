@@ -21,8 +21,12 @@ class TrainingResult:
         self.epochs = history.epoch
         self.loss = history.history['loss']
         self.acc = history.history['acc']
-        self.val_loss = history.history['val_loss']
-        self.val_acc = history.history['val_acc']
+        if 'val_loss' in history.history.keys():
+            self.val_loss = history.history['val_loss']
+            self.val_acc = history.history['val_acc']
+        else:
+            self.val_loss = []
+            self.val_acc = []
 
         # Class history
         p, r, f1, s = precision_recall_fscore_support(y_true, y_pred)

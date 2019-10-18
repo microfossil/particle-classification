@@ -68,7 +68,11 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
 
     if data_source is None:
         data_source = DataSource()
-        data_source.set_source(input_dir, data_min_count, mapping=params['class_mapping'])
+        data_source.set_source(input_dir,
+                               data_min_count,
+                               mapping=params['class_mapping'],
+                               min_count_to_others=params['data_map_others'],
+                               mmap_directory=params['mmap_directory'])
         data_source.load_images(img_size=(img_height, img_width),
                                 prepro_type=None,
                                 prepro_params=(255, 0, 1),
@@ -112,9 +116,13 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
                                                nb_drops=alr_drops,
                                                tf_keras=model_uses_tf_keras)
         print("@Training")
+        if data_split > 0:
+            validation_data = (test_vector, data_source.test_onehots)
+        else:
+            validation_data = None
         history = model_tail.fit(train_vector,
                                  data_source.train_onehots,
-                                 validation_data=(test_vector, data_source.test_onehots),
+                                 validation_data=validation_data,
                                  epochs=max_epochs,
                                  batch_size=batch_size,
                                  shuffle=True,
@@ -183,10 +191,14 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
                                                nb_drops=alr_drops,
                                                tf_keras=model_uses_tf_keras)
         print("@Training")
+        if data_split > 0:
+            validation_data = test_gen
+        else:
+            validation_data = None
         history = model.fit_generator(
             train_gen,
             steps_per_epoch=math.ceil(len(data_source.train_images) // batch_size),
-            validation_data=test_gen,
+            validation_data=validation_data,
             validation_steps=math.ceil(len(data_source.test_images) // batch_size),
             epochs=max_epochs,
             verbose=0,
@@ -204,13 +216,22 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
 
     # Graphs -----------------------------------------------------------------------------------------------------------
     print("@Generating results")
-    # Calculate test set scores
-    y_true = data_source.test_cls
+    if data_split > 0:
+        # Calculate test set scores
+        y_true = data_source.test_cls
+        y_prob = model.predict(data_source.test_images)
+        y_pred = y_prob.argmax(axis=1)
+    else:
+        y_true = np.asarray([])
+        y_prob = np.asarray([])
+        y_pred = np.asarray([])
+
+    # Inference time
     start = time.time()
-    y_prob = model.predict(data_source.test_images)
+    for i in range(10):
+        model.predict(data_source.images)
     end = time.time()
-    inference_time = (end - start) / len(data_source.test_images) * 1000
-    y_pred = y_prob.argmax(axis=1)
+    inference_time = (end - start) / len(data_source.images) * 1000 /10
 
     # Store results
     result = TrainingResult(params,
@@ -228,14 +249,16 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
     os.makedirs(save_dir, exist_ok=True)
 
     # Plot the graphs
-    plot_loss_vs_epochs(history)
-    plt.savefig(os.path.join(save_dir, "loss_vs_epoch.png"))
-    plot_accuracy_vs_epochs(history)
-    plt.savefig(os.path.join(save_dir, "accuracy_vs_epoch.png"))
-    plot_confusion_accuracy_matrix(y_true, y_pred, data_source.cls_labels)
-    plt.savefig(os.path.join(save_dir, "confusion_matrix.png"))
-    plot_precision_recall(y_true, y_pred, data_source.cls_labels)
-    plt.savefig(os.path.join(save_dir, "precision_recall.png"))
+    if data_split > 0:
+        plot_loss_vs_epochs(history)
+        plt.savefig(os.path.join(save_dir, "loss_vs_epoch.png"))
+        plot_accuracy_vs_epochs(history)
+        plt.savefig(os.path.join(save_dir, "accuracy_vs_epoch.png"))
+        plot_confusion_accuracy_matrix(y_true, y_pred, data_source.cls_labels)
+        plt.savefig(os.path.join(save_dir, "confusion_matrix.png"))
+        plot_precision_recall(y_true, y_pred, data_source.cls_labels)
+        plt.savefig(os.path.join(save_dir, "precision_recall.png"))
+        plt.close('all')
 
     if params['save_mislabeled'] is True:
         print("@Estimating mislabeled")

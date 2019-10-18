@@ -79,10 +79,12 @@ def default_params():
     params['data_min_count'] = 40
     params['data_split'] = 0.25
     params['data_split_offset'] = 0
+    params['data_map_others'] = False
     params['seed'] = None
     params['use_class_weights'] = True
     params['class_mapping'] = None
     params['delete_mmap_files'] = True
+    params['mmap_directory'] = None
 
     # What to save
     # save_model:

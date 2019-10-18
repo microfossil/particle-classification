@@ -16,6 +16,7 @@ from scipy.stats.mstats import gmean
 from miso.data.download import download_images
 from numpy.lib.format import open_memmap
 import lxml.etree as ET
+from pathlib import Path
 
 
 class DataSource:
@@ -69,7 +70,7 @@ class DataSource:
                     prepro_params=(255, 0, 1),
                     color_mode='rgb',
                     print_status=False,
-                    dtype=np.float32):
+                    dtype=np.float16):
 
         # hashed_filename = os.path.join(self.source_directory, self.get_dataframe_hash(img_size, color_mode) + ".pkl")
         # try:
@@ -97,8 +98,8 @@ class DataSource:
             byte_count = 'X'
 
         # Memory map
-        hash = hashlib.sha256(pd.util.hash_pandas_object(self.data_df, index=True).values).hexdigest()
-        unique_id = "{}_{}_{}_{}_{}.npy".format(hash, img_size[0], img_size[1], color_mode, byte_count)
+        hashstr = hashlib.sha256(pd.util.hash_pandas_object(self.data_df, index=True).values).hexdigest()[0:16]
+        unique_id = "{}_{}_{}_{}_{}.npy".format(hashstr, img_size[0], img_size[1], color_mode, byte_count)
         self.images_mmap_filename = os.path.join(self.mmap_directory, unique_id)
 
         if os.path.exists(self.images_mmap_filename):
@@ -197,7 +198,7 @@ class DataSource:
             gc.collect()
             os.remove(self.images_mmap_filename)
 
-    def split(self, split=0.25, split_offset=0, seed=None, dtype=np.float32):
+    def split(self, split=0.25, split_offset=0, seed=None, dtype=np.float16):
         # Create new random index if necessary
         if self.random_idx_init is None:
             np.random.seed(seed)
@@ -245,7 +246,8 @@ class DataSource:
                    mapping: dict = None,
                    map_others=True,
                    must_contain: str = None,
-                   ignore_list: list = None):
+                   ignore_list: list = None,
+                   mmap_directory = None):
         """
         Loads images from from a directory where each sub-directories contains images for a single class, e.g.:
 
@@ -268,22 +270,25 @@ class DataSource:
         :param ignore_list: List of classes that will be ignored, and their images not loaded
         :return:
         """
+        self.mmap_directory = mmap_directory
         if source.startswith("http"):
             print("@Downloading dataset " + source + "...")
             dir_for_download = os.path.join(os.getcwd(), 'datasets')
             os.makedirs(dir_for_download, exist_ok=True)
             dir_path = download_images(source, dir_for_download)
             self.source_name = dir_path
-            self.mmap_directory = dir_path
+            if mmap_directory is None:
+                self.mmap_directory = dir_for_download
         else:
             self.source_name = source
-            self.mmap_directory = source
+            if mmap_directory is None:
+                self.mmap_directory = str(Path(self.source_name).parent)
 
         if self.source_name.endswith("xml"):
             print("@Parsing project file " + self.source_name)
             filenames = self.parse_xml(self.source_name)
-            self.mmap_directory = os.path.dirname(self.source_name)
-            print(self.mmap_directory)
+            if mmap_directory is None:
+                self.mmap_directory = str(Path(self.source_name).parent)
         else:
             print("@Parsing image directory...")
             # Get alphabetically sorted list of class directories
@@ -423,7 +428,6 @@ class DataSource:
             cls_counts.append(len(self.data_df[self.data_df['cls'] == idx]))
             # print(cls_counts)
         self.cls_counts = cls_counts
-        self.cls = self.data_df['cls']
         self.cls = self.data_df['cls'].to_numpy()
         self.onehots = to_categorical(self.data_df['cls'])
 

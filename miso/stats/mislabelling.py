@@ -65,10 +65,11 @@ def plot_mislabelled(images,
             #     ax.set_axis_off()
             #     continue
             if i == 0:
+                image = images[im_idx].astype(np.float32)
                 if images.shape[3] == 1:
-                    ax.imshow(images[im_idx, :, :, 0])
+                    ax.imshow(image[:, :, 0])
                 else:
-                    ax.imshow(images[im_idx, :, :, :])
+                    ax.imshow(image)
                 if cls_labels is None:
                     xlabel = "{0}\n({1})?".format(cls[im_idx], pred_cls[im_idx])
                 else:
@@ -76,10 +77,11 @@ def plot_mislabelled(images,
                 ax.set_xlabel(xlabel)
             else:
                 kidx = idx[im_idx, i - 1]
+                image = images[kidx].astype(np.float32)
                 if images.shape[3] == 1:
-                    ax.imshow(images[kidx, :, :, 0])
+                    ax.imshow(image[:, :, 0])
                 else:
-                    ax.imshow(images[kidx, :, :, :])
+                    ax.imshow(image)
                 if cls_labels is None:
                     xlabel = "{0}".format(cls[kidx])
                 else:
@@ -100,4 +102,4 @@ def plot_mislabelled(images,
                                  "mislabeled",
                                  cls_labels[cls[im_idx]],
                                  image_names[im_idx]).replace("\\", "/"))
-        plt.close()
+        plt.close('all')
