@@ -83,7 +83,7 @@ class DataSource:
         #     pass
         filenames = self.data_df['filenames']
         image_count = len(filenames)
-        if color_mode == 'rgb':
+        if color_mode == 'rgb' or color_mode == 'greyscale3':
             channels = 3
         else:
             channels = 1
@@ -101,6 +101,7 @@ class DataSource:
         hashstr = hashlib.sha256(pd.util.hash_pandas_object(self.data_df, index=True).values).hexdigest()[0:16]
         unique_id = "{}_{}_{}_{}_{}.npy".format(hashstr, img_size[0], img_size[1], color_mode, byte_count)
         self.images_mmap_filename = os.path.join(self.mmap_directory, unique_id)
+        print(self.images_mmap_filename)
 
         if os.path.exists(self.images_mmap_filename):
             self.images = open_memmap(self.images_mmap_filename, dtype=dtype, mode='r+', shape=(image_count, img_size[0], img_size[1], channels))
@@ -117,6 +118,9 @@ class DataSource:
             else:
                 im = Image.open(filename).convert('L')
             im = np.asarray(im, dtype=np.float)
+            if color_mode == 'greyscale3':
+                im = np.expand_dims(im, -1)
+                im = np.repeat(im, repeats=3, axis=-1)
             if im.ndim == 2:
                 im = np.expand_dims(im, -1)
                 if color_mode == 'rgb':
@@ -182,21 +186,29 @@ class DataSource:
     #     self.images, _ = next(gen)
     #     self.split(split, split_offset, seed)
 
-    def delete_memmap_files(self):
-        train_filename = os.path.join(self.mmap_directory, "train.npy")
-        test_filename = os.path.join(self.mmap_directory, "test.npy")
-        if os.path.exists(train_filename):
-            del self.train_images
-            gc.collect()
-            os.remove(train_filename)
-        if os.path.exists(test_filename):
-            del self.test_images
-            gc.collect()
-            os.remove(test_filename)
-        if os.path.exists(self.images_mmap_filename):
-            del self.images
-            gc.collect()
-            os.remove(self.images_mmap_filename)
+    def delete_memmap_files(self, del_split=True, del_source=True):
+        if del_split:
+            train_filename = os.path.join(self.mmap_directory, "train.npy")
+            test_filename = os.path.join(self.mmap_directory, "test.npy")
+            if os.path.exists(train_filename):
+                if self.train_images is not None:
+                    self.train_images._mmap.close()
+                del self.train_images
+                gc.collect()
+                os.remove(train_filename)
+            if os.path.exists(test_filename):
+                if self.test_images is not None:
+                    self.test_images._mmap.close()
+                del self.test_images
+                gc.collect()
+                os.remove(test_filename)
+        if del_source:
+            if os.path.exists(self.images_mmap_filename):
+                if self.images is not None:
+                    self.images._mmap.close()
+                del self.images
+                gc.collect()
+                os.remove(self.images_mmap_filename)
 
     def split(self, split=0.25, split_offset=0, seed=None, dtype=np.float16):
         # Create new random index if necessary
@@ -215,14 +227,7 @@ class DataSource:
         img_size = self.images.shape[1:]
         train_filename = os.path.join(self.mmap_directory, "train.npy")
         test_filename = os.path.join(self.mmap_directory, "test.npy")
-        if os.path.exists(train_filename):
-            del self.train_images
-            gc.collect()
-            os.remove(train_filename)
-        if os.path.exists(test_filename):
-            del self.test_images
-            gc.collect()
-            os.remove(test_filename)
+        self.delete_memmap_files(True, False)
         self.train_images = open_memmap(train_filename, dtype=dtype, mode='w+', shape=(len(train_idx), img_size[0], img_size[1], img_size[2]))
         self.test_images = open_memmap(test_filename, dtype=dtype, mode='w+', shape=(len(test_idx), img_size[0], img_size[1], img_size[2]))
         for i in range(len(train_idx)):

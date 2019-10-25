@@ -64,7 +64,12 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
     if img_channels == 3:
         color_mode = 'rgb'
     else:
-        color_mode = 'grayscale'
+        if cnn_type.endswith('tl'):
+            color_mode = 'greyscale3'
+            params['img_channels'] = 3
+        else:
+            color_mode = 'greyscale'
+    print('Color mode: {}'.format(color_mode))
 
     if data_source is None:
         data_source = DataSource()
@@ -227,11 +232,19 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
         y_pred = np.asarray([])
 
     # Inference time
-    start = time.time()
-    for i in range(10):
-        model.predict(data_source.images)
-    end = time.time()
-    inference_time = (end - start) / len(data_source.images) * 1000 /10
+    max_count = np.min([1000, len(data_source.images)])
+    to_predict = np.copy(data_source.images[0:max_count])
+
+    inf_times = []
+    for i in range(3):
+        start = time.time()
+        model.predict(to_predict)
+        end = time.time()
+        diff = (end - start) / max_count * 1000
+        inf_times.append(diff)
+        print("@Calculating inference time {}/10: {:.3f}ms".format(i+1, diff))
+    inference_time = np.median(inf_times)
+
 
     # Store results
     result = TrainingResult(params,
@@ -331,9 +344,8 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
     # Save info
     info.save(os.path.join(save_dir, "model", "network_info.xml"))
 
-    if params['delete_mmap_files']:
-        print("@Deleting temporary files")
-        data_source.delete_memmap_files()
+    print("@Deleting temporary files")
+    data_source.delete_memmap_files(del_split=True, del_source=params['delete_mmap_files'])
 
     print("@Complete")
     return model, vector_model, data_source, result
