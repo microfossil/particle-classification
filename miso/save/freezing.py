@@ -87,13 +87,15 @@ def freeze_or_save(model, save_dir, metadata: ModelInfo=None, freeze=True, tf_ke
 
 def load(source: str,
          input_tensor="input_1:0",
-         output_tensor="conv2d_23/Sigmoid:0"):
+         output_tensor="conv2d_23/Sigmoid:0",
+         session=None):
 
     if not os.path.exists(source):
         raise FileNotFoundError('The graph file was not found on the system.\nThe path was: ' + source)
 
     # Load network
-    session = K.get_session()
+    if session is None:
+        session = K.get_session()
     with gfile.Open(source, 'rb') as f:
         graph_def = tf.GraphDef()
         graph_def.ParseFromString(f.read())
@@ -107,5 +109,5 @@ def load(source: str,
 
     # Input / output tensors
     input = session.graph.get_tensor_by_name(input_tensor)
-    mask = session.graph.get_tensor_by_name(output_tensor)
-    return session, input, mask
+    output = session.graph.get_tensor_by_name(output_tensor)
+    return session, input, output

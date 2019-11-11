@@ -112,34 +112,34 @@ def plot_confusion_accuracy_matrix(y_true,
     ax_cm.set_yticks(tick_marks)
     ax_cm.set_yticklabels(cls_labels)
     ax_cm.set_xticks(tick_marks, cls_labels)
-    ax_cm.set_xlim(-0.5, len(cls_labels)-0.5)
+    ax_cm.set_xlim(-0.5, len(cls_labels) - 0.5)
     ax_cm.set_ylim(-0.5, len(cls_labels) - 0.5)
     ax_cm.invert_yaxis()
     # Bar plots
     remove_frame(ax_top)
-    ax_top.bar(tick_marks, p, width=0.8, color=cmap(p), edgecolor=(0,0,0,0.6))
+    ax_top.bar(tick_marks, p, width=0.8, color=cmap(p), edgecolor=(0, 0, 0, 0.6))
     ax_top.set_xlim((-0.5, len(tick_marks) - 0.5))
     for i, v in enumerate(p):
         if np.mean(cmap(v)[:-1]) < 0.5:
             clr = 'white'
         else:
             clr = 'black'
-        ax_top.text(i, 0.15, '{:.1f}'.format(v*100), color=clr, ha='center', rotation=90, alpha=0.7)
+        ax_top.text(i, 0.15, '{:.1f}'.format(v * 100), color=clr, ha='center', rotation=90, alpha=0.7)
     remove_frame(ax_right)
-    ax_right.barh(tick_marks, r, height=0.8, color=cmap(r), edgecolor=(0,0,0,0.6))
+    ax_right.barh(tick_marks, r, height=0.8, color=cmap(r), edgecolor=(0, 0, 0, 0.6))
     ax_right.set_ylim((-0.5, len(tick_marks) - 0.5))
     for i, v in enumerate(r):
         if np.mean(cmap(v)[:-1]) < 0.5:
             clr = 'white'
         else:
             clr = 'black'
-        ax_right.text(0.05, i, '{:.1f}'.format(v*100), color=clr, va='center', alpha=0.7)
+        ax_right.text(0.05, i, '{:.1f}'.format(v * 100), color=clr, va='center', alpha=0.7)
     ax_right.invert_yaxis()
     # Confusion matrix
     patches = []
     colors = []
     for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
-        patches.append(pch.Rectangle((j-0.5, i-0.5), 1, 1))
+        patches.append(pch.Rectangle((j - 0.5, i - 0.5), 1, 1))
         colors.append(cm[i, j] / 100)
         # if cm[i, j] != 0 or style == 'checker':
         ax_cm.text(j, i + 0.25, cm[i, j],
@@ -150,26 +150,26 @@ def plot_confusion_accuracy_matrix(y_true,
     ax_cm.add_collection(patcol)
     # Grid
     if style == 'grid':
-        for i in range(len(cls_labels)-1):
-            line1 = lines.Line2D([i+0.5,i+0.5],[-0.5,len(cls_labels)+0.5], color=(0,0,0,0.05))
-            line2 = lines.Line2D([-0.5, len(cls_labels) + 0.5],[i + 0.5, i + 0.5], color=(0, 0, 0, 0.05))
+        for i in range(len(cls_labels) - 1):
+            line1 = lines.Line2D([i + 0.5, i + 0.5], [-0.5, len(cls_labels) + 0.5], color=(0, 0, 0, 0.05))
+            line2 = lines.Line2D([-0.5, len(cls_labels) + 0.5], [i + 0.5, i + 0.5], color=(0, 0, 0, 0.05))
             ax_cm.add_line(line1)
             ax_cm.add_line(line2)
     if style == 'grid5':
-        for i in range(len(cls_labels)-1):
+        for i in range(len(cls_labels) - 1):
             if i % 5 == 4:
-                line1 = lines.Line2D([i+0.5,i+0.5],[-0.5,len(cls_labels)+0.5], color=(0,0,0,0.2))
-                line2 = lines.Line2D([-0.5, len(cls_labels) + 0.5],[i + 0.5, i + 0.5], color=(0, 0, 0, 0.2))
+                line1 = lines.Line2D([i + 0.5, i + 0.5], [-0.5, len(cls_labels) + 0.5], color=(0, 0, 0, 0.2))
+                line2 = lines.Line2D([-0.5, len(cls_labels) + 0.5], [i + 0.5, i + 0.5], color=(0, 0, 0, 0.2))
                 ax_cm.add_line(line1)
                 ax_cm.add_line(line2)
     # Labels
     ax_cm.set_ylabel('True label')
     ax_cm.set_xlabel('Predicted label')
-    ax_right.set_ylabel('Recall {:.1f}%'.format(np.mean(r)*100))
+    ax_right.set_ylabel('Recall {:.1f}%'.format(np.mean(r) * 100))
     ax_right.yaxis.set_label_position('right')
-    ax_top.set_xlabel('Precision {:.1f}%'.format(np.mean(p)*100))
+    ax_top.set_xlabel('Precision {:.1f}%'.format(np.mean(p) * 100))
     ax_top.xaxis.set_label_position('top')
-    ax_top.set_title('Overall accuracy {:.1f}%'.format(accuracy_score(y_true, y_pred)*100))
+    ax_top.set_title('Overall accuracy {:.1f}%'.format(accuracy_score(y_true, y_pred) * 100))
     ax_cm.set_zorder(100)
     plt.tight_layout()
     if show is True:
@@ -183,3 +183,104 @@ def remove_frame(ax):
     ax.spines['left'].set_visible(False)
     ax.get_xaxis().set_ticks([])
     ax.get_yaxis().set_ticks([])
+
+
+def plot_comparison_matrix(y_true,
+                           y_pred,
+                           true_cls_labels,
+                           pred_cls_labels,
+                           normalise=True,
+                           title='Comparison matrix',
+                           cmap=plt.cm.Blues,
+                           figsize=None,
+                           style='grid5',
+                           show=False
+                           ):
+    """
+    This function prints and plots the confusion matrix.
+    Normalization can be applied by setting `normalize=True`.
+    """
+    # If figsize is None, estimate the plot size
+    if figsize is None:
+        figsize = (len(pred_cls_labels) / 2.75 + 2, len(true_cls_labels) / 2.75 + 2)
+
+    # Calculate confusion matrix
+    max_labels = np.max((len(true_cls_labels),len(pred_cls_labels)))
+    cm = confusion_matrix(y_true=y_true,
+                          y_pred=y_pred,
+                          labels=range(max_labels))
+    cm = cm[0:len(true_cls_labels), 0:len(pred_cls_labels)]
+    support = np.sum(cm, axis=1)
+    # Normalise the values
+    if normalise:
+        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+        cm = np.round(cm * 100).astype(int)
+    # Create combined plots
+    # f, ax = plt.subplots(2, 2,
+    #                      gridspec_kw={'width_ratios': [6, 1],
+    #                                   'height_ratios': [1, 6],
+    #                                   'wspace': 0,
+    #                                   'hspace': 0},
+    #                      figsize=figsize)
+    # Add counts to class labels
+
+    true_cls_labels = ['{} ({})'.format(true_cls_labels[i], support[i]) for i in range(len(true_cls_labels))]
+    thresh = cm.max() / 2.
+
+    fig, ax = plt.subplots(1, 1, figsize=figsize)
+    # Axes labels
+    true_tick_marks = np.arange(len(true_cls_labels))
+    pred_tick_marks = np.arange(len(pred_cls_labels))
+
+    ax.set_yticks(true_tick_marks)
+    ax.set_yticklabels(true_cls_labels)
+    ax.set_ylim(-0.5, len(true_cls_labels) - 0.5)
+
+    ax.set_xticks(pred_tick_marks)
+    ax.set_xticklabels(pred_cls_labels, rotation=90)
+    ax.set_xlim(-0.5, len(pred_cls_labels) - 0.5)
+
+    ax.invert_yaxis()
+
+    # Confusion matrix
+    patches = []
+    colors = []
+    for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
+        patches.append(pch.Rectangle((j - 0.5, i - 0.5), 1, 1))
+        colors.append(cm[i, j] / 100)
+        # if cm[i, j] != 0 or style == 'checker':
+        ax.text(j, i + 0.25, cm[i, j],
+                   horizontalalignment="center",
+                   color="white" if cm[i, j] > thresh else "black")
+    patcol = PatchCollection(patches, alpha=1, cmap=cmap)
+    patcol.set_array(np.array(colors))
+    ax.add_collection(patcol)
+
+    # Grid
+    if style == 'grid':
+        for i in range(len(pred_cls_labels) - 1):
+            line1 = lines.Line2D([i + 0.5, i + 0.5], [-0.5, len(true_cls_labels) + 0.5], color=(0, 0, 0, 0.05))
+            ax.add_line(line1)
+        for i in range(len(true_cls_labels) - 1):
+            line2 = lines.Line2D([-0.5, len(pred_cls_labels) + 0.5], [i + 0.5, i + 0.5], color=(0, 0, 0, 0.05))
+            ax.add_line(line2)
+
+    if style == 'grid5':
+        for i in range(len(pred_cls_labels) - 1):
+            if i % 5 == 4:
+                line1 = lines.Line2D([i + 0.5, i + 0.5], [-0.5, len(true_cls_labels) + 0.5], color=(0, 0, 0, 0.2))
+                line2 = lines.Line2D([-0.5, len(true_cls_labels) + 0.5], [i + 0.5, i + 0.5], color=(0, 0, 0, 0.2))
+                ax.add_line(line1)
+                ax.add_line(line2)
+        for i in range(len(true_cls_labels) - 1):
+            if i % 5 == 4:
+                line1 = lines.Line2D([i + 0.5, i + 0.5], [-0.5, len(pred_cls_labels) + 0.5], color=(0, 0, 0, 0.2))
+                line2 = lines.Line2D([-0.5, len(pred_cls_labels) + 0.5], [i + 0.5, i + 0.5], color=(0, 0, 0, 0.2))
+                ax.add_line(line1)
+                ax.add_line(line2)
+    # Labels
+    ax.set_ylabel('True labels')
+    ax.set_xlabel('Predicted labels')
+    plt.tight_layout()
+    if show is True:
+        plt.show()

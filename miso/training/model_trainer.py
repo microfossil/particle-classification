@@ -264,13 +264,13 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
     # Plot the graphs
     if data_split > 0:
         plot_loss_vs_epochs(history)
-        plt.savefig(os.path.join(save_dir, "loss_vs_epoch.png"))
+        plt.savefig(os.path.join(save_dir, "loss_vs_epoch.pdf"))
         plot_accuracy_vs_epochs(history)
-        plt.savefig(os.path.join(save_dir, "accuracy_vs_epoch.png"))
+        plt.savefig(os.path.join(save_dir, "accuracy_vs_epoch.pdf"))
         plot_confusion_accuracy_matrix(y_true, y_pred, data_source.cls_labels)
-        plt.savefig(os.path.join(save_dir, "confusion_matrix.png"))
-        plot_precision_recall(y_true, y_pred, data_source.cls_labels)
-        plt.savefig(os.path.join(save_dir, "precision_recall.png"))
+        plt.savefig(os.path.join(save_dir, "confusion_matrix.pdf"))
+
+
         plt.close('all')
 
     if params['save_mislabeled'] is True:
