@@ -7,13 +7,10 @@ import datetime
 from collections import OrderedDict
 
 import tensorflow.keras.backend as K
-import keras.backend as J
-
-from tensorflow.keras.models import Model as ModelK
-
 from miso.stats.mislabelling import plot_mislabelled
 from miso.data.datasource import DataSource
 from miso.data.generators import *
+from miso.training.wave import *
 from miso.training.adaptive_learning_rate import AdaptiveLearningRateScheduler
 from miso.training.training_result import TrainingResult
 from miso.stats.confusion_matrix import *
@@ -28,8 +25,8 @@ from miso.training.model_factory import *
 def train_image_classification_model(params: dict, data_source: DataSource = None):
     # Make both backends use the same session
     K.clear_session()
-    J.clear_session()
-    J.set_session(K.get_session())
+
+    intro()
 
     # Params -----------------------------------------------------------------------------------------------------------
     name = params.get('name')
@@ -95,15 +92,26 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
         # Model --------------------------------------------------------------------------------------------------------
         print("@Generating model")
         start = time.time()
-        model_uses_tf_keras = True
         # Get head and tail
         model_head, model_tail = generate_tl(params)
         model_tail.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
         # Create Vectors -----------------------------------------------------------------------------------------------
-        # Note that the images are scaled internally in the network to match the ResNet50 ImageNet expected scaling.
-        train_vector = model_head.predict(data_source.train_images)
-        test_vector = model_head.predict(data_source.test_images)
+        # Note that the images are scaled internally in the network to match the expected preprocessing
+        train_vector = []
+        test_vector = []
+        step = 64
+
+        for i in range(0, len(data_source.train_images), step):
+            train_vector.append(model_head.predict(data_source.train_images[i:i+step]))
+            print("@Calculating train vectors - {} of {}".format(i, len(data_source.train_images)))
+        train_vector = np.concatenate(train_vector, axis=0)
+
+        for i in range(0, len(data_source.test_images), step):
+            test_vector.append(model_head.predict(data_source.test_images[i:i + step]))
+            print("@Calculating test vectors - {} of {}".format(i, len(data_source.test_images)))
+        test_vector = np.concatenate(test_vector, axis=0)
+
         data_source.train_vectors = train_vector
         data_source.test_vectors = test_vector
 
@@ -118,8 +126,7 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
 
         # Training -----------------------------------------------------------------------------------------------------
         alr_cb = AdaptiveLearningRateScheduler(nb_epochs=alr_epochs,
-                                               nb_drops=alr_drops,
-                                               tf_keras=model_uses_tf_keras)
+                                               nb_drops=alr_drops)
         print("@Training")
         if data_split > 0:
             validation_data = (test_vector, data_source.test_onehots)
@@ -143,7 +150,7 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
         # Now we be tricky and join the trained dense layers to the resnet model to create a model that accepts images
         # as input
         outputs = model_tail(model_head.outputs[0])
-        model = ModelK(model_head.inputs[0], outputs)
+        model = Model(model_head.inputs[0], outputs)
         model.summary()
 
         # Vector -------------------------------------------------------------------------------------------------------
@@ -153,12 +160,6 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
         # Model --------------------------------------------------------------------------------------------------------
         print("@Generating model")
         start = time.time()
-        if cnn_type.startswith("base_cyclic"):
-            model_uses_tf_keras = True
-        elif cnn_type.startswith("resnet_cyclic"):
-            model_uses_tf_keras = True
-        else:
-            model_uses_tf_keras = False
         model = generate(params)
 
         # Augmentation -------------------------------------------------------------------------------------------------
@@ -193,8 +194,7 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
         # Training -----------------------------------------------------------------------------------------------------
 
         alr_cb = AdaptiveLearningRateScheduler(nb_epochs=alr_epochs,
-                                               nb_drops=alr_drops,
-                                               tf_keras=model_uses_tf_keras)
+                                               nb_drops=alr_drops)
         print("@Training")
         if data_split > 0:
             validation_data = test_gen
@@ -245,7 +245,6 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
         print("@Calculating inference time {}/10: {:.3f}ms".format(i+1, diff))
     inference_time = np.median(inf_times)
 
-
     # Store results
     result = TrainingResult(params,
                             history,
@@ -269,8 +268,6 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
         plt.savefig(os.path.join(save_dir, "accuracy_vs_epoch.pdf"))
         plot_confusion_accuracy_matrix(y_true, y_pred, data_source.cls_labels)
         plt.savefig(os.path.join(save_dir, "confusion_matrix.pdf"))
-
-
         plt.close('all')
 
     if params['save_mislabeled'] is True:
@@ -287,7 +284,7 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
     # Save model -------------------------------------------------------------------------------------------------------
     print("@Saving model")
     # Convert if necessary to fix TF batch normalisation issues
-    model = convert_to_inference_mode(model, lambda: generate(params), model_uses_tf_keras)
+    model = convert_to_inference_mode(model, lambda: generate(params))
     vector_model = generate_vector(model, params)
 
     # Generate description
@@ -338,14 +335,15 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
         freeze_or_save(model,
                        os.path.join(save_dir, "model"),
                        info,
-                       params['save_model'] == 'frozen',
-                       model_uses_tf_keras)
+                       params['save_model'] == 'frozen')
 
     # Save info
     info.save(os.path.join(save_dir, "model", "network_info.xml"))
 
     print("@Deleting temporary files")
     data_source.delete_memmap_files(del_split=True, del_source=params['delete_mmap_files'])
+
+    wave()
 
     print("@Complete")
     return model, vector_model, data_source, result

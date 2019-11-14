@@ -1,10 +1,9 @@
 import math
-from tensorflow.keras.models import Model as ModelK
-from keras.models import Model as ModelJ
+from tensorflow.keras.models import Model
 from miso.models.transfer_learning import *
 from miso.models.base_cyclic import *
 from miso.models.resnet import *
-from classification_models import Classifiers
+from classification_models.tfkeras import Classifiers
 
 
 def generate(params: dict):
@@ -85,19 +84,19 @@ def generate_vector(model, params: dict):
 
     if cnn_type.endswith("tl"):
         vector_layer = model.layers[-1].layers[-2]
-        vector_model = ModelK(model.inputs, vector_layer.output)
+        vector_model = Model(model.inputs, vector_layer.output)
     elif cnn_type.startswith("base_cyclic"):
         vector_layer = model.get_layer(index=-2)
-        vector_model = ModelK(model.inputs, vector_layer.output)
+        vector_model = Model(model.inputs, vector_layer.output)
     elif cnn_type.startswith("resnet_cyclic"):
         vector_layer = model.get_layer(index=-2)
-        vector_model = ModelK(model.inputs, vector_layer.output)
+        vector_model = Model(model.inputs, vector_layer.output)
     elif cnn_type.startswith("resnet") or cnn_type.startswith("seresnet"):
         vector_layer = model.get_layer(index=-3)
-        vector_model = ModelJ(model.inputs, vector_layer.output)
+        vector_model = Model(model.inputs, vector_layer.output)
     elif cnn_type.startswith("vgg") or cnn_type.startswith("densenet"):
         vector_layer = model.get_layer(index=-2)
-        vector_model = ModelJ(model.inputs, vector_layer.output)
+        vector_model = Model(model.inputs, vector_layer.output)
     else:
         raise ValueError("The network type, {}, is not valid".format(cnn_type))
 

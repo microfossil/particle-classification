@@ -1,12 +1,6 @@
 import tensorflow as tf
 from tensorflow.keras.callbacks import Callback
 import tensorflow.keras.backend as K
-
-try:
-    import keras.backend as J
-except:
-    pass
-
 from miso.training.rolling_buffer import RollingBuffer
 import math
 import time
@@ -42,7 +36,7 @@ class AdaptiveLearningRateScheduler(Callback):
     Decreases learning rate by a certain factor each time it is no longer improving
     """
 
-    def __init__(self, drop_rate=0.5, nb_drops=4, nb_epochs=10, verbose=1, monitor='loss', tf_keras=True):
+    def __init__(self, drop_rate=0.5, nb_drops=4, nb_epochs=10, verbose=1, monitor='loss'):
         super(AdaptiveLearningRateScheduler, self).__init__()
         self.monitor = monitor
         self.drop_rate = drop_rate
@@ -55,7 +49,6 @@ class AdaptiveLearningRateScheduler(Callback):
         self.buffer = None
         self.previous_time = None
         self.finished = False
-        self.tf_keras = tf_keras
 
     def on_train_begin(self, logs=None):
         if 'batch_size' in self.params and self.params['batch_size'] is not None:
@@ -101,14 +94,9 @@ class AdaptiveLearningRateScheduler(Callback):
 
         if self.current_batch > self.buffer.length() * 3 and self.buffer.full() and self.finished is False:
             if self.buffer.slope_probability_less_than(0) < 0.50:
-                if self.tf_keras:
-                    lr = float(K.get_value(self.model.optimizer.lr))
-                    new_lr = lr * self.drop_rate
-                    K.set_value(self.model.optimizer.lr, new_lr)
-                else:
-                    lr = float(J.get_value(self.model.optimizer.lr))
-                    new_lr = lr * self.drop_rate
-                    J.set_value(self.model.optimizer.lr, new_lr)
+                lr = float(K.get_value(self.model.optimizer.lr))
+                new_lr = lr * self.drop_rate
+                K.set_value(self.model.optimizer.lr, new_lr)
                 self.buffer.clear()
                 self.drop_count += 1
 

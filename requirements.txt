@@ -11,6 +11,6 @@ Pillow>=5.4.1
 scikit-image>=0.14.2
 scikit-learn>=0.20.2
 scipy>=1.1.0
-image-classifiers>0.2.2
-segmentation-models>=0.2.1
-tensorflow-gpu>=1.14.0,<1.15
+image-classifiers==0.2.2
+segmentation-models==0.2.1
+tensorflow==1.15

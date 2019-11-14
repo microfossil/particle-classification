@@ -1,18 +1,11 @@
-from collections import OrderedDict
-from typing import List
 import os
 import shutil
 import tensorflow as tf
 from tensorflow.keras.models import Model
 from tensorflow.python.platform import gfile
 from tensorflow.python.tools import freeze_graph
-# from miso.save import freeze_graph
 from miso.training.model_info import ModelInfo
 import tensorflow.keras.backend as K
-try:
-    import keras.backend as J
-except:
-    pass
 
 
 def remove(path):
@@ -25,42 +18,28 @@ def remove(path):
         raise ValueError("file {} is not a file or dir.".format(path))
 
 
-def convert_to_inference_mode(model, model_factory, tf_keras=True):
+def convert_to_inference_mode(model, model_factory):
     # Trick to get around bugs in tensorflow 1.14.0
     # https://github.com/tensorflow/tensorflow/issues/31331#issuecomment-518655879
     model.save_weights("weights.h5")
-    if tf_keras is True:
-        K.clear_session()
-        K.set_learning_phase(0)
-    else:
-        J.clear_session()
-        J.set_learning_phase(0)
+    K.clear_session()
+    K.set_learning_phase(0)
     model = model_factory()
     model.load_weights("weights.h5")
     remove("weights.h5")
     return model
 
 
-def freeze_or_save(model, save_dir, metadata: ModelInfo=None, freeze=True, tf_keras=True):
+def freeze_or_save(model, save_dir, metadata: ModelInfo=None, freeze=True):
 
-    if tf_keras:
-        if metadata is not None:
-            metadata_tensor = K.constant(metadata.to_xml(), name="metadata", dtype='string')
-            model = Model(model.inputs[0], [model.outputs[0], metadata_tensor])
-        # K.set_learning_phase(0)
-        tf.saved_model.simple_save(K.get_session(),
-                                   save_dir,
-                                   inputs={"input": model.inputs[0]},
-                                   outputs={"output": model.outputs[0]})
-    else:
-        if metadata is not None:
-            metadata_tensor = J.constant(metadata.to_xml(), name="metadata", dtype='string')
-            model = Model(model.inputs[0], [model.outputs[0], metadata_tensor])
-        # J.set_learning_phase(0)
-        tf.saved_model.simple_save(J.get_session(),
-                                   save_dir,
-                                   inputs={"input": model.inputs[0]},
-                                   outputs={"output": model.outputs[0]})
+    if metadata is not None:
+        metadata_tensor = K.constant(metadata.to_xml(), name="metadata", dtype='string')
+        model = Model(model.inputs[0], [model.outputs[0], metadata_tensor])
+    # K.set_learning_phase(0)
+    tf.saved_model.simple_save(K.get_session(),
+                               save_dir,
+                               inputs={"input": model.inputs[0]},
+                               outputs={"output": model.outputs[0]})
     if freeze:
         if metadata is not None:
             ext = ".pb"
