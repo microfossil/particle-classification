@@ -15,7 +15,6 @@ params['input_source'] = r'C:\Users\rossm\Documents\Data\Foraminifera\ForamA\mad
 params['data_min_count'] = 40
 params['data_split'] = 0.200000
 params['data_map_others'] = False
-
 params['output_dir'] = r'E:\Data\Testing'
 params['output_dir'] = r'C:\Users\rossm\Documents\Data\Testing'
 

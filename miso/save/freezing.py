@@ -32,9 +32,9 @@ def convert_to_inference_mode(model, model_factory):
 
 def freeze_or_save(model, save_dir, metadata: ModelInfo=None, freeze=True):
 
-    if metadata is not None:
-        metadata_tensor = K.constant(metadata.to_xml(), name="metadata", dtype='string')
-        model = Model(model.inputs[0], [model.outputs[0], metadata_tensor])
+    # if metadata is not None:
+    #     metadata_tensor = K.constant(metadata.to_xml(), name="metadata", dtype='string')
+    #     model = Model(model.inputs[0], [model.outputs[0], metadata_tensor])
     # K.set_learning_phase(0)
     tf.saved_model.simple_save(K.get_session(),
                                save_dir,
