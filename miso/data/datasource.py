@@ -72,6 +72,7 @@ class DataSource:
                     prepro_params=(255, 0, 1),
                     color_mode='rgb',
                     print_status=False,
+                    seed=None,
                     dtype=np.float32):
 
         # hashed_filename = os.path.join(self.source_directory, self.get_dataframe_hash(img_size, color_mode) + ".pkl")
@@ -100,16 +101,18 @@ class DataSource:
             byte_count = 'X'
 
         # Memory map
-        hashstr = hashlib.sha256(pd.util.hash_pandas_object(self.data_df, index=True).values).hexdigest()[0:16]
-        unique_id = "{}_{}_{}_{}_{}.npy".format(hashstr, img_size[0], img_size[1], color_mode, byte_count)
-        self.images_mmap_filename = os.path.join(self.mmap_directory, unique_id)
-        print(self.images_mmap_filename)
+        if self.use_mmap:
+            hashstr = hashlib.sha256(pd.util.hash_pandas_object(self.data_df, index=True).values).hexdigest()[0:16]
+            unique_id = "{}_{}_{}_{}_{}.npy".format(hashstr, img_size[0], img_size[1], color_mode, byte_count)
+            self.images_mmap_filename = os.path.join(self.mmap_directory, unique_id)
+            print(self.images_mmap_filename)
+            if os.path.exists(self.images_mmap_filename):
+                self.images = open_memmap(self.images_mmap_filename, dtype=dtype, mode='r+', shape=(image_count, img_size[0], img_size[1], channels))
+                return
+            self.images = open_memmap(self.images_mmap_filename, dtype=dtype, mode='w+',  shape=(image_count, img_size[0], img_size[1], channels))
+        else:
+            self.images = np.zeros(shape=(image_count, img_size[0], img_size[1], channels), dtype=dtype)
 
-        if os.path.exists(self.images_mmap_filename):
-            self.images = open_memmap(self.images_mmap_filename, dtype=dtype, mode='r+', shape=(image_count, img_size[0], img_size[1], channels))
-            return
-
-        self.images = open_memmap(self.images_mmap_filename, dtype=dtype, mode='w+',  shape=(image_count, img_size[0], img_size[1], channels))
         idx = 0
         # Load each image
         print("@Loading images...")
@@ -166,7 +169,8 @@ class DataSource:
         #     images = self.images[:, :, :, np.newaxis]
         # Split into test and training sets
         #self.split(images, split, split_index, seed)
-        self.images.flush()
+        if self.use_mmap:
+            self.images.flush()
 
     # def load_images_using_datagen(self, img_size, datagen, color_mode='rgb', split=0.25, split_offset=0, seed=None):
     #     """
@@ -189,6 +193,8 @@ class DataSource:
     #     self.split(split, split_offset, seed)
 
     def delete_memmap_files(self, del_split=True, del_source=True):
+        if self.use_mmap is False:
+            return
         if self.mmap_directory is None:
             return
         if del_split:
@@ -229,20 +235,23 @@ class DataSource:
         # Memmap
         print("@Split mapping")
         img_size = self.images.shape[1:]
-        print("@Split mapping - deleting old memmap files")
-        train_filename = os.path.join(self.mmap_directory, "train.npy")
-        test_filename = os.path.join(self.mmap_directory, "test.npy")
-        self.delete_memmap_files(True, False)
-        print("@Split mapping - creating new memmap files")
-        self.train_images = open_memmap(train_filename, dtype=dtype, mode='w+', shape=(len(train_idx), img_size[0], img_size[1], img_size[2]))
-        self.test_images = open_memmap(test_filename, dtype=dtype, mode='w+', shape=(len(test_idx), img_size[0], img_size[1], img_size[2]))
-        print("@Split mapping - copying train images")
-        for i in range(len(train_idx)):
-            self.train_images[i] = self.images[train_idx[i]]
-        print("@Split mapping - copying test images")
-        for i in range(len(test_idx)):
-            self.test_images[i] = self.images[test_idx[i]]
-        # self.test_images = self.images[test_idx]
+        if self.use_mmap:
+            print("@Split mapping - deleting old memmap files")
+            train_filename = os.path.join(self.mmap_directory, "train.npy")
+            test_filename = os.path.join(self.mmap_directory, "test.npy")
+            self.delete_memmap_files(True, False)
+            print("@Split mapping - creating new memmap files")
+            self.train_images = open_memmap(train_filename, dtype=dtype, mode='w+', shape=(len(train_idx), img_size[0], img_size[1], img_size[2]))
+            self.test_images = open_memmap(test_filename, dtype=dtype, mode='w+', shape=(len(test_idx), img_size[0], img_size[1], img_size[2]))
+            print("@Split mapping - copying train images")
+            for i in range(len(train_idx)):
+                self.train_images[i] = self.images[train_idx[i]]
+            print("@Split mapping - copying test images")
+            for i in range(len(test_idx)):
+                self.test_images[i] = self.images[test_idx[i]]
+        else:
+            self.train_images = self.images[train_idx]
+            self.test_images = self.images[test_idx]
         self.train_cls = self.cls[train_idx]
         self.test_cls = self.cls[test_idx]
         self.train_onehots = self.onehots[train_idx]
