@@ -17,6 +17,7 @@ from miso.data.download import download_images
 from numpy.lib.format import open_memmap
 import lxml.etree as ET
 from pathlib import Path
+import atexit
 
 
 class DataSource:
@@ -52,6 +53,8 @@ class DataSource:
         self.images_mmap_filename = None
         self.mmap_directory = None
 
+        atexit.register(self.delete_memmap_files)
+
     def get_class_weights(self):
         count = np.bincount(self.data_df['cls'])
         weights = gmean(count) / count
@@ -70,7 +73,7 @@ class DataSource:
                     prepro_params=(255, 0, 1),
                     color_mode='rgb',
                     print_status=False,
-                    dtype=np.float16):
+                    dtype=np.float32):
 
         # hashed_filename = os.path.join(self.source_directory, self.get_dataframe_hash(img_size, color_mode) + ".pkl")
         # try:
@@ -187,6 +190,8 @@ class DataSource:
     #     self.split(split, split_offset, seed)
 
     def delete_memmap_files(self, del_split=True, del_source=True):
+        if self.mmap_directory is None:
+            return
         if del_split:
             train_filename = os.path.join(self.mmap_directory, "train.npy")
             test_filename = os.path.join(self.mmap_directory, "test.npy")
@@ -210,7 +215,7 @@ class DataSource:
                 gc.collect()
                 os.remove(self.images_mmap_filename)
 
-    def split(self, split=0.25, split_offset=0, seed=None, dtype=np.float16):
+    def split(self, split=0.25, split_offset=0, seed=None, dtype=np.float32):
         # Create new random index if necessary
         if self.random_idx_init is None:
             np.random.seed(seed)
@@ -223,15 +228,19 @@ class DataSource:
         test_idx = self.random_idx[0:int(test_len)]
         train_idx = self.random_idx[int(test_len):]
         # Memmap
-        print("Split mapping")
+        print("@Split mapping")
         img_size = self.images.shape[1:]
+        print("@Split mapping - deleting old memmap files")
         train_filename = os.path.join(self.mmap_directory, "train.npy")
         test_filename = os.path.join(self.mmap_directory, "test.npy")
         self.delete_memmap_files(True, False)
+        print("@Split mapping - creating new memmap files")
         self.train_images = open_memmap(train_filename, dtype=dtype, mode='w+', shape=(len(train_idx), img_size[0], img_size[1], img_size[2]))
         self.test_images = open_memmap(test_filename, dtype=dtype, mode='w+', shape=(len(test_idx), img_size[0], img_size[1], img_size[2]))
+        print("@Split mapping - copying train images")
         for i in range(len(train_idx)):
             self.train_images[i] = self.images[train_idx[i]]
+        print("@Split mapping - copying test images")
         for i in range(len(test_idx)):
             self.test_images[i] = self.images[test_idx[i]]
         # self.test_images = self.images[test_idx]
@@ -241,6 +250,7 @@ class DataSource:
         self.test_onehots = self.onehots[test_idx]
         self.train_df = self.data_df.iloc[train_idx,:]
         self.test_df = self.data_df.iloc[test_idx,:]
+        print("@Split mapping - done")
 
     def set_source(self,
                    source,
