@@ -98,19 +98,30 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
 
         # Create Vectors -----------------------------------------------------------------------------------------------
         # Note that the images are scaled internally in the network to match the expected preprocessing
-        train_vector = []
-        test_vector = []
-        step = 64
+        print(time.time())
+        model_head.predict(data_source.train_images[0:128])
+        print(time.time())
+        test = data_source.train_images[0:128].copy()
+        model_head.predict(test)
+        print(time.time())
+        print("@Calculating train vectors")
+        train_vector = model_head.predict(data_source.train_images)
+        print("@Calculating test vectors")
+        test_vector = model_head.predict(data_source.test_images)
 
-        for i in range(0, len(data_source.train_images), step):
-            train_vector.append(model_head.predict(data_source.train_images[i:i+step]))
-            print("@Calculating train vectors - {} of {}".format(i, len(data_source.train_images)))
-        train_vector = np.concatenate(train_vector, axis=0)
-
-        for i in range(0, len(data_source.test_images), step):
-            test_vector.append(model_head.predict(data_source.test_images[i:i + step]))
-            print("@Calculating test vectors - {} of {}".format(i, len(data_source.test_images)))
-        test_vector = np.concatenate(test_vector, axis=0)
+        # train_vector = []
+        # test_vector = []
+        # step = 64
+        #
+        # for i in range(0, len(data_source.train_images), step):
+        #     train_vector.append(model_head.predict(data_source.train_images[i:i+step]))
+        #     print("@Calculating train vectors - {} of {}".format(i, len(data_source.train_images)))
+        # train_vector = np.concatenate(train_vector, axis=0)
+        #
+        # for i in range(0, len(data_source.test_images), step):
+        #     test_vector.append(model_head.predict(data_source.test_images[i:i + step]))
+        #     print("@Calculating test vectors - {} of {}".format(i, len(data_source.test_images)))
+        # test_vector = np.concatenate(test_vector, axis=0)
 
         data_source.train_vectors = train_vector
         data_source.test_vectors = test_vector
