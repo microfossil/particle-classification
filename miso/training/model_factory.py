@@ -3,7 +3,7 @@ from tensorflow.keras.models import Model
 from miso.models.transfer_learning import *
 from miso.models.base_cyclic import *
 from miso.models.resnet import *
-from classification_models.tfkeras import Classifiers
+from classification_models import Classifiers
 
 
 def generate(params: dict):
