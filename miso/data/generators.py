@@ -63,6 +63,7 @@ def tf_augmented_image_generator(images,
     :param onehots: Onehot encoding of target class
     :param batch_size: Batch size for training
     :param map_fn: The augmentation map function
+    :param shuffle_size: Batch size of images shuffled. Smaller values reduce memory consumption.
     :param num_parallel_calls: Number of calls in parallel, default is automatic tuning.
     :return:
     """
@@ -81,14 +82,6 @@ def tf_augmented_image_generator(images,
     dataset = dataset.shuffle(shuffle_size, reshuffle_each_iteration=True).repeat()
     dataset = dataset.batch(batch_size)
     dataset = dataset.prefetch(1)
-
-    # This doesnt work
-    # dataset = dataset.shuffle(len(images))
-    # dataset = dataset.repeat(None) # shuffle and repeat will be fused automatically
-    # if augment_fn is not None:
-    #     dataset = dataset.map(lambda x, y: (augment_fn(x), y), num_parallel_calls=tf.data.experimental.AUTOTUNE)
-    # dataset = dataset.batch(batch_size)  # map and batch will be fused automatically
-    # dataset = dataset.apply(tf.data.experimental.prefetch_to_device('/device:GPU:0'))
 
     iterator = dataset.make_initializable_iterator()
     init_op = iterator.initializer
