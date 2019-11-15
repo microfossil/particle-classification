@@ -50,10 +50,9 @@ class DataSource:
         self.test_onehots = None
         self.test_vectors = None
 
+        self.use_mmap = False
         self.images_mmap_filename = None
         self.mmap_directory = None
-
-        atexit.register(self.delete_memmap_files)
 
     def get_class_weights(self):
         count = np.bincount(self.data_df['cls'])

@@ -99,9 +99,16 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
         # Create Vectors -----------------------------------------------------------------------------------------------
         # Note that the images are scaled internally in the network to match the expected preprocessing
         print(time.time())
-        model_head.predict(data_source.train_images[0:128])
+        model_head.predict(data_source.train_images[0:1024])
         print(time.time())
-        test = data_source.train_images[0:128].copy()
+        model_head.predict(data_source.train_images[0:1024])
+        print(time.time())
+        test = data_source.train_images[0:1024].copy()
+        model_head.predict(test)
+        print(time.time())
+        model_head.predict(data_source.train_images[0:1024])
+        print(time.time())
+        test = data_source.train_images[0:1024].copy()
         model_head.predict(test)
         print(time.time())
         print("@Calculating train vectors")
