@@ -494,6 +494,8 @@ class DataSource:
                 absfile = relfile
             else:
                 absfile = os.path.abspath(os.path.join(os.path.dirname(xml_filename), relfile))
+            if os.path.isfile(absfile) is False:
+                continue
             filenames.append(absfile)
 
             cls_names = []
