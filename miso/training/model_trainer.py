@@ -70,6 +70,7 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
 
     if data_source is None:
         data_source = DataSource()
+        data_source.use_mmap = params['use_mmap']
         data_source.set_source(input_dir,
                                data_min_count,
                                mapping=params['class_mapping'],

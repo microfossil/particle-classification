@@ -85,6 +85,7 @@ def default_params():
     params['class_mapping'] = None
     params['delete_mmap_files'] = True
     params['mmap_directory'] = None
+    params['use_mmap'] = False
 
     # What to save
     # save_model:
