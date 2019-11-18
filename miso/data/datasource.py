@@ -57,6 +57,8 @@ class DataSource:
     def get_class_weights(self):
         count = np.bincount(self.data_df['cls'])
         weights = gmean(count) / count
+        weights[weights < 0.1] = 0.1
+        weights[weights > 10] = 10
         return weights
 
     def get_short_filenames(self):
@@ -73,7 +75,7 @@ class DataSource:
                     color_mode='rgb',
                     print_status=False,
                     seed=None,
-                    dtype=np.float32):
+                    dtype=np.float16):
 
         # hashed_filename = os.path.join(self.source_directory, self.get_dataframe_hash(img_size, color_mode) + ".pkl")
         # try:
@@ -220,7 +222,7 @@ class DataSource:
                 gc.collect()
                 os.remove(self.images_mmap_filename)
 
-    def split(self, split=0.25, split_offset=0, seed=None, dtype=np.float32):
+    def split(self, split=0.25, split_offset=0, seed=None, dtype=np.float16):
         # Create new random index if necessary
         if self.random_idx_init is None:
             np.random.seed(seed)
