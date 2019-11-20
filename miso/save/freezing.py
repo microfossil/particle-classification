@@ -6,6 +6,7 @@ from tensorflow.python.platform import gfile
 from tensorflow.python.tools import freeze_graph
 from miso.training.model_info import ModelInfo
 import tensorflow.keras.backend as K
+import tempfile
 
 
 def remove(path):
@@ -21,12 +22,14 @@ def remove(path):
 def convert_to_inference_mode(model, model_factory):
     # Trick to get around bugs in tensorflow 1.14.0
     # https://github.com/tensorflow/tensorflow/issues/31331#issuecomment-518655879
-    model.save_weights("weights.h5")
-    K.clear_session()
-    K.set_learning_phase(0)
-    model = model_factory()
-    model.load_weights("weights.h5")
-    remove("weights.h5")
+    with tempfile.TemporaryDirectory() as dirpath:
+        weights_filename = os.path.join(dirpath, "weights.h5")
+        model.save_weights(weights_filename)
+        K.clear_session()
+        K.set_learning_phase(0)
+        model = model_factory()
+        model.load_weights(weights_filename)
+        remove(weights_filename)
     return model
 
 
