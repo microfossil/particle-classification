@@ -9,7 +9,7 @@ def plot_precision_recall(y_true,
                           fig_size=(6, 4),
                           rotate_labels=90,
                           show=False):
-    p, r, f1, s = precision_recall_fscore_support(y_true, y_pred)
+    p, r, f1, s = precision_recall_fscore_support(y_true, y_pred, labels=range(len(cls_labels)))
     plt.figure(facecolor="white", figsize=fig_size)
     ax = plt.subplot(111)
     ax.set_axisbelow(True)

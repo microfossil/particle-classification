@@ -31,7 +31,9 @@ def plot_confusion_matrix(y_true,
                           labels=range(len(cls_labels)))
     # Normalise the values
     if normalise:
-        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+        count = cm.sum(axis=1)[:, np.newaxis]
+        count[count == 0] = 1
+        cm = cm.astype('float') / count
         cm = np.nan_to_num(cm)
         cm = np.round(cm * 100).astype(int)
     # Plot confusion matrix
@@ -88,6 +90,7 @@ def plot_confusion_accuracy_matrix(y_true,
     # Normalise the values
     if normalise:
         cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+        cm = np.nan_to_num(cm)
         cm = np.round(cm * 100).astype(int)
     # Create combined plots
     f, ax = plt.subplots(2, 2,
