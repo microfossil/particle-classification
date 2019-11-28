@@ -83,9 +83,9 @@ def generate_vector(model, params: dict):
     cnn_type = params['type']
 
     if cnn_type.endswith("tl"):
-        # vector_layer = model.layers[-1].layers[-2]
-        # vector_model = Model(model.inputs, vector_layer.output)
-        vector_model = model
+        vector_layer = model.layers[-1].layers[-2]
+        vector_model = Model(model.inputs, vector_layer.output)
+        # vector_model = model
     elif cnn_type.startswith("base_cyclic"):
         vector_layer = model.get_layer(index=-2)
         vector_model = Model(model.inputs, vector_layer.output)
