@@ -29,7 +29,7 @@ class TrainingResult:
             self.val_acc = []
 
         # Class history
-        p, r, f1, s = precision_recall_fscore_support(y_true, y_pred)
+        p, r, f1, s = precision_recall_fscore_support(y_true, y_pred, labels=range(len(self.cls_labels)))
         self.recall = r
         self.precision = p
         self.f1_score = f1
