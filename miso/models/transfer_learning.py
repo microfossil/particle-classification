@@ -138,6 +138,15 @@ def tail(num_classes):
     return marchitto_tail(num_classes)
 
 
+def tail_vector(num_classes):
+    model = Sequential()
+    model.add(Dropout(0.05))
+    model.add(Dense(512, activation='relu'))
+    model.add(Dropout(0.15))
+    model.add(Dense(512, activation='relu'))
+    return model
+
+
 def marchitto_tail(nb_classes):
     model = Sequential()
     model.add(Dropout(0.05))
