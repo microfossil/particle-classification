@@ -46,6 +46,7 @@ class CyclicDensePool4(tf.keras.layers.Layer):
     def call(self, input):
         return dense_pool_4(input, self.pool_op)
 
+
 class CyclicDensePoolN(tf.keras.layers.Layer):
     def __init__(self, pool_op, split_count=12):
         super(CyclicDensePoolN, self).__init__()

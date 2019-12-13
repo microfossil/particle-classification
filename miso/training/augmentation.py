@@ -17,21 +17,21 @@ def augmentation_complete(im_x,
     # ROTATION
     if rotation is not None:
         if len(rotation) > 2:
-            rotation_factor = tf.random_shuffle(tf.constant(rotation))[0]
+            rotation_factor = tf.random.shuffle(tf.constant(rotation))[0]
         elif len(rotation) == 2:
-            rotation_factor = tf.random_uniform([], rotation[0] / 180 * math.pi, rotation[1] / 180 * math.pi)
+            rotation_factor = tf.random.uniform([], rotation[0] / 180 * math.pi, rotation[1] / 180 * math.pi)
         im_x = tf.contrib.image.rotate(im_x, rotation_factor, interpolation='BILINEAR')
     # ZOOM
     if zoom is not None:
         if len(zoom) > 2:
-            zoom_value = tf.random_shuffle(tf.constant(zoom))[0]
+            zoom_value = tf.random.shuffle(tf.constant(zoom))[0]
         elif len(zoom) == 2:
-            zoom_value = tf.random_uniform([], zoom[0], zoom[1])
+            zoom_value = tf.random.uniform([], zoom[0], zoom[1])
         zoom_start_factor = tf.divide(tf.subtract(1.0, zoom_value), 2)
         zoom_end_factor = tf.subtract(1.0, zoom_start_factor)
         zoom_factor = [[zoom_start_factor, zoom_start_factor, zoom_end_factor, zoom_end_factor]]
         im_x = \
-            tf.image.crop_and_resize([im_x], boxes=zoom_factor, box_ind=tf.constant([0]), crop_size=tf.shape(im_x)[0:2],
+            tf.image.crop_and_resize([im_x], boxes=zoom_factor, box_indices=tf.constant([0]), crop_size=tf.shape(im_x)[0:2],
                                      method='bilinear', extrapolation_value=0)[0]
     # GAIN
     if gain is not None:

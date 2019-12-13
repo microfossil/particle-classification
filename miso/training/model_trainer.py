@@ -7,6 +7,8 @@ import datetime
 from collections import OrderedDict
 
 import tensorflow.keras.backend as K
+# from tensorflow.keras.utils import plot_model
+
 from miso.stats.mislabelling import plot_mislabelled
 from miso.data.datasource import DataSource
 from miso.data.generators import *
@@ -14,7 +16,6 @@ from miso.training.wave import *
 from miso.training.adaptive_learning_rate import AdaptiveLearningRateScheduler
 from miso.training.training_result import TrainingResult
 from miso.stats.confusion_matrix import *
-from miso.stats.accuracy import *
 from miso.stats.training import *
 from miso.training.augmentation import *
 from miso.save.freezing import freeze_or_save, convert_to_inference_mode
@@ -280,6 +281,7 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
     os.makedirs(save_dir, exist_ok=True)
 
     # Plot the graphs
+    # plot_model(model, to_file=os.path.join(save_dir, "model_plot.pdf"), show_shapes=True)
     if data_split > 0:
         plot_loss_vs_epochs(history)
         plt.savefig(os.path.join(save_dir, "loss_vs_epoch.pdf"))

@@ -141,8 +141,8 @@ def tf_augmented_image_generator_for_segmentation(images,
     img_size = (None,) + img_size[1:]
     target_size = targets.shape
     target_size = (None,) + target_size[1:]
-    images_tensor = tf.placeholder(tf.float32, shape=img_size)
-    targets_tensor = tf.placeholder(tf.float32, shape=target_size)
+    images_tensor = tf.compat.v1.placeholder(tf.float32, shape=img_size)
+    targets_tensor = tf.compat.v1.placeholder(tf.float32, shape=target_size)
 
     # Create dataset
     dataset = tf.data.Dataset.from_tensor_slices((images_tensor, targets_tensor))

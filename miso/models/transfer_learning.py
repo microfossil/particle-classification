@@ -39,15 +39,18 @@ def head(cnn_type, input_shape):
 def tf_prepro(input_shape):
     # (x / 127.5) - 1
     inputs = Input(shape=input_shape)
-    x = Lambda(lambda y: y * 2 - 1)(inputs)
+    x = Lambda(lambda y: tf.subtract(tf.multiply(y, 2), 1))
+    # x = Lambda(lambda y: y * 2 - 1)(inputs)
     return inputs, x
 
 
 def torch_prepro(input_shape):
     # (x / 255 - mean) / std_dev
     inputs = Input(shape=input_shape)
-    x = Lambda(lambda y: y - tf.reshape(tf.constant([0.485, 0.456, 0.406]), [1, 1, 1, 3]))(inputs)
-    x = Lambda(lambda y: y / tf.reshape(tf.constant([0.229, 0.224, 0.225]), [1, 1, 1, 3]))(x)
+    x = Lambda(lambda y: tf.subtract(y, tf.reshape(tf.constant([0.485, 0.456, 0.406]), [1, 1, 1, 3])))(inputs)
+    x = Lambda(lambda y: tf.divide(y, tf.reshape(tf.constant([0.229, 0.224, 0.225]), [1, 1, 1, 3])))(x)
+    # x = Lambda(lambda y: y - tf.reshape(tf.constant([0.485, 0.456, 0.406]), [1, 1, 1, 3]))(inputs)
+    # x = Lambda(lambda y: y / tf.reshape(tf.constant([0.229, 0.224, 0.225]), [1, 1, 1, 3]))(x)
     return inputs, x
 
 
@@ -55,7 +58,9 @@ def default_prepro(input_shape):
     # Convert to BGR then x - mean
     inputs = Input(shape=input_shape)
     x = Lambda(lambda y: tf.reverse(y, axis=[-1]))(inputs)
-    x = Lambda(lambda y: y * tf.constant(255.0) - tf.reshape(tf.constant([103.939, 116.779, 128.68]), [1, 1, 1, 3]))(x)
+    x = Lambda(lambda y: tf.subtract(tf.multiply(y, 255.0), tf.reshape(tf.constant([103.939, 116.779, 128.68]), [1, 1, 1, 3])))(x)
+    # x = Lambda(lambda y: tf.reverse(y, axis=[-1]))(inputs)
+    # x = Lambda(lambda y: y * tf.constant(255.0) - tf.reshape(tf.constant([103.939, 116.779, 128.68]), [1, 1, 1, 3]))(x)
     return inputs, x
 #
 #
