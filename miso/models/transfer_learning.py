@@ -57,10 +57,10 @@ def torch_prepro(input_shape):
 def default_prepro(input_shape):
     # Convert to BGR then x - mean
     inputs = Input(shape=input_shape)
-    x = Lambda(lambda y: tf.reverse(y, axis=[-1]))(inputs)
-    x = Lambda(lambda y: tf.subtract(tf.multiply(y, 255.0), tf.reshape(tf.constant([103.939, 116.779, 128.68]), [1, 1, 1, 3])))(x)
     # x = Lambda(lambda y: tf.reverse(y, axis=[-1]))(inputs)
-    # x = Lambda(lambda y: y * tf.constant(255.0) - tf.reshape(tf.constant([103.939, 116.779, 128.68]), [1, 1, 1, 3]))(x)
+    # x = Lambda(lambda y: tf.subtract(tf.multiply(y, 255.0), tf.reshape(tf.constant([103.939, 116.779, 128.68]), [1, 1, 1, 3])))(x)
+    x = Lambda(lambda y: tf.reverse(y, axis=[-1]))(inputs)
+    x = Lambda(lambda y: y * tf.constant(255.0) - tf.reshape(tf.constant([103.939, 116.779, 128.68]), [1, 1, 1, 3]))(x)
     return inputs, x
 #
 #
