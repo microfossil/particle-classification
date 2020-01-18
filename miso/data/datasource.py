@@ -133,16 +133,7 @@ class DataSource:
                 if color_mode == 'rgb':
                     im = np.repeat(im, repeats=3, axis=-1)
 
-            # height = im.shape[0]
-            # width = im.shape[1]
-            # new_height = img_size[0]
-            # new_width = img_size[1]
-            # if height > width:
-            #     new_width = int(np.round(width * new_height / height))
-            # elif width > height:
-            #     new_height = int(np.round(height * new_width / width))
             im = self.make_image_square(im)
-            # im = resize(im, (new_height, new_width), order=1)
             im = resize(im, (img_size[0], img_size[1]), order=1)
 
             # im = np.ones((224,224,3))
@@ -458,7 +449,8 @@ class DataSource:
 
         # print(self.data_df)
 
-    def make_image_square(self, im):
+    @staticmethod
+    def make_image_square(im):
         if im.shape[0] == im.shape[1]:
             return im
         #print("not_square {} {}".format(im.shape[0],im.shape[1]))
@@ -480,7 +472,8 @@ class DataSource:
             axis=2)
         return im
 
-    def parse_xml(self, xml_filename):
+    @staticmethod
+    def parse_xml(xml_filename):
         project = ET.parse(xml_filename).getroot()
 
         filenames = []
