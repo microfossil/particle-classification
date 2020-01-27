@@ -31,7 +31,7 @@ def augmentation_complete(im_x,
         zoom_end_factor = tf.subtract(1.0, zoom_start_factor)
         zoom_factor = [[zoom_start_factor, zoom_start_factor, zoom_end_factor, zoom_end_factor]]
         im_x = \
-            tf.image.crop_and_resize([im_x], boxes=zoom_factor, box_indices=tf.constant([0]), crop_size=tf.shape(im_x)[0:2],
+            tf.image.crop_and_resize([im_x], boxes=zoom_factor, box_ind=tf.constant([0]), crop_size=tf.shape(im_x)[0:2],
                                      method='bilinear', extrapolation_value=0)[0]
     # GAIN
     if gain is not None:
