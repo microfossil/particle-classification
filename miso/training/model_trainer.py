@@ -18,7 +18,7 @@ from miso.training.training_result import TrainingResult
 from miso.stats.confusion_matrix import *
 from miso.stats.training import *
 from miso.training.augmentation import *
-from miso.save.freezing import freeze_or_save, convert_to_inference_mode
+from miso.deploy.saving import freeze, convert_to_inference_mode
 from miso.training.model_info import ModelInfo
 from miso.training.model_factory import *
 
@@ -353,10 +353,10 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
 
     # Freeze and save graph
     if params['save_model'] is not None:
-        freeze_or_save(model,
-                       os.path.join(save_dir, "model"),
-                       info,
-                       params['save_model'] == 'frozen')
+        freeze(model,
+               os.path.join(save_dir, "model"),
+               info,
+               params['save_model'] == 'frozen')
 
     # Save info
     info.save(os.path.join(save_dir, "model", "network_info.xml"))
