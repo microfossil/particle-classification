@@ -155,7 +155,7 @@ def test():
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         print("Error: You must specify a network description xml.")
-        #app_session, app_input, app_output, app_img_size, app_cls_labels = test()
+        # app_session, app_input, app_output, app_img_size, app_cls_labels = test()
     else:
         app_session, app_input, app_output, app_img_size, app_cls_labels = load_from_xml(sys.argv[1])
         app_df = pd.DataFrame(columns=['sample'] + app_cls_labels)
@@ -163,6 +163,6 @@ if __name__ == '__main__':
         print("---------------------")
         print("Labels:")
         print(app_cls_labels)
-        app.run(debug=False)
+        app.run(debug=False, port=5555)
 
 
