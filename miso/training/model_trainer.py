@@ -355,8 +355,7 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
     if params['save_model'] is not None:
         freeze(model,
                os.path.join(save_dir, "model"),
-               info,
-               params['save_model'] == 'frozen')
+               info)
 
     # Save info
     info.save(os.path.join(save_dir, "model", "network_info.xml"))
