@@ -213,7 +213,7 @@ class DataSource:
                 gc.collect()
                 os.remove(self.images_mmap_filename)
 
-    def split(self, split=0.25, split_offset=0, seed=None, dtype=np.float16):
+    def split(self, split=0.25, split_offset=0, seed=None, stratify=False, dtype=np.float16):
         # Create new random index if necessary
         if self.random_idx_init is None:
             np.random.seed(seed)

@@ -91,13 +91,7 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
     params['num_classes'] = data_source.num_classes
 
     if cnn_type.endswith('tl'):
-        # Model --------------------------------------------------------------------------------------------------------
-        print("@Generating model")
         start = time.time()
-        # Get head and tail
-        model_head, model_tail = generate_tl(params)
-        model_tail.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
-
         # Create Vectors -----------------------------------------------------------------------------------------------
         # Note that the images are scaled internally in the network to match the expected preprocessing
         # print(time.time())
@@ -113,10 +107,19 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
         # test = data_source.train_images[0:1024].copy()
         # model_head.predict(test)
         # print(time.time())
+
+        # Generate vectors
+        model_head = generate_tl_head(params)
         print("@Calculating train vectors")
+        t = time.time()
         train_vector = model_head.predict(data_source.train_images)
+        print("!{}s elapsed".format(time.time() - t))
         print("@Calculating test vectors")
+        t = time.time()
         test_vector = model_head.predict(data_source.test_images)
+        print("!{}s elapsed".format(time.time() - t))
+        # Clear
+        K.clear_session()
 
         # train_vector = []
         # test_vector = []
@@ -144,6 +147,12 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
         # Generator ----------------------------------------------------------------------------------------------------
         # No generator needed
 
+        # Model --------------------------------------------------------------------------------------------------------
+        print("@Generating tail")
+        # Get  tail
+        model_tail = generate_tl_tail(params)
+        model_tail.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
         # Training -----------------------------------------------------------------------------------------------------
         alr_cb = AdaptiveLearningRateScheduler(nb_epochs=alr_epochs,
                                                nb_drops=alr_drops)
@@ -169,6 +178,7 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
         # Generator ----------------------------------------------------------------------------------------------------
         # Now we be tricky and join the trained dense layers to the resnet model to create a model that accepts images
         # as input
+        model_head = generate_tl_head(params)
         outputs = model_tail(model_head.outputs[0])
         model = Model(model_head.inputs[0], outputs)
         model.summary()

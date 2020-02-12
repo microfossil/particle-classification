@@ -79,6 +79,7 @@ class AdaptiveLearningRateScheduler(Callback):
             time_difference = current_time - self.previous_time
         self.previous_time = current_time
         if val_acc is not None:
+            print("\r", end="")
             graph_to_console(self.current_epoch, self.current_batch,
                              acc, loss, val_acc, val_loss,
                              self.buffer.slope_probability_less_than(0), self.buffer.full(),
@@ -91,6 +92,7 @@ class AdaptiveLearningRateScheduler(Callback):
         monitor_value = logs.get(self.monitor)
         self.buffer.append(monitor_value)
         self.current_batch += 1
+        print("\r{}".format(self.current_batch), end="")
 
         if self.current_batch > self.buffer.length() * 3 and self.buffer.full() and self.finished is False:
             if self.buffer.slope_probability_less_than(0) < 0.50:

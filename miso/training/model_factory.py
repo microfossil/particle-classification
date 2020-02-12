@@ -63,19 +63,26 @@ def generate(params: dict):
     return model
 
 
-def generate_tl(params: dict):
+def generate_tl_head(params: dict):
     # Network
     cnn_type = params.get('type')
-
     # Input
     img_height = params.get('img_height')
     img_width = params.get('img_width')
     img_channels = params.get('img_channels')
     input_shape = (img_height, img_width, img_channels)
-
     model_head = head(cnn_type, input_shape=input_shape)
-    model_tail = tail(params['num_classes'])
+    return model_head
 
+
+def generate_tl_tail(params: dict):
+    model_tail = tail(params['num_classes'])
+    return model_tail
+
+
+def generate_tl(params: dict):
+    model_head = generate_tl_head(params)
+    model_tail = tail(params['num_classes'])
     return model_head, model_tail
 
 
