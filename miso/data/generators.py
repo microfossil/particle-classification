@@ -93,6 +93,32 @@ def tf_augmented_image_generator(images,
             inputs, labels = sess.run(next_val)
             yield inputs, labels
 
+def tf_vector_generator(vectors,
+                         onehots,
+                         batch_size,
+                         shuffle_size=1000,
+                         num_parallel_calls=tf.data.experimental.AUTOTUNE):
+    # Get shapes from input data
+    vec_size = vectors.shape
+    vec_size = (None, vec_size[1])
+    onehot_size = onehots.shape
+    onehot_size = (None, onehot_size[1])
+    vectors_tensor = tf.placeholder(tf.float32, shape=vec_size)
+    onehots_tensor = tf.placeholder(tf.float32, shape=onehot_size)
+    # Create dataset
+    dataset = tf.data.Dataset.from_tensor_slices((vectors_tensor, onehots_tensor))
+    dataset = dataset.shuffle(shuffle_size, reshuffle_each_iteration=True).repeat()
+    dataset = dataset.batch(batch_size)
+    dataset = dataset.prefetch(1)
+    iterator = dataset.make_initializable_iterator()
+    init_op = iterator.initializer
+    next_val = iterator.get_next()
+    with K.get_session().as_default() as sess:
+        sess.run(init_op, feed_dict={vectors_tensor: vectors, onehots_tensor: onehots})
+        while True:
+            inputs, labels = sess.run(next_val)
+            yield inputs, labels
+
 
 def image_generator_from_dataframe(dataframe,
                                    img_size,

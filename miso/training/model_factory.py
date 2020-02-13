@@ -75,14 +75,14 @@ def generate_tl_head(params: dict):
     return model_head
 
 
-def generate_tl_tail(params: dict):
-    model_tail = tail(params['num_classes'])
+def generate_tl_tail(params: dict, input_shape):
+    model_tail = tail(params['num_classes'], input_shape)
     return model_tail
 
 
 def generate_tl(params: dict):
     model_head = generate_tl_head(params)
-    model_tail = tail(params['num_classes'])
+    model_tail = tail(params['num_classes'], [model_head.layers[-1].output.shape[1],])
     return model_head, model_tail
 
 
@@ -104,21 +104,25 @@ def generate_tl_vector(params: dict):
 
 def generate_vector(model, params: dict):
     cnn_type = params['type']
-
     if cnn_type.endswith("tl"):
-        if tf.__version__ == '1.13.1':
-            img_height = params.get('img_height')
-            img_width = params.get('img_width')
-            img_channels = params.get('img_channels')
-            input_shape = (img_height, img_width, img_channels)
-            model_head = head(cnn_type, input_shape=input_shape)
-            model_tail = tail_vector(params['num_classes'])
-            outputs = model_tail(model_head.outputs[0])
-            vector_model = Model(model_head.inputs[0], outputs)
-            vector_model.set_weights(model.get_weights())
-        else:
-            vector_layer = model.layers[-1].layers[-2]
-            vector_model = Model(model.inputs, vector_layer.output)
+        # if tf.__version__ == '1.13.1':
+        img_height = params.get('img_height')
+        img_width = params.get('img_width')
+        img_channels = params.get('img_channels')
+        input_shape = (img_height, img_width, img_channels)
+        model_head = head(cnn_type, input_shape=input_shape)
+        model_tail = tail_vector(params['num_classes'], [model_head.outputs[0].shape[1], ])
+        outputs = model_tail(model_head.output)
+        vector_model = Model(model_head.input, outputs)
+        vector_model.set_weights(model.get_weights()[:-2])
+        # else:
+        # vector_layer = model.layers[-1].layers[-2]
+        # print(vector_layer)
+        # print(model.layers[-1])
+        # print(model.layers[-1].layers[-2])
+        # print(model.layers[-1].layers[-2].output)
+        # model.summary()
+        # vector_model = Model(model.input, model.layers[-1].output)
         # vector_model = model
     elif cnn_type.startswith("base_cyclic"):
         vector_layer = model.get_layer(index=-2)

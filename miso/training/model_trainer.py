@@ -7,7 +7,8 @@ import datetime
 from collections import OrderedDict
 
 import tensorflow.keras.backend as K
-# from tensorflow.keras.utils import plot_model
+from tensorflow.keras.layers import Input
+from tensorflow.keras.models import Model
 
 from miso.stats.mislabelling import plot_mislabelled
 from miso.data.datasource import DataSource
@@ -86,6 +87,7 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
 
     if params['use_class_weights'] is True:
         params['class_weights'] = data_source.get_class_weights()
+        print("@Class weights are {}".format(params['class_weights']))
     else:
         params['class_weights'] = None
     params['num_classes'] = data_source.num_classes
@@ -150,26 +152,58 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
         # Model --------------------------------------------------------------------------------------------------------
         print("@Generating tail")
         # Get  tail
-        model_tail = generate_tl_tail(params)
+        model_tail = generate_tl_tail(params, [train_vector.shape[1], ])
         model_tail.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
+        # Training -----------------------------------------------------------------------------------------------------
+        # alr_cb = AdaptiveLearningRateScheduler(nb_epochs=alr_epochs,
+        #                                        nb_drops=alr_drops)
+        # print("@Training")
+        # if data_split > 0:
+        #     validation_data = (test_vector, data_source.test_onehots)
+        # else:
+        #     validation_data = None
+        # history = model_tail.fit(train_vector,
+        #                          data_source.train_onehots,
+        #                          validation_data=validation_data,
+        #                          epochs=max_epochs,
+        #                          batch_size=batch_size,
+        #                          shuffle=True,
+        #                          verbose=0,
+        #                          class_weight=params['class_weights'],
+        #                          callbacks=[alr_cb])
+        # end = time.time()
+        # training_time = end - start
+        # print("@Training time: {}s".format(training_time))
+        # time.sleep(3)
+
+        # Generator ----------------------------------------------------------------------------------------------------
+        train_gen = tf_vector_generator(train_vector,
+                                        data_source.train_onehots,
+                                        batch_size)
+        test_gen = tf_vector_generator(test_vector,
+                                       data_source.test_onehots,
+                                       batch_size)
 
         # Training -----------------------------------------------------------------------------------------------------
         alr_cb = AdaptiveLearningRateScheduler(nb_epochs=alr_epochs,
                                                nb_drops=alr_drops)
         print("@Training")
         if data_split > 0:
-            validation_data = (test_vector, data_source.test_onehots)
+            validation_data = test_gen
         else:
             validation_data = None
-        history = model_tail.fit(train_vector,
-                                 data_source.train_onehots,
-                                 validation_data=validation_data,
-                                 epochs=max_epochs,
-                                 batch_size=batch_size,
-                                 shuffle=True,
-                                 verbose=0,
-                                 class_weight=params['class_weights'],
-                                 callbacks=[alr_cb])
+        history = model_tail.fit_generator(
+            train_gen,
+            steps_per_epoch=math.ceil(len(train_vector) // batch_size),
+            validation_data=validation_data,
+            validation_steps=math.ceil(len(test_vector) // batch_size),
+            epochs=max_epochs,
+            verbose=0,
+            shuffle=False,
+            max_queue_size=1,
+            class_weight=params['class_weights'],
+            callbacks=[alr_cb])
         end = time.time()
         training_time = end - start
         print("@Training time: {}s".format(training_time))
@@ -179,8 +213,8 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
         # Now we be tricky and join the trained dense layers to the resnet model to create a model that accepts images
         # as input
         model_head = generate_tl_head(params)
-        outputs = model_tail(model_head.outputs[0])
-        model = Model(model_head.inputs[0], outputs)
+        outputs = model_tail(model_head.output)
+        model = Model(model_head.input, outputs)
         model.summary()
 
         # Vector -------------------------------------------------------------------------------------------------------
@@ -272,7 +306,7 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
         end = time.time()
         diff = (end - start) / max_count * 1000
         inf_times.append(diff)
-        print("@Calculating inference time {}/10: {:.3f}ms".format(i+1, diff))
+        print("@Calculating inference time {}/10: {:.3f}ms".format(i + 1, diff))
     inference_time = np.median(inf_times)
 
     # Store results

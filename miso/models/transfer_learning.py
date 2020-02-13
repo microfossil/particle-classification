@@ -13,7 +13,6 @@ TransferLearningParams = collections.namedtuple(
 
 
 def head(cnn_type, input_shape):
-
     subtypes = cnn_type.split('_')
     model_type = subtypes[0]
     if 'cyclic' in subtypes:
@@ -134,27 +133,39 @@ def default_prepro(input_shape):
 #     return model
 
 
-def tail(num_classes):
-    return marchitto_tail(num_classes)
+def tail(num_classes, input_shape):
+    return marchitto_tail(num_classes, input_shape)
 
 
-def tail_vector(num_classes):
-    model = Sequential()
-    model.add(Dropout(0.05))
-    model.add(Dense(512, activation='relu'))
-    model.add(Dropout(0.15))
-    model.add(Dense(512, activation='relu'))
-    return model
+def tail_vector(num_classes, input_shape):
+    inp = Input(shape=input_shape)
+    outp = Dropout(0.05)(inp)
+    outp = Dense(512, activation='relu')(outp)
+    outp = Dropout(0.15)(outp)
+    outp = Dense(512, activation='relu')(outp)
+    # model = Sequential()
+    # model.add(Dropout(0.05))
+    # model.add(Dense(512, activation='relu'))
+    # model.add(Dropout(0.15))
+    # model.add(Dense(512, activation='relu'))
+    return Model(inp, outp)
 
 
-def marchitto_tail(nb_classes):
-    model = Sequential()
-    model.add(Dropout(0.05))
-    model.add(Dense(512, activation='relu'))
-    model.add(Dropout(0.15))
-    model.add(Dense(512, activation='relu'))
-    model.add(Dense(nb_classes, activation='softmax'))
-    return model
+def marchitto_tail(nb_classes, input_shape):
+    inp = Input(shape=input_shape)
+    outp = Dropout(0.05)(inp)
+    outp = Dense(512, activation='relu')(outp)
+    outp = Dropout(0.15)(outp)
+    outp = Dense(512, activation='relu')(outp)
+    outp = Dense(nb_classes, activation='softmax')(outp)
+    return Model(inp, outp)
+    # model = Sequential()
+    # model.add(Dropout(0.05))
+    # model.add(Dense(512, activation='relu'))
+    # model.add(Dropout(0.15))
+    # model.add(Dense(512, activation='relu'))
+    # model.add(Dense(nb_classes, activation='softmax'))
+    # return model
 
 TRANSFER_LEARNING_PARAMS = {
         'xception': TransferLearningParams(ka.xception.Xception, tf_prepro, [299,299,3]),
