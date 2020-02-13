@@ -193,8 +193,8 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
             validation_data = test_gen
         else:
             validation_data = None
-        log_dir = "C:\\logs\\profile\\" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-        tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1, profile_batch=3)
+        # log_dir = "C:\\logs\\profile\\" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+        # tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1, profile_batch=3)
         history = model_tail.fit_generator(
             train_gen,
             steps_per_epoch=math.ceil(len(train_vector) // batch_size),
@@ -205,7 +205,7 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
             shuffle=False,
             max_queue_size=1,
             class_weight=params['class_weights'],
-            callbacks=[alr_cb,tensorboard_callback])
+            callbacks=[alr_cb])
         end = time.time()
         training_time = end - start
         print("@Training time: {}s".format(training_time))
