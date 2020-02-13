@@ -110,22 +110,22 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
         # model_head.predict(test)
         # print(time.time())
 
-        # # Generate vectors
-        # model_head = generate_tl_head(params)
-        # print("@Calculating train vectors")
-        # t = time.time()
-        # train_vector = model_head.predict(data_source.train_images)
-        # print("!{}s elapsed".format(time.time() - t))
-        # print("@Calculating test vectors")
-        # t = time.time()
-        # test_vector = model_head.predict(data_source.test_images)
-        # print("!{}s elapsed".format(time.time() - t))
-        # # Clear
-        # K.clear_session()
+        # Generate vectors
+        model_head = generate_tl_head(params)
+        print("@Calculating train vectors")
+        t = time.time()
+        train_vector = model_head.predict(data_source.train_images)
+        print("!{}s elapsed".format(time.time() - t))
+        print("@Calculating test vectors")
+        t = time.time()
+        test_vector = model_head.predict(data_source.test_images)
+        print("!{}s elapsed".format(time.time() - t))
+        # Clear
+        K.clear_session()
 
         # Generate vectors (random!)
-        train_vector = np.random.random(size=[data_source.train_images.shape[0], 2048])
-        test_vector = np.random.random(size=[data_source.test_images.shape[0], 2048])
+        # train_vector = np.random.random(size=[data_source.train_images.shape[0], 2048])
+        # test_vector = np.random.random(size=[data_source.test_images.shape[0], 2048])
 
         # train_vector = []
         # test_vector = []
