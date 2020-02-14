@@ -19,14 +19,24 @@ def head(cnn_type, input_shape):
         use_cyclic = True
     else:
         use_cyclic = False
+    if 'gain' in subtypes:
+        use_gain = True
+    else:
+        use_gain = False
 
     params = TRANSFER_LEARNING_PARAMS[model_type]
     inputs, x = params.prepro_func(input_shape)
     if use_cyclic:
-        x = CyclicSlice4()(x)
+        if use_gain:
+            x = CyclicGainSlice12()(x)
+        else:
+            x = CyclicSlice4()(x)
     x = params.model_func(include_top=False, weights='imagenet', pooling='avg', input_shape=input_shape)(x)
     if use_cyclic:
-        x = CyclicDensePool4(pool_op=tf.reduce_mean)(x)
+        if use_gain:
+            x = CyclicDensePoolN(pool_op=tf.reduce_mean)(x)
+        else:
+            x = CyclicDensePool4(pool_op=tf.reduce_mean)(x)
     model = Model(inputs=inputs, outputs=x)
     for layer in model.layers:
         layer.trainable = False

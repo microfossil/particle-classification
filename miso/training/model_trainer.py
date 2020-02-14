@@ -144,6 +144,9 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
         # Clear
         K.clear_session()
 
+        # print(train_vector.dtype)
+        # print(test_vector.dtype)
+
         # Generate vectors (random!)
         # train_vector = np.random.random(size=[data_source.train_images.shape[0], 2048])
         # test_vector = np.random.random(size=[data_source.test_images.shape[0], 2048])
