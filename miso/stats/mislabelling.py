@@ -34,6 +34,12 @@ def plot_mislabelled(images,
     # Get the index of images with a different k-NN prediction to their label
     diff_idx = np.where(cls != pred_cls)[0]
 
+    # Write a CSV of the mislabelled
+    with open(os.path.join(output_dir, "mislabeled.csv"), 'w+') as f:
+        f.write("index, filename, label, predicted_label\n")
+        for i in diff_idx:
+            f.write("{},{},{},{}\n".format(i, image_names[i], cls_labels[cls[i]], cls_labels[pred_cls[i]]))
+
     if num_neighbours == 1:
         nx = 2
         ny = 1
