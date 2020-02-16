@@ -38,7 +38,7 @@ def plot_mislabelled(images,
     with open(os.path.join(output_dir, "mislabeled.csv"), 'w+') as f:
         f.write("index, filename, label, predicted_label\n")
         for i in diff_idx:
-            f.write("{},{},{},{}\n".format(i, image_names[i], cls_labels[cls[i]], cls_labels[pred_cls[i]]))
+            f.write("{},{},{},{}\n".format(i+1, image_names[i], cls_labels[cls[i]], cls_labels[pred_cls[i]]))
 
     if num_neighbours == 1:
         nx = 2
