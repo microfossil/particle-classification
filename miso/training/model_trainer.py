@@ -6,6 +6,11 @@ import time
 import datetime
 from collections import OrderedDict
 
+import tensorflow as tf
+# tf.enable_v2_behavior()
+
+import tensorflow_probability as tfp
+
 import tensorflow.keras.backend as K
 from tensorflow.keras.layers import Input
 from tensorflow.keras.models import Model
@@ -22,6 +27,8 @@ from miso.training.augmentation import *
 from miso.deploy.saving import freeze, convert_to_inference_mode
 from miso.training.model_info import ModelInfo
 from miso.training.model_factory import *
+from miso.models.bayesian import *
+
 
 
 def train_image_classification_model(params: dict, data_source: DataSource = None):
@@ -92,7 +99,154 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
         params['class_weights'] = None
     params['num_classes'] = data_source.num_classes
 
-    if cnn_type.endswith('tl'):
+    if cnn_type.endswith('bayes'):
+
+        start = time.time()
+
+        img_shape = [img_height, img_width, img_channels]
+        model = bayes2(32, data_source.num_classes, len(data_source.train_images))
+
+        def elbo(y_actual, y_predicted):
+            labels_distribution = tfp.distributions.Categorical(logits=y_predicted)
+            # ar = tf.argmax(y_actual, 1)
+            neg_log_likelihood = -tf.reduce_mean(-tf.nn.softmax_cross_entropy_with_logits(labels=y_actual, logits=labels_distribution.logits_parameter()))
+            kl = sum(model.losses) / data_source.train_images.shape[0]
+            elbo_loss = neg_log_likelihood + kl
+            return elbo_loss
+
+        model.compile(optimizer='adam', loss=elbo, metrics=['accuracy'], experimental_run_tf_function=False)
+
+        # model.build(input_shape=[None, ] + img_shape)
+
+        alr_cb = AdaptiveLearningRateScheduler(nb_epochs=alr_epochs,
+                                               nb_drops=alr_drops)
+
+        # (X_train, y_train), (X_test, y_test) = tf.keras.datasets.mnist.load_data()
+        # X_train = np.expand_dims(X_train, -1)
+        # n_train = X_train.shape[0]
+        # X_test = np.expand_dims(X_test, -1)
+        # n_test = X_test.shape[0]
+        #
+        # # Normalize data
+        # X_train = X_train.astype('float32') / 255
+        # X_test = X_test.astype('float32') / 255
+
+
+        # model.fit(data_source.train_images,
+        #           data_source.train_onehots,
+        #           validation_data=(data_source.test_images, data_source.test_onehots),
+        #           batch_size=batch_size,
+        #           epochs=1000,
+        #           verbose=0,
+        #           callbacks=[alr_cb])
+        # # model = generate_bayesian(params, len(data_source.train_images)) #img_shape, data_source.num_classes, filters=16, blocks=4)
+        #
+        train_gen = image_generator(data_source.train_images,
+                                   data_source.train_onehots,
+                                   64)
+        # test_gen = image_generator(data_source.test_images,
+        #                            data_source.test_onehots,
+        #                            64)
+
+
+
+        # def elbo(y_actual, y_predicted):
+        #     labels_distribution = tfp.distributions.Categorical(logits=y_predicted)
+        #     # ar = tf.argmax(y_actual, 1)
+        #     neg_log_likelihood = -tf.reduce_mean(-tf.nn.softmax_cross_entropy_with_logits(labels=y_actual, logits=labels_distribution.logits_parameter()))
+        #     kl = sum(model.losses) / data_source.train_images.shape[0]
+        #     elbo_loss = neg_log_likelihood + kl
+        #     return elbo_loss
+
+        # model.compile(optimizer='adam', loss=elbo, metrics=['accuracy'])
+        # model.summary()
+        params['use_augmentation'] = False
+
+        for epoch in range(2000):
+            epoch_accuracy, epoch_loss = [], []
+            for step, (batch_x, batch_y) in enumerate(train_gen):
+                batch_loss, batch_accuracy = model.train_on_batch(
+                    batch_x, batch_y)
+                epoch_accuracy.append(batch_accuracy)
+                epoch_loss.append(batch_loss)
+
+                if step > len(data_source.train_images) // 64:
+                    break
+
+            print('Epoch: {}, Batch index: {}, Loss: {}, Accuracy: {}'.format(
+                epoch,
+                step,
+                np.mean(epoch_loss),
+                np.mean(epoch_accuracy)))
+
+
+
+
+
+        model.fit(data_source.train_images, data_source.train_onehots, batch_size=batch_size, epochs=60, verbose=1)
+        print("*******************************************************************************************************")
+        model.fit_generator(train_gen, steps_per_epoch=math.ceil(len(data_source.train_images) // 64), epochs=60, verbose=1)
+
+        # Augmentation -------------------------------------------------------------------------------------------------
+        if params['aug_rotation'] is True:
+            rotation_range = [0, 360]
+        else:
+            rotation_range = None
+
+        def augment(x):
+            return augmentation_complete(x,
+                                         rotation=rotation_range,
+                                         gain=params['aug_gain'],
+                                         gamma=params['aug_gamma'],
+                                         zoom=params['aug_zoom'],
+                                         gaussian_noise=params['aug_gaussian_noise'],
+                                         bias=params['aug_bias'])
+
+        if params['use_augmentation'] is True:
+            augment_fn = augment
+        else:
+            augment_fn = None
+
+        # model.fit(data_source.train_images, data_source.train_cls, batch_size=batch_size, epochs=30, verbose=1)
+        model.fit_generator(train_gen)
+        # Generator ----------------------------------------------------------------------------------------------------
+        # train_gen = tf_augmented_image_generator(data_source.train_images,
+        #                                          data_source.train_onehots,
+        #                                          batch_size,
+        #                                          augment_fn)
+        # test_gen = image_generator(data_source.test_images,
+        #                            data_source.test_onehots,
+        #                            batch_size)
+
+        # Training -----------------------------------------------------------------------------------------------------
+        alr_cb = AdaptiveLearningRateScheduler(nb_epochs=alr_epochs,
+                                               nb_drops=alr_drops)
+        print("@Training")
+        if data_split > 0:
+            validation_data = test_gen
+        else:
+            validation_data = None
+        history = model.fit_generator(
+            train_gen,
+            steps_per_epoch=math.ceil(len(data_source.train_images) // batch_size),
+            validation_data=validation_data,
+            validation_steps=math.ceil(len(data_source.test_images) // batch_size),
+            epochs=max_epochs,
+            verbose=0,
+            shuffle=False,
+            max_queue_size=1,
+            class_weight=None,
+            callbacks=[alr_cb])
+        end = time.time()
+        training_time = end - start
+        print("@Training time: {}s".format(training_time))
+        time.sleep(3)
+
+        # Vector -------------------------------------------------------------------------------------------------------
+        vector_model = generate_vector(model, params)
+
+
+    elif cnn_type.endswith('tl'):
 
         # mnist = tf.keras.datasets.mnist
         # (x_train, y_train), (x_test, y_test) = mnist.load_data()
@@ -286,7 +440,6 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
                                    batch_size)
 
         # Training -----------------------------------------------------------------------------------------------------
-
         alr_cb = AdaptiveLearningRateScheduler(nb_epochs=alr_epochs,
                                                nb_drops=alr_drops)
         print("@Training")

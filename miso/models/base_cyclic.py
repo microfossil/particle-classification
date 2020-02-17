@@ -3,7 +3,6 @@ from tensorflow.keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPooling2
                                     GlobalMaxPooling2D, GlobalAveragePooling2D, Lambda
 from tensorflow.keras.layers import BatchNormalization
 from tensorflow.keras.models import Model
-
 from miso.layers import cyclic
 
 

@@ -3,6 +3,7 @@ from tensorflow.keras.models import Model
 from miso.models.transfer_learning import *
 from miso.models.base_cyclic import *
 from miso.models.resnet import *
+from miso.models.bayesian import *
 from classification_models.tfkeras import Classifiers
 
 
@@ -40,6 +41,18 @@ def generate(params: dict):
                                     None,
                                     use_cyclic=True)
         model = ResNetCyclic(resnet_params, input_shape, None, True, params['num_classes'])
+    # Bayes
+    elif type.startswith("base_bayes"):
+        blocks = int(math.log2(img_height) - 2)
+        model = base_bayes(input_shape=input_shape,
+                            nb_classes=params['num_classes'],
+                            filters=params['filters'],
+                            blocks=blocks,
+                            dropout=0.5,
+                            dense=512,
+                            conv_activation=params['activation'],
+                            use_batch_norm=params['use_batch_norm'],
+                            global_pooling=params['global_pooling'])
 
     # ResNet50 Transfer Learning
     # Uses the pre-trained ResNet50 network from tf.keras with full image input and augmentation
@@ -56,6 +69,31 @@ def generate(params: dict):
         model = classifier(input_shape=(img_height, img_width, img_channels),
                            weights=None,
                            classes=params['num_classes'])
+
+    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+    model.summary()
+
+    return model
+
+def generate_bayesian(params: dict, nb_training_examples):
+    # Input
+    img_height = params.get('img_height')
+    img_width = params.get('img_width')
+    img_channels = params.get('img_channels')
+    input_shape = (img_height, img_width, img_channels)
+
+    if params['type'].startswith("base_bayes"):
+        blocks = int(math.log2(img_height) - 2)
+        model = base_bayes(input_shape=input_shape,
+                            nb_classes=params['num_classes'],
+                           nb_training_examples=nb_training_examples,
+                            filters=params['filters'],
+                            blocks=blocks,
+                            dropout=0.5,
+                            dense=512,
+                            conv_activation=params['activation'],
+                            use_batch_norm=params['use_batch_norm'],
+                            global_pooling=params['global_pooling'])
 
     model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
     model.summary()
@@ -125,6 +163,9 @@ def generate_vector(model, params: dict):
         # vector_model = Model(model.input, model.layers[-1].output)
         # vector_model = model
     elif cnn_type.startswith("base_cyclic"):
+        vector_layer = model.get_layer(index=-2)
+        vector_model = Model(model.inputs, vector_layer.output)
+    elif cnn_type.startswith("base_bayes"):
         vector_layer = model.get_layer(index=-2)
         vector_model = Model(model.inputs, vector_layer.output)
     elif cnn_type.startswith("resnet_cyclic"):

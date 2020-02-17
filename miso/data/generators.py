@@ -71,7 +71,6 @@ def tf_augmented_image_generator(images,
     img_size = images.shape
     img_size = (None, img_size[1], img_size[2], img_size[3])
     onehot_size = onehots.shape
-    onehot_size = (None, onehot_size[1])
     images_tensor = tf.placeholder(tf.float32, shape=img_size)
     onehots_tensor = tf.placeholder(tf.float32, shape=onehot_size)
 
@@ -89,6 +88,37 @@ def tf_augmented_image_generator(images,
 
     with K.get_session().as_default() as sess:
         sess.run(init_op, feed_dict={images_tensor: images, onehots_tensor: onehots})
+        while True:
+            inputs, labels = sess.run(next_val)
+            yield inputs, labels
+
+def tf_augmented_image_generator_cls(images,
+                                 cls,
+                                 batch_size,
+                                 map_fn,
+                                 shuffle_size=1000,
+                                 num_parallel_calls=tf.data.experimental.AUTOTUNE):
+    # Get shapes from input data
+    img_size = images.shape
+    img_size = (None, img_size[1], img_size[2], img_size[3])
+    onehot_size = (None, )
+    images_tensor = tf.placeholder(tf.float32, shape=img_size)
+    onehots_tensor = tf.placeholder(tf.float32, shape=onehot_size)
+
+    # Create dataset
+    dataset = tf.data.Dataset.from_tensor_slices((images_tensor, onehots_tensor))
+    if map_fn is not None:
+        dataset = dataset.map(lambda x, y: (map_fn(x), y), num_parallel_calls=num_parallel_calls)
+    dataset = dataset.shuffle(shuffle_size, reshuffle_each_iteration=True).repeat()
+    dataset = dataset.batch(batch_size)
+    dataset = dataset.prefetch(1)
+
+    iterator = dataset.make_initializable_iterator()
+    init_op = iterator.initializer
+    next_val = iterator.get_next()
+
+    with K.get_session().as_default() as sess:
+        sess.run(init_op, feed_dict={images_tensor: images, onehots_tensor: cls})
         while True:
             inputs, labels = sess.run(next_val)
             yield inputs, labels
