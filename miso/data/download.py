@@ -30,6 +30,7 @@ def download_images(origin, directory):
         os.remove(os.path.join(directory, "download.zip"))
     else:
         folder_path = os.path.join(directory, os.listdir(directory)[0])
+        print("@ Already downloaded at: {}".format(folder_path))
     return folder_path
 
 
