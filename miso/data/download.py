@@ -25,12 +25,12 @@ def download_images(origin, directory):
         # Create a ZipFile Object and load sample.zip in it
         with ZipFile(zip_path, 'r') as zip_obj:
             # Get list of files names in zip
-            paths = [path for path in zip_obj.namelist() if ~path.startswith("_")]
+            paths = [path for path in zip_obj.namelist() if not path.startswith("_")]
             dir_name = paths[0].replace(',','/').replace(',','\\')
             folder_path = os.path.join(directory, dir_name)
         os.remove(os.path.join(directory, "download.zip"))
     else:
-        paths = [path for path in os.listdir(directory) if ~path.startswith("_")]
+        paths = [path for path in os.listdir(directory) if not path.startswith("_")]
         folder_path = os.path.join(directory, paths[0])
         print("@ Already downloaded at: {}".format(folder_path))
     return folder_path
