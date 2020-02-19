@@ -213,18 +213,20 @@ class DataSource:
                 gc.collect()
                 os.remove(self.images_mmap_filename)
 
-    def split(self, split=0.25, split_offset=0, seed=None, stratify=False, dtype=np.float16):
+    def split(self, split=0.25, split_offset=0, seed=None, dtype=np.float16):
         # Create new random index if necessary
-        if self.random_idx_init is None:
-            np.random.seed(seed)
-            self.random_idx_init = np.random.permutation(len(self.images))
+        # if self.random_idx_init is None:
+        train_idx, test_idx = train_test_split(range(len(self.images)), test_size=split, random_state=seed, shuffle=True, stratify=self.cls)
+        self.random_idx = train_idx + test_idx
+            # np.random.seed(seed)
+            # self.random_idx_init = np.random.permutation(len(self.images))
         # Roll according to offset
-        roll = int(np.round(len(self.images) * split_offset))
-        self.random_idx = np.roll(self.random_idx_init, roll)
+        # roll = int(np.round(len(self.images) * split_offset))
+        # self.random_idx = np.roll(self.random_idx_init, roll)
         # Now split
-        test_len = np.round(len(self.images) * split)
-        test_idx = self.random_idx[0:int(test_len)]
-        train_idx = self.random_idx[int(test_len):]
+        # test_len = np.round(len(self.images) * split)
+        # test_idx = self.random_idx[0:int(test_len)]
+        # train_idx = self.random_idx[int(test_len):]
         # Memmap
         print("@Split mapping")
         img_size = self.images.shape[1:]
