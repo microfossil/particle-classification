@@ -29,10 +29,22 @@ def generate(params: dict):
                             conv_activation=params['activation'],
                             use_batch_norm=params['use_batch_norm'],
                             global_pooling=params['global_pooling'])
+    # Mirror Cyclic
+    elif type.startswith("mirror_cyclic"):
+        blocks = int(math.log2(img_height) - 2)
+        model = mirror_cyclic(input_shape=input_shape,
+                              nb_classes=params['num_classes'],
+                              filters=params['filters'],
+                              blocks=blocks,
+                              dropout=0.5,
+                              dense=512,
+                              conv_activation='relu',
+                              use_batch_norm=params['use_batch_norm'],
+                              global_pooling=params['global_pooling'])
     # ResNet Cyclic
     elif type.startswith("resnet_cyclic"):
         blocks = int(math.log2(img_height) - 2)
-        blocks -= 1     # Resnet has one block to start with already
+        blocks -= 1  # Resnet has one block to start with already
         resnet_params = ModelParams('resnet_cyclic',
                                     params['filters'],
                                     [1 for i in range(4)],
@@ -82,7 +94,7 @@ def generate_tl_tail(params: dict, input_shape):
 
 def generate_tl(params: dict):
     model_head = generate_tl_head(params)
-    model_tail = tail(params['num_classes'], [model_head.layers[-1].output.shape[1],])
+    model_tail = tail(params['num_classes'], [model_head.layers[-1].output.shape[1], ])
     return model_head, model_tail
 
 
@@ -125,6 +137,9 @@ def generate_vector(model, params: dict):
         # vector_model = Model(model.input, model.layers[-1].output)
         # vector_model = model
     elif cnn_type.startswith("base_cyclic"):
+        vector_layer = model.get_layer(index=-2)
+        vector_model = Model(model.inputs, vector_layer.output)
+    elif cnn_type.startswith("mirror_cyclic"):
         vector_layer = model.get_layer(index=-2)
         vector_model = Model(model.inputs, vector_layer.output)
     elif cnn_type.startswith("resnet_cyclic"):

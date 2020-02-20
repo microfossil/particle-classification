@@ -277,7 +277,7 @@ class DataSource:
 
         The labels for the class are taken as the sub-directory names
 
-        :param directory: Path to the directory containing sub-directories of classes
+        :param source: Path to the directory containing sub-directories of classes
         :param extension: Extension of the images in directory (e.g. "jpg"). If `None`, it looks for jpg, png and tiff
         :param min_count: Minimum number of images in a sub-directory for that class to be included
         :param max_count: Maximum number of images in a sub-directory to be used (If `None` all images are used)
