@@ -2,22 +2,19 @@ import glob
 import os
 import hashlib
 import gc
-import dill
 import numpy as np
 import pandas as pd
-import bz2
 from PIL import Image
+import skimage.color as skcolor
 from skimage.transform import resize
 from sklearn.model_selection import train_test_split
 from tensorflow.keras.utils import to_categorical
 from collections import OrderedDict
-from miso.data.generators import image_generator_from_dataframe
 from scipy.stats.mstats import gmean
 from miso.data.download import download_images
 from numpy.lib.format import open_memmap
 import lxml.etree as ET
 from pathlib import Path
-import atexit
 
 
 class DataSource:
@@ -64,35 +61,78 @@ class DataSource:
     def get_short_filenames(self):
         return pd.concat((self.train_df.short_filenames, self.test_df.short_filenames))
 
-    # def get_dataframe_hash(self, img_size, color_mode):
-    #     hash_str = hashlib.sha256(pd.util.hash_pandas_object(self.data_df, index=True).values).hexdigest()
-    #     return "{}_{}_{}_{}".format(hash_str, img_size[0], img_size[1], color_mode)
+    @staticmethod
+    def preprocess_image(self, im, prepro_method='rescale', prepro_params=(255, 0, 1)):
+        # TODO divide according to image depth (8 or 16 bits etc)
+        if prepro_method == 'rescale':
+            im = np.divide(im, prepro_params[0])
+            im = np.subtract(im, prepro_params[1])
+            im = np.multiply(im, prepro_params[2])
+        return im
 
-    def load_images(self,
-                    img_size,
-                    prepro_type=None,
-                    prepro_params=(255, 0, 1),
-                    color_mode='rgb',
-                    print_status=False,
-                    seed=None,
-                    dtype=np.float16):
+    def load_image(self, filename, img_size, img_type, make_square=True):
+        if img_type == 'rgb':
+            im = Image.open(filename)
+            im = np.asarray(im, dtype=np.float)
+            if im.ndim == 2:
+                im = np.expand_dims(im, -1)
+                im = np.repeat(im, repeats=3, axis=-1)
+        elif img_type == 'greyscale':
+            im = Image.open(filename).convert('L')
+            im = np.asarray(im, dtype=np.float)
+            im = np.expand_dims(im, -1)
+        elif img_type == 'greyscale3':
+            im = Image.open(filename).convert('L')
+            im = np.asarray(im, dtype=np.float)
+            im = np.expand_dims(im, -1)
+            im = np.repeat(im, repeats=3, axis=-1)
+        elif img_type == 'greyscaled':
+            ims = self.read_tiff(filename, [0, 2])
+            g = skcolor.rgb2grey(ims[0])
+            d = skcolor.rgb2grey(ims[1])
+            im = np.concatenate((g,d), 2)
+        elif img_type == 'rgbd':
+            ims = self.read_tiff(filename, [0, 2])
+            rgb = ims[0]
+            if rgb.ndim == 2:
+                rgb = np.expand_dims(rgb, -1)
+                rgb = np.repeat(rgb, repeats=3, axis=-1)
+            d = skcolor.rgb2grey(ims[1])
+            im = np.concatenate((rgb, d), 2)
 
-        # hashed_filename = os.path.join(self.source_directory, self.get_dataframe_hash(img_size, color_mode) + ".pkl")
-        # try:
-        #     with open(hashed_filename, 'rb') as file:
-        #         images = dill.load(file)
-        #         self.split(images, split, seed)
-        #         print("@Found existing processed images at " + hashed_filename)
-        #         return
-        # except:
-        #     pass
+        im = self.make_image_square(im)
+        im = resize(im, (img_size[0], img_size[1]), order=1)
+        return im
+
+    @staticmethod
+    def read_tiff(self, filename, indices):
+        img = Image.open(filename)
+        images = []
+        for i, idx in enumerate(indices):
+            img.seek(idx)
+            images.append(np.array(img))
+        return images
+
+    def load_dataset(self,
+                     img_size,
+                     img_type='rgb',
+                     dtype=np.float16):
+
+        # Image filenames
         filenames = self.data_df['filenames']
         image_count = len(filenames)
-        if color_mode == 'rgb' or color_mode == 'greyscale3':
+
+        # Color mode:
+        # - rgb: normal RGB
+        # - greyscale: convert to greyscale (single channel) if necessary
+        # - greyscale3: convert to greyscale then repeat across 3 channels
+        #               (for inputting greyscale images into networks that take three channels)
+        if img_type == 'rgb' or img_type == 'greyscale3':
             channels = 3
         else:
             channels = 1
 
+        # float16 is used be default to save memory
         if dtype is np.float16:
             byte_count = 2
         elif dtype is np.float32:
@@ -102,12 +142,16 @@ class DataSource:
         else:
             byte_count = 'X'
 
-        # Memory map
+        # Sometimes the data set is too big to be saved into memory.
+        # In this case, we can memory map the numpy array onto disk.
+        # Make sure to delete the files afterwards
         if self.use_mmap:
+            # Unique hash id is used for the filename
             hashstr = hashlib.sha256(pd.util.hash_pandas_object(self.data_df, index=True).values).hexdigest()[0:16]
-            unique_id = "{}_{}_{}_{}_{}.npy".format(hashstr, img_size[0], img_size[1], color_mode, byte_count)
+            unique_id = "{}_{}_{}_{}_{}.npy".format(hashstr, img_size[0], img_size[1], img_type, byte_count)
             self.images_mmap_filename = os.path.join(self.mmap_directory, unique_id)
             print(self.images_mmap_filename)
+            # If the memmap file already exists, simply load it
             if os.path.exists(self.images_mmap_filename):
                 self.images = open_memmap(self.images_mmap_filename, dtype=dtype, mode='r+', shape=(image_count, img_size[0], img_size[1], channels))
                 return
@@ -115,36 +159,12 @@ class DataSource:
         else:
             self.images = np.zeros(shape=(image_count, img_size[0], img_size[1], channels), dtype=dtype)
 
-        idx = 0
         # Load each image
-        print("@Loading images...")
-        print()
+        idx = 0
+        print("@ Loading images... ")
         for filename in filenames:
-            if color_mode == 'rgb':
-                im = Image.open(filename)
-            else:
-                im = Image.open(filename).convert('L')
-            im = np.asarray(im, dtype=np.float)
-            if color_mode == 'greyscale3':
-                im = np.expand_dims(im, -1)
-                im = np.repeat(im, repeats=3, axis=-1)
-            if im.ndim == 2:
-                im = np.expand_dims(im, -1)
-                if color_mode == 'rgb':
-                    im = np.repeat(im, repeats=3, axis=-1)
-
-            im = self.make_image_square(im)
-            im = resize(im, (img_size[0], img_size[1]), order=1)
-
-            # im = np.ones((224,224,3))
-
-            # Rescale according to params
-            # e.g. to take a [0,255] range image to [-1,1] params would be 255,-0.5,2
-            # I' = (I / 255 - 0.5) * 2
-            #TODO divide according to image depth (8 or 16 bits etc)
-            im = np.divide(im, prepro_params[0])
-            im = np.subtract(im, prepro_params[1])
-            im = np.multiply(im, prepro_params[2])
+            im = self.load_image(filename, img_size, img_type)
+            im = self.preprocess_image(im)
             # Convert to format
             im = im.astype(dtype)
             if im.ndim == 2:
@@ -152,38 +172,9 @@ class DataSource:
             self.images[idx] = im
             idx += 1
             if idx % 100 == 0:
-                if print_status:
-                    print("@Loading images {}%".format((int)(idx / len(filenames) * 100)))
-                else:
-                    print("\r{} of {} processed".format(idx, len(filenames)), end='')
-        # Convert all to a numpy array
-        # self.images = np.asarray(self.images)
-        # if self.images.ndim == 3:
-        #     images = self.images[:, :, :, np.newaxis]
-        # Split into test and training sets
-        #self.split(images, split, split_index, seed)
+                print("\r@ Loading images {}%".format((int)(idx / len(filenames) * 100)))
         if self.use_mmap:
             self.images.flush()
-
-    # def load_images_using_datagen(self, img_size, datagen, color_mode='rgb', split=0.25, split_offset=0, seed=None):
-    #     """
-    #     Loads images from disk using an ImageDataGenerator. Images are resize and the colour changed if necessary.
-    #     :param img_size: Images will be transformed to this size
-    #     :param datagen: Keras ImageDataGenerator to used. If None, default generator using rescale=1./255 will be used
-    #     :param color_mode: Convert image to 'rgb' (3 channel) or 'grayscale' (1 channel)
-    #     :param test_size: If not None, will call train_test_split(test_size) before loading
-    #     :return: tuple of training images, training classes, test images and test classes
-    #     """
-    #     # Data generator
-    #     gen = image_generator_from_dataframe(self.data_df,
-    #                                          img_size,
-    #                                          10000000,
-    #                                          self.cls_labels,
-    #                                          datagen,
-    #                                          color_mode)
-    #     gen.shuffle = False
-    #     self.images, _ = next(gen)
-    #     self.split(split, split_offset, seed)
 
     def delete_memmap_files(self, del_split=True, del_source=True):
         if self.use_mmap is False:
@@ -213,47 +204,39 @@ class DataSource:
                 gc.collect()
                 os.remove(self.images_mmap_filename)
 
-    def split(self, split=0.25, split_offset=0, seed=None, dtype=np.float16):
-        # Create new random index if necessary
-        # if self.random_idx_init is None:
+    def split(self, split=0.20, seed=None, dtype=np.float16):
+        # Split with stratify
         train_idx, test_idx = train_test_split(range(len(self.images)), test_size=split, random_state=seed, shuffle=True, stratify=self.cls)
         self.random_idx = train_idx + test_idx
-            # np.random.seed(seed)
-            # self.random_idx_init = np.random.permutation(len(self.images))
-        # Roll according to offset
-        # roll = int(np.round(len(self.images) * split_offset))
-        # self.random_idx = np.roll(self.random_idx_init, roll)
-        # Now split
-        # test_len = np.round(len(self.images) * split)
-        # test_idx = self.random_idx[0:int(test_len)]
-        # train_idx = self.random_idx[int(test_len):]
-        # Memmap
-        print("@Split mapping")
+        print("@ Split mapping...")
         img_size = self.images.shape[1:]
+        # Memmap splitting
         if self.use_mmap:
-            print("@Split mapping - deleting old memmap files")
+            print("@ Split mapping - deleting old memmap files")
             train_filename = os.path.join(self.mmap_directory, "train.npy")
             test_filename = os.path.join(self.mmap_directory, "test.npy")
             self.delete_memmap_files(True, False)
-            print("@Split mapping - creating new memmap files")
-            self.train_images = open_memmap(train_filename, dtype=dtype, mode='w+', shape=(len(train_idx), img_size[0], img_size[1], img_size[2]))
-            self.test_images = open_memmap(test_filename, dtype=dtype, mode='w+', shape=(len(test_idx), img_size[0], img_size[1], img_size[2]))
-            print("@Split mapping - copying train images")
+            print("@ Split mapping - creating new memmap files")
+            self.train_images = open_memmap(train_filename, dtype=dtype, mode='w+', shape=(len(train_idx), ) + img_size)
+            self.test_images = open_memmap(test_filename, dtype=dtype, mode='w+', shape=(len(train_idx), ) + img_size)
+            print("@ Split mapping - copying train images")
             for i in range(len(train_idx)):
                 self.train_images[i] = self.images[train_idx[i]]
-            print("@Split mapping - copying test images")
+            print("@ Split mapping - copying test images")
             for i in range(len(test_idx)):
                 self.test_images[i] = self.images[test_idx[i]]
+        # Normal splitting
         else:
             self.train_images = self.images[train_idx]
             self.test_images = self.images[test_idx]
+        # Remainder
         self.train_cls = self.cls[train_idx]
         self.test_cls = self.cls[test_idx]
         self.train_onehots = self.onehots[train_idx]
         self.test_onehots = self.onehots[test_idx]
         self.train_df = self.data_df.iloc[train_idx,:]
         self.test_df = self.data_df.iloc[test_idx,:]
-        print("@Split mapping - done")
+        print("@ Split mapping - done")
 
     def set_source(self,
                    source,
@@ -290,7 +273,7 @@ class DataSource:
         """
         self.mmap_directory = mmap_directory
         if source.startswith("http"):
-            print("@Downloading dataset " + source + "...")
+            print("@ Downloading dataset " + source + "...")
             dir_for_download = os.path.join(os.getcwd(), 'datasets')
             os.makedirs(dir_for_download, exist_ok=True)
             dir_path = download_images(source, dir_for_download)
@@ -303,12 +286,12 @@ class DataSource:
                 self.mmap_directory = str(Path(self.source_name).parent)
 
         if self.source_name.endswith("xml"):
-            print("@Parsing project file " + self.source_name)
+            print("@ Parsing project file " + self.source_name)
             filenames = self.parse_xml(self.source_name)
             if mmap_directory is None:
                 self.mmap_directory = str(Path(self.source_name).parent)
         else:
-            print("@Parsing image directory...")
+            print("@ Parsing image directory...")
             # Get alphabetically sorted list of class directories
             class_dirs = sorted(glob.glob(os.path.join(self.source_name, "*")))
 
@@ -344,7 +327,7 @@ class DataSource:
 
         # Map the classes into overall classes if mapping is enabled
         if mapping is not None:
-            print("@Applying mapping...")
+            print("@ Applying mapping...")
             mapped_filenames = OrderedDict()
             # Sort the map
             sorted_map = OrderedDict()
@@ -380,7 +363,7 @@ class DataSource:
             filenames = mapped_filenames
 
         # Remove any classes that do not have enough images and put in 'other'
-        print("@Moving classes with not enough images to 'other'...")
+        print("@ Moving classes with not enough images to 'other'...")
         not_enough_list = list()
         enough_dict = OrderedDict()
         for cls, cls_filenames in filenames.items():
@@ -440,7 +423,7 @@ class DataSource:
 
         self.data_df = pd.DataFrame(df)
         self.num_classes = len(self.cls_labels)
-        print("@{} images in {} classes".format(len(cls_index), self.num_classes))
+        print("@ {} images in {} classes".format(len(cls_index), self.num_classes))
 
         for idx in range(self.num_classes):
             cls_counts.append(len(self.data_df[self.data_df['cls'] == idx]))
@@ -455,7 +438,6 @@ class DataSource:
     def make_image_square(im):
         if im.shape[0] == im.shape[1]:
             return im
-        #print("not_square {} {}".format(im.shape[0],im.shape[1]))
         height = im.shape[0]
         width = im.shape[1]
         half = max(height, width)
@@ -470,8 +452,7 @@ class DataSource:
                     ((height_pad_start, height_pad_end), (width_pad_start, width_pad_end)),
                     mode='constant',
                     constant_values=consts[c])
-             for c in range(im.shape[2])],
-            axis=2)
+             for c in range(im.shape[2])], axis=2)
         return im
 
     @staticmethod
@@ -512,10 +493,6 @@ class DataSource:
         df = pd.DataFrame({'filenames': filenames, 'cls': cls})
 
         for label in cls_labels:
-            # print(label)
-            # print(len(filenames))
-            # print(len(cls))
-            # print(np.sum(cls == label))
             filenames_dict[label] = df.filenames[df.cls == label]
 
         return filenames_dict

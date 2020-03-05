@@ -232,12 +232,12 @@ if __name__ == '__main__':
     data_source = DataSource()
     data_source.use_mmap = False
     data_source.set_source(input_source, 40)
-    data_source.load_images(img_size=(image_size, image_size),
-                            prepro_type=None,
-                            prepro_params=(255, 0, 1),
-                            color_mode='greyscale',
-                            print_status=True,
-                            dtype=np.float32)
+    data_source.load_dataset(img_size=(image_size, image_size),
+                             prepro_type=None,
+                             prepro_params=(255, 0, 1),
+                             img_type='greyscale',
+                             print_status=True,
+                             dtype=np.float32)
     data_source.split(0.25, 0, 0)
 
     # if args.weights:

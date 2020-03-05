@@ -100,7 +100,7 @@ class MaskDataSource:
         self.data_df = pd.DataFrame(df)
         print("{} files found".format(len(filenames)))
 
-        #     if color_mode == 'rgb':
+        #     if img_type == 'rgb':
         #         im = Image.open(filename)
         #     else:
         #         im = Image.open(filename).convert('L')
