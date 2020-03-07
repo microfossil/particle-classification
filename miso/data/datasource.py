@@ -62,7 +62,7 @@ class DataSource:
         return pd.concat((self.train_df.short_filenames, self.test_df.short_filenames))
 
     @staticmethod
-    def preprocess_image(self, im, prepro_method='rescale', prepro_params=(255, 0, 1)):
+    def preprocess_image(im, prepro_method='rescale', prepro_params=(255, 0, 1)):
         # TODO divide according to image depth (8 or 16 bits etc)
         if prepro_method == 'rescale':
             im = np.divide(im, prepro_params[0])
@@ -70,7 +70,7 @@ class DataSource:
             im = np.multiply(im, prepro_params[2])
         return im
 
-    def load_image(self, filename, img_size, img_type, make_square=True):
+    def load_image(self, filename, img_size, img_type):
         if img_type == 'rgb':
             im = Image.open(filename)
             im = np.asarray(im, dtype=np.float)
@@ -105,7 +105,7 @@ class DataSource:
         return im
 
     @staticmethod
-    def read_tiff(self, filename, indices):
+    def read_tiff(filename, indices):
         img = Image.open(filename)
         images = []
         for i, idx in enumerate(indices):
@@ -487,14 +487,11 @@ class DataSource:
         for taxon_xml in project.find('taxons').iter('taxon'):
             if taxon_xml.find('isClass').text == 'true':
                 cls_labels.append(taxon_xml.find('code').text)
-
         cls_labels = sorted(cls_labels)
-
+        
         df = pd.DataFrame({'filenames': filenames, 'cls': cls})
-
         for label in cls_labels:
             filenames_dict[label] = df.filenames[df.cls == label]
-
         return filenames_dict
 
 
