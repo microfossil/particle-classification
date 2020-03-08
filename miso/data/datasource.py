@@ -90,7 +90,7 @@ class DataSource:
             ims = self.read_tiff(filename, [0, 2])
             g = skcolor.rgb2grey(ims[0])
             d = skcolor.rgb2grey(ims[1])
-            im = np.stack((g[:, :, np.newaxis], d[:, :, np.newaxis]), 2)
+            im = np.concatenate((g[:, :, np.newaxis], d[:, :, np.newaxis]), 2)
         elif img_type == 'rgbd':
             ims = self.read_tiff(filename, [0, 2])
             rgb = ims[0]
@@ -98,7 +98,7 @@ class DataSource:
                 rgb = np.expand_dims(rgb, -1)
                 rgb = np.repeat(rgb, repeats=3, axis=-1)
             d = skcolor.rgb2grey(ims[1])
-            im = np.stack((rgb, d[:,:, np.newaxis]), 2)
+            im = np.concatenate((rgb, d[:,:, np.newaxis]), 2)
         print(im.shape)
         im = self.make_image_square(im)
         print(im.shape)
