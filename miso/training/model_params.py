@@ -63,6 +63,7 @@ def default_params():
     params['activation'] = 'relu'
 
     # Input
+    params['img_size'] = None
     params['img_height'] = 128
     params['img_width'] = 128
     params['img_channels'] = 1

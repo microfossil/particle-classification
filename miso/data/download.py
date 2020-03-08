@@ -7,7 +7,8 @@ import hashlib
 def download_images(origin, directory):
     hash = hashlib.md5(origin.encode()).hexdigest()[:10]
     directory = os.path.join(directory, hash)
-    if os.path.exists(directory) is False:
+    zip_path = os.path.join(directory, "download.zip")
+    if os.path.exists(directory) is False or os.path.exists(zip_path) is False:
         os.makedirs(directory, exist_ok=True)
         outp = tf.keras.utils.get_file(
             "download.zip",
@@ -21,7 +22,6 @@ def download_images(origin, directory):
             archive_format='auto',
             cache_dir=None)
         print(outp)
-        zip_path = os.path.join(directory, "download.zip")
         # Create a ZipFile Object and load sample.zip in it
         with ZipFile(zip_path, 'r') as zip_obj:
             # Get list of files names in zip
