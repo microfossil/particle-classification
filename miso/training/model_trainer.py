@@ -32,7 +32,6 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
 
     # Input
     img_size = params.get('img_size')
-    print('img_size')
     if img_size is not None:
         [img_height, img_width, img_channels] = params.get('img_size')
     else:
