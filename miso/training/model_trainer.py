@@ -74,9 +74,9 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
         else:
             raise ValueError("Number of channels must be 1 or 3")
     elif img_type == 'rgbd':
-        img_channels = 4
+        params['img_channels'] = 4
     elif img_type == 'greyscaled':
-        img_channels = 2
+        params['img_channels'] = 2
 
     print('@ Image type: {}'.format(img_type))
 

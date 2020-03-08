@@ -169,6 +169,7 @@ class DataSource:
             im = im.astype(dtype)
             if im.ndim == 2:
                 im = im[:, :, np.newaxis]
+            print(self.images.shape)
             self.images[idx] = im
             idx += 1
             if idx % 100 == 0:
