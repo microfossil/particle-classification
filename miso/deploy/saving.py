@@ -1,10 +1,9 @@
 import os
 import shutil
 import tensorflow as tf
-from tensorflow.keras.models import Model
 from tensorflow.python.platform import gfile
 from tensorflow.python.tools import freeze_graph
-from miso.training.model_info import ModelInfo
+from miso.deploy.model_info import ModelInfo
 import tensorflow.keras.backend as K
 import tempfile
 import lxml.etree as ET

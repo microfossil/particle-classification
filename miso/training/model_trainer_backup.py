@@ -1,14 +1,9 @@
 """
 Creates and trains a generic network
 """
-import os
 import time
 import datetime
 from collections import OrderedDict
-
-import tensorflow.keras.backend as K
-from tensorflow.keras.layers import Input
-from tensorflow.keras.models import Model
 
 from miso.stats.mislabelling import plot_mislabelled
 from miso.data.datasource import DataSource
@@ -20,7 +15,7 @@ from miso.stats.confusion_matrix import *
 from miso.stats.training import *
 from miso.training.augmentation import *
 from miso.deploy.saving import freeze, convert_to_inference_mode
-from miso.training.model_info import ModelInfo
+from miso.deploy.model_info import ModelInfo
 from miso.training.model_factory import *
 
 
