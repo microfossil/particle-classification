@@ -114,6 +114,9 @@ class DataSource:
         img = Image.open(filename)
         images = []
         print("num frames: {}".format(img.n_frames))
+        for i in range(img.n_frames):
+            img.seek(i)
+            print("- frame {} shape {}".format(i, img.shape))
         for i, idx in enumerate(indices):
             img.seek(idx)
             images.append(np.array(img))
