@@ -131,8 +131,14 @@ class DataSource:
         #               (for inputting greyscale images into networks that take three channels)
         if img_type == 'rgb' or img_type == 'greyscale3':
             channels = 3
-        else:
+        elif img_type == 'greyscale':
             channels = 1
+        elif img_type == 'rgbd':
+            channels = 4
+        elif img_type == 'greyscaled':
+            channels = 2
+        else:
+            raise ValueError("Unknown image type")
 
         # float16 is used be default to save memory
         if dtype is np.float16:
