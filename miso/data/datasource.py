@@ -120,6 +120,9 @@ class DataSource:
             print(img)
         for i, idx in enumerate(indices):
             img.seek(idx)
+            if len(np.array(img).shape) == 0:
+                print("Bad")
+                img.mode = 'L'
             images.append(np.array(img))
         return images
 
