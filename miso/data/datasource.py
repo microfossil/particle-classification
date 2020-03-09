@@ -113,6 +113,7 @@ class DataSource:
     def read_tiff(filename, indices):
         img = Image.open(filename)
         images = []
+        print("num frames: {}".format(img.n_frames))
         for i, idx in enumerate(indices):
             img.seek(idx)
             images.append(np.array(img))
