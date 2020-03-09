@@ -116,7 +116,7 @@ class DataSource:
         print("num frames: {}".format(img.n_frames))
         for i in range(img.n_frames):
             img.seek(i)
-            print("- frame {} shape {}".format(i, img.shape))
+            print("- frame {} shape {}".format(i, np.array(img).shape))
         for i, idx in enumerate(indices):
             img.seek(idx)
             images.append(np.array(img))
