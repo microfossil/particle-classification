@@ -102,26 +102,26 @@ class DataSource:
                 rgb = np.repeat(rgb, repeats=3, axis=-1)
             d = skcolor.rgb2grey(ims[1])
             im = np.concatenate((rgb, d[:,:, np.newaxis]), 2)
-        print(im.shape)
+        # print(im.shape)
         im = self.make_image_square(im)
-        print(im.shape)
+        # print(im.shape)
         im = resize(im, (img_size[0], img_size[1]), order=1)
-        print(im.shape)
+        # print(im.shape)
         return im
 
     @staticmethod
     def read_tiff(filename, indices):
         img = Image.open(filename)
         images = []
-        print("num frames: {}".format(img.n_frames))
+        # print("num frames: {}".format(img.n_frames))
         for i in range(img.n_frames):
             img.seek(i)
-            print("- frame {} shape {}".format(i, np.array(img).shape))
-            print(img)
+            # print("- frame {} shape {}".format(i, np.array(img).shape))
+            # print(img)
         for i, idx in enumerate(indices):
             img.seek(idx)
             if len(np.array(img).shape) == 0:
-                print("Bad")
+                #print("Bad")
                 img.mode = 'L'
             images.append(np.array(img))
         return images
@@ -188,7 +188,7 @@ class DataSource:
             im = im.astype(dtype)
             if im.ndim == 2:
                 im = im[:, :, np.newaxis]
-            print(self.images.shape)
+            # print(self.images.shape)
             self.images[idx] = im
             idx += 1
             if idx % 100 == 0:
