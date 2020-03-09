@@ -94,7 +94,7 @@ class DataSource:
         elif img_type == 'rgbd':
             ims = self.read_tiff(filename, [0, 2])
             rgb = ims[0]
-            print("rgbd")
+            print("rgbd {}".format(filename))
             print(rgb.shape)
             print(ims[1].shape)
             if rgb.ndim == 2:
