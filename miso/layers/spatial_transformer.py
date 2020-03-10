@@ -19,7 +19,7 @@ def add_spatial_transformer_network(image, resample_size):
     return adj_image
 
 
-def get_initial_weights(self, output_size):
+def get_initial_weights(output_size):
     b = np.zeros((2, 3), dtype='float32')
     b[0, 0] = 1
     b[1, 1] = 1
