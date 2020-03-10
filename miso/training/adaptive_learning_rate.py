@@ -92,7 +92,7 @@ class AdaptiveLearningRateScheduler(Callback):
         monitor_value = logs.get(self.monitor)
         self.buffer.append(monitor_value)
         self.current_batch += 1
-        print("\r{}".format(self.current_batch), end="")
+        # print("\r{}".format(self.current_batch), end="")
 
         if self.current_batch > self.buffer.length() * 3 and self.buffer.full() and self.finished is False:
             if self.buffer.slope_probability_less_than(0) < 0.50:
