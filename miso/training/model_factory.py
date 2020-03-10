@@ -28,7 +28,8 @@ def generate(params: dict):
                             dense=512,
                             conv_activation=params['activation'],
                             use_batch_norm=params['use_batch_norm'],
-                            global_pooling=params['global_pooling'])
+                            global_pooling=params['global_pooling'],
+                            use_spatial_transformer=params['use_spatial_transformer'])
     # Mirror Cyclic
     elif type.startswith("mirror_cyclic"):
         blocks = int(math.log2(img_height) - 2)

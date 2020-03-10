@@ -4,7 +4,8 @@ from tensorflow.keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPooling2
 from tensorflow.keras.layers import BatchNormalization
 from tensorflow.keras.models import Model
 
-from miso.layers import cyclic
+from ..layers import cyclic
+from ..layers.spatial_transformer import add_spatial_transformer_network
 
 
 def base_cyclic(input_shape,
@@ -16,7 +17,8 @@ def base_cyclic(input_shape,
                 conv_padding='same',
                 conv_activation='relu',
                 use_batch_norm=True,
-                global_pooling=None):
+                global_pooling=None,
+                use_spatial_transformer=False):
 
     default_bn_params = {
         'axis': 3,
@@ -27,7 +29,11 @@ def base_cyclic(input_shape,
     }
 
     inputs = Input(shape=input_shape)
-    x = cyclic.CyclicSlice4()(inputs)
+    if use_spatial_transformer:
+        x = add_spatial_transformer_network(inputs, input_shape[:2])
+        x = cyclic.CyclicSlice4()(x)
+    else:
+        x = cyclic.CyclicSlice4()(inputs)
     for i in range(blocks):
         conv_filters = filters * 2 ** i
         # First layer

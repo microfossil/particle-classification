@@ -61,6 +61,8 @@ def default_params():
     params['global_pooling'] = None
     # - activation: 'relu', 'elu', 'selu'
     params['activation'] = 'relu'
+    # - spatial transformer
+    params['use_spatial_transformer'] = False
 
     # Input
     params['img_size'] = None
