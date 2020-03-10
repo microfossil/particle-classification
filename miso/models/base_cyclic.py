@@ -30,7 +30,7 @@ def base_cyclic(input_shape,
 
     inputs = Input(shape=input_shape)
     if use_spatial_transformer:
-        x = add_spatial_transformer_network(inputs, input_shape[:2])
+        x = add_spatial_transformer_network(inputs, input_shape)
         x = cyclic.CyclicSlice4()(x)
     else:
         x = cyclic.CyclicSlice4()(inputs)

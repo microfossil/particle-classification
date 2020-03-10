@@ -7,8 +7,12 @@ import hashlib
 def download_images(origin, directory):
     hash = hashlib.md5(origin.encode()).hexdigest()[:10]
     directory = os.path.join(directory, hash)
+    if os.path.exists(directory):
+        paths = [path for path in os.listdir(directory) if not path.startswith("_")]
+    else:
+        paths = []
     zip_path = os.path.join(directory, "download.zip")
-    if os.path.exists(directory) is False or os.path.exists(zip_path) is False:
+    if len(paths) == 0:
         os.makedirs(directory, exist_ok=True)
         outp = tf.keras.utils.get_file(
             "download.zip",
