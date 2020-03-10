@@ -147,3 +147,4 @@ def mirror_cyclic(input_shape,
     model = Model(inputs, x, name='base_cyclic')
     return model
 
+

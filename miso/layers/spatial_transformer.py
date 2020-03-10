@@ -1,6 +1,5 @@
 from tensorflow.keras import backend as K
-from tensorflow.keras.layers import *
-from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Layer, Input, MaxPool2D, Conv2D, Flatten, Dense, Activation
 import tensorflow as tf
 import numpy as np
 
@@ -150,9 +149,22 @@ class BilinearInterpolation(Layer):
         transformations = K.reshape(affine_transformation,
                                     shape=(batch_size, 2, 3))
         # transformations = K.cast(affine_transformation[:, 0:2, :], 'float32')
-        regular_grids = self._make_regular_grids(batch_size, *output_size)
+        regular_grids = self._make_regular_grids(batch_size, *output_size[:2])
         sampled_grids = K.batch_dot(transformations, regular_grids)
         interpolated_image = self._interpolate(X, sampled_grids, output_size)
-        new_shape = (batch_size, output_size[0], output_size[1], num_channels)
+        new_shape = (batch_size, output_size[0], output_size[1], output_size[2])
         interpolated_image = K.reshape(interpolated_image, new_shape)
+        # print(batch_size)
+        # print(num_channels)
+        # print(X)
+        # print(new_shape)
+        # print(interpolated_image)
         return interpolated_image
+
+
+if __name__ == "__main__":
+    inputs = Input((64,64,1))
+    print(inputs)
+    c = add_spatial_transformer_network(inputs, (64,64,1))
+    print(c)
+    c = Conv2D(4, (3,3))
