@@ -36,7 +36,7 @@ class AdaptiveLearningRateScheduler(Callback):
     Decreases learning rate by a certain factor each time it is no longer improving
     """
 
-    def __init__(self, drop_rate=0.5, nb_drops=4, nb_epochs=10, verbose=1, monitor='loss'):
+    def __init__(self, drop_rate=0.5, nb_drops=4, nb_epochs=10, verbose=2, monitor='loss'):
         super(AdaptiveLearningRateScheduler, self).__init__()
         self.monitor = monitor
         self.drop_rate = drop_rate
@@ -67,11 +67,9 @@ class AdaptiveLearningRateScheduler(Callback):
         val_loss = logs.get("val_loss") or 0
         val_acc = logs.get("val_acc") or logs.get('val_accuracy') or logs.get('val_iou_score') or logs.get(
             'val_cosine_proximity') or 0
-
         if 'cosine_proximity' in logs:
             acc += 1
             val_acc += 1
-
         current_time = time.time()
         if self.previous_time is None:
             time_difference = 0
@@ -79,14 +77,16 @@ class AdaptiveLearningRateScheduler(Callback):
             time_difference = current_time - self.previous_time
         self.previous_time = current_time
         if val_acc is not None:
-            print("\r", end="")
-            graph_to_console(self.current_epoch, self.current_batch,
-                             acc, loss, val_acc, val_loss,
-                             self.buffer.slope_probability_less_than(0), self.buffer.full(),
-                             time_difference)
+            # print("\r", end="")
+            if self.verbose >= 2:
+                graph_to_console(self.current_epoch, self.current_batch,
+                                 acc, loss, val_acc, val_loss,
+                                 self.buffer.slope_probability_less_than(0), self.buffer.full(),
+                                 time_difference)
         if self.finished is True:
             self.model.stop_training = True
-            print("@Training finished".format(self.model.optimizer.lr))
+            if self.verbose >= 1:
+                print("@ Training finished".format(self.model.optimizer.lr))
 
     def on_batch_end(self, batch, logs=None):
         monitor_value = logs.get(self.monitor)
@@ -106,5 +106,5 @@ class AdaptiveLearningRateScheduler(Callback):
                     self.finished = True
                     return
 
-                if self.verbose == 1:
-                    print("@Learning rate dropped ({}/{})".format(self.drop_count, self.nb_drops))
+                if self.verbose >= 1:
+                    print("@ Learning rate dropped ({}/{})".format(self.drop_count, self.nb_drops))
