@@ -5,7 +5,6 @@ import numpy as np
 
 
 def pca(X, nr_components=16, normalise_vectors=True):
-
     if normalise_vectors:
         X = normalize(X, axis=1)
     p = PCA(n_components=nr_components)

@@ -88,9 +88,24 @@ class DataSource:
             im = np.repeat(im, repeats=3, axis=-1)
         elif img_type == 'greyscaled':
             ims = self.read_tiff(filename, [0, 2])
-            g = skcolor.rgb2grey(ims[0])
-            d = skcolor.rgb2grey(ims[1])
+            g = skcolor.rgb2grey(ims[0]) * 255      # Scales to 0 - 1 for some reason
+            if ims[1].ndim == 3:
+                d = skcolor.rgb2grey(ims[1])
+            else:
+                d = ims[1].astype(float)
             im = np.concatenate((g[:, :, np.newaxis], d[:, :, np.newaxis]), 2)
+        elif img_type == 'greyscaledm':
+            ims = self.read_tiff(filename, [0, 2, 4])
+            g = skcolor.rgb2grey(ims[0]) * 255  # Scales to 0 - 1 for some reason
+            if ims[1].ndim == 3:
+                d = skcolor.rgb2grey(ims[1])
+            else:
+                d = ims[1].astype(float)
+            if ims[2].ndim == 3:
+                m = skcolor.rgb2grey(ims[2])
+            else:
+                m = ims[2].astype(float)
+            im = np.concatenate((g[:, :, np.newaxis], d[:, :, np.newaxis], m[:, :, np.newaxis]), 2)
         elif img_type == 'rgbd':
             ims = self.read_tiff(filename, [0, 2])
             rgb = ims[0]
@@ -148,6 +163,8 @@ class DataSource:
             channels = 4
         elif img_type == 'greyscaled':
             channels = 2
+        elif img_type == 'greyscaledm':
+            channels = 3
         else:
             raise ValueError("Unknown image type")
 
@@ -224,7 +241,8 @@ class DataSource:
                 gc.collect()
                 os.remove(self.images_mmap_filename)
 
-    def split(self, split=0.20, seed=None, dtype=np.float16):
+    def split(self, split=0.20, seed=None):
+        dtype=self.images.dtype
         # Split with stratify
         train_idx, test_idx = train_test_split(range(len(self.images)), test_size=split, random_state=seed, shuffle=True, stratify=self.cls)
         self.random_idx = train_idx + test_idx
@@ -235,10 +253,10 @@ class DataSource:
             print("@ Split mapping - deleting old memmap files")
             train_filename = os.path.join(self.mmap_directory, "train.npy")
             test_filename = os.path.join(self.mmap_directory, "test.npy")
-            self.delete_memmap_files(True, False)
+            self.delete_memmap_files(del_split=True, del_source=False)
             print("@ Split mapping - creating new memmap files")
             self.train_images = open_memmap(train_filename, dtype=dtype, mode='w+', shape=(len(train_idx), ) + img_size)
-            self.test_images = open_memmap(test_filename, dtype=dtype, mode='w+', shape=(len(train_idx), ) + img_size)
+            self.test_images = open_memmap(test_filename, dtype=dtype, mode='w+', shape=(len(test_idx), ) + img_size)
             print("@ Split mapping - copying train images")
             for i in range(len(train_idx)):
                 self.train_images[i] = self.images[train_idx[i]]

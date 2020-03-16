@@ -9,3 +9,4 @@ scikit-learn
 scipy
 segmentation-models
 dill
+flask
