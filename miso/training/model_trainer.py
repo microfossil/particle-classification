@@ -77,6 +77,8 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
         params['img_channels'] = 4
     elif img_type == 'greyscaled':
         params['img_channels'] = 2
+    elif img_type == 'greyscaledm':
+        params['img_channels'] = 3
 
     print('@ Image type: {}'.format(img_type))
 
