@@ -155,18 +155,7 @@ class DataSource:
         # - greyscale: convert to greyscale (single channel) if necessary
         # - greyscale3: convert to greyscale then repeat across 3 channels
         #               (for inputting greyscale images into networks that take three channels)
-        if img_type == 'rgb' or img_type == 'greyscale3':
-            channels = 3
-        elif img_type == 'greyscale':
-            channels = 1
-        elif img_type == 'rgbd':
-            channels = 4
-        elif img_type == 'greyscaled':
-            channels = 2
-        elif img_type == 'greyscaledm':
-            channels = 3
-        else:
-            raise ValueError("Unknown image type")
+        channels = self.get_number_of_channels(img_type)
 
         # float16 is used be default to save memory
         if dtype is np.float16:
@@ -492,6 +481,22 @@ class DataSource:
                     constant_values=consts[c])
              for c in range(im.shape[2])], axis=2)
         return im
+
+    @staticmethod
+    def get_number_of_channels(img_type):
+        if img_type == 'rgb' or img_type == 'greyscale3' or img_type == 'k3':
+            channels = 3
+        elif img_type == 'greyscale' or img_type == 'k':
+            channels = 1
+        elif img_type == 'rgbd':
+            channels = 4
+        elif img_type == 'greyscaled' or img_type == 'kd':
+            channels = 2
+        elif img_type == 'greyscaledm' or img_type == 'kdm':
+            channels = 3
+        else:
+            raise ValueError("Unknown image type")
+        return channels
 
     @staticmethod
     def parse_xml(xml_filename):
