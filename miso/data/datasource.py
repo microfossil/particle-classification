@@ -88,7 +88,7 @@ class DataSource:
             im = np.expand_dims(im, -1)
             im = np.repeat(im, repeats=3, axis=-1)
         elif img_type == 'greyscaled':
-            ims = self.read_tiff(filename, [0, 2])
+            ims = DataSource.read_tiff(filename, [0, 2])
             g = skcolor.rgb2grey(ims[0]) * 255      # Scales to 0 - 1 for some reason
             if ims[1].ndim == 3:
                 d = skcolor.rgb2grey(ims[1])

@@ -11,6 +11,8 @@ from tensorflow.python.platform import gfile
 import tensorflow.keras.backend as K
 import os
 import pandas as pd
+import multiprocessing
+from pathlib import Path
 
 
 class InferenceGenerator(Sequence):
@@ -26,6 +28,7 @@ class InferenceGenerator(Sequence):
         images = []
         for filename in filenames:
             image = DataSource.load_image(filename, self.img_size, self.img_type)
+            image = DataSource.preprocess_image(image)
             images.append(image)
         return filenames, np.asarray(images)
 
@@ -98,7 +101,7 @@ def process(network_info, images_dir, output_dir):
     print("Image size: {}".format(img_size))
     print("Classes: {}".format(cls_labels))
     print()
-
+    print("Parsing source directory... (this can take some time)")
     if img_size[2] == 3:
         img_type = 'rgb'
     else:
@@ -107,13 +110,16 @@ def process(network_info, images_dir, output_dir):
 
     print("Files: {}".format(len(gen.filenames)))
     print("Batches: {}".format(len(gen)))
+
+    workers = np.min((multiprocessing.cpu_count(), 8))
+    print("Workers: {}".format(workers))
     print()
 
     filenames = []
     cls_index = []
     cls_names = []
     enq = OrderedEnqueuer(gen, use_multiprocessing=True)
-    enq.start(workers=8, max_queue_size=16)
+    enq.start(workers=workers, max_queue_size=multiprocessing.cpu_count()*4)
     output_generator = enq.get()
     for i in range(len(gen)):
         print("\r{} / {}".format(i, len(gen)), end='')
@@ -129,13 +135,16 @@ def process(network_info, images_dir, output_dir):
     print("Done")
     print("See {} for results".format(output_dir))
 
-    df = pd.DataFrame(data={'filename': filenames, 'class': cls_names, 'class_index': cls_index})
+    parents = [Path(f).parent.name for f in filenames]
+    files = [Path(f).name for f in filenames]
+
+    df = pd.DataFrame(data={'filename': filenames, 'parent': parents, 'file': files, 'class': cls_names, 'class_index': cls_index})
     os.makedirs(output_directory, exist_ok=True)
     df.to_csv(os.path.join(output_dir, "inference.csv"))
 
 
 if __name__ == "__main__":
-    network_info = r"C:\Users\marchanr\OneDrive\CEREGE\ResNet50 Cyclic Gain TL (fast)_20200205-113147\ResNet50 Cyclic Gain TL (fast)_20200205-113147\model\network_info.xml"
+    network_info = r"D:\Development\Microfossil\PaperExperiments\Paper1CNNForMicrofossil\MD972138\Output\MD972138_base_cyclic_8_20200410-173126\model\network_info.xml"
     images_directory = r"D:\Datasets\Foraminifera\images_20200226_114546 Fifth with background"
     output_directory = r"D:\output"
     process(network_info, images_directory, output_directory)
