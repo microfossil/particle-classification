@@ -70,7 +70,8 @@ class DataSource:
             im = np.multiply(im, prepro_params[2])
         return im
 
-    def load_image(self, filename, img_size, img_type):
+    @staticmethod
+    def load_image(filename, img_size, img_type):
         if img_type == 'rgb':
             im = Image.open(filename)
             im = np.asarray(im, dtype=np.float)
@@ -95,7 +96,7 @@ class DataSource:
                 d = ims[1].astype(float)
             im = np.concatenate((g[:, :, np.newaxis], d[:, :, np.newaxis]), 2)
         elif img_type == 'greyscaledm':
-            ims = self.read_tiff(filename, [0, 2, 4])
+            ims = DataSource.read_tiff(filename, [0, 2, 4])
             g = skcolor.rgb2grey(ims[0]) * 255  # Scales to 0 - 1 for some reason
             if ims[1].ndim == 3:
                 d = skcolor.rgb2grey(ims[1])
@@ -107,7 +108,7 @@ class DataSource:
                 m = ims[2].astype(float)
             im = np.concatenate((g[:, :, np.newaxis], d[:, :, np.newaxis], m[:, :, np.newaxis]), 2)
         elif img_type == 'rgbd':
-            ims = self.read_tiff(filename, [0, 2])
+            ims = DataSource.read_tiff(filename, [0, 2])
             rgb = ims[0]
             # print("rgbd {}".format(filename))
             # print(rgb.shape)
@@ -118,7 +119,7 @@ class DataSource:
             d = skcolor.rgb2grey(ims[1])
             im = np.concatenate((rgb, d[:,:, np.newaxis]), 2)
         # print(im.shape)
-        im = self.make_image_square(im)
+        im = DataSource.make_image_square(im)
         # print(im.shape)
         im = resize(im, (img_size[0], img_size[1]), order=1)
         # print(im.shape)
@@ -531,6 +532,27 @@ class DataSource:
         for label in cls_labels:
             filenames_dict[label] = df.filenames[df.cls == label]
         return filenames_dict
+
+    @staticmethod
+    def parse_directory(source_dir):
+        sub_dirs = sorted(glob.glob(os.path.join(source_dir, "*")))
+
+        filenames = OrderedDict()
+        for sub_dir in sub_dirs:
+            if os.path.isdir(sub_dir) is False:
+                continue
+            # Get the directory name
+            sub_name = os.path.basename(sub_dir)
+            # Skip directories starting with ~
+            if sub_name.startswith('~'):
+                continue
+            # Get the files
+            files = []
+            for ext in ["*.jpg", "*.jpeg", "*.png", "*.tif", "*.tiff", "*.bmp"]:
+                files.extend(sorted(glob.glob(os.path.join(sub_dir, ext))))
+            # Add to dictionary
+            filenames[sub_name] = files
+        return filenames
 
 
 if __name__ == "__main__":
