@@ -113,7 +113,7 @@ def process(network_info, images_dir, output_dir):
     cls_index = []
     cls_names = []
     enq = OrderedEnqueuer(gen, use_multiprocessing=True)
-    enq.start(workers=1, max_queue_size=16)
+    enq.start(workers=8, max_queue_size=16)
     output_generator = enq.get()
     for i in range(len(gen)):
         print("\r{} / {}".format(i, len(gen)), end='')
