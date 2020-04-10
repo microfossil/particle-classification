@@ -95,6 +95,27 @@ def plot_embedding_with_images(X, y, num_classes, images, face_colour="black", c
     plt.tight_layout()
 
 
+def plot_embedding_with_colour_images(X, images, face_colour="black", scale_adj=1.0, figsize=(10,10)):
+    # Normalise the co-ordinates
+    x_min, x_max = np.min(X, 0), np.max(X, 0)
+    X = (X - x_min) / (x_max - x_min)
+    # Calculate the scaling amount
+    scale = images.shape[1] // 64 / scale_adj
+    # Create the figure
+    if figsize is None:
+        figsize = (20*scale, 20*scale)
+    plt.figure(figsize=figsize, dpi=50, facecolor=face_colour, edgecolor=face_colour)
+    plt.gca().set_facecolor(face_colour)
+    # Plot
+    for j in range(X.shape[0]):
+        img = images[j,:,:,:]
+        ab = AnnotationBbox(OffsetImage(img), (0.03 + X[j, 0]*0.94, 0.03 + X[j, 1] * 0.94), xycoords="axes fraction", frameon=False)
+        plt.gca().add_artist(ab)
+    plt.xticks([])
+    plt.yticks([])
+    plt.tight_layout()
+
+
 def plot_embedding_with_images_on_grid(X, y, num_classes, images, width=128, mask_level=0.7, scale_adj=1.0):
     """
     2D image scatter plots, but with the images in a grid.
