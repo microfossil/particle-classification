@@ -1,6 +1,3 @@
-"""
-Test of training ResNet50 transfer learning network using dataset hosted on Google Drive
-"""
 from miso.training.model_params import default_params
 from miso.training.model_trainer import train_image_classification_model
 
@@ -21,13 +18,13 @@ params['description'] = None
 # - resnet34
 # - resnet50
 # - resnet50_tl     (resnet50 using transfer learning)
-params['type'] = 'base_cyclic'
+params['type'] = 'resnet50_tl'
 params['filters'] = 4
 
 # The input dimensions of the image.
 # For transfer learning, the dimensions will automatically be set to the appropriate size for the network.
-params['img_height'] = 224
-params['img_width'] = 224
+params['img_height'] = 128
+params['img_width'] = 128
 params['img_channels'] = 1
 
 # Training
@@ -49,7 +46,7 @@ params['use_augmentation'] = False
 
 # Input data source
 # Can be local directory or URL to zip file
-params['input_source'] = r'https://1drv.ws/u/s!AiQM7sVIv7fah4MN2gWCXDWX_DT0OA?e=Eu3lZh'
+params['input_source'] = r'D:\Datasets\Foraminifera\fifth_with_background.xml'
 # Minimum number of images per class for that class to be included.
 # Classes with only a few images are not worth using in training.
 params['data_min_count'] = 40

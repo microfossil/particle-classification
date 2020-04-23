@@ -94,7 +94,7 @@ def load_from_xml(filename, session=None):
     return session, input, output, img_size, cls_labels
 
 
-def process(network_info, images_dir, output_dir):
+def process(network_info, images_dir, output_dir, threshold=0.8):
     session, input_tensor, output_tensor, img_size, cls_labels = load_from_xml(network_info)
     print("Input tensor: {}".format(input_tensor))
     print("Output tensor: {}".format(output_tensor))
@@ -118,6 +118,7 @@ def process(network_info, images_dir, output_dir):
     filenames = []
     cls_index = []
     cls_names = []
+    score = []
     enq = OrderedEnqueuer(gen, use_multiprocessing=True)
     enq.start(workers=workers, max_queue_size=multiprocessing.cpu_count()*4)
     output_generator = enq.get()
@@ -126,10 +127,12 @@ def process(network_info, images_dir, output_dir):
         batch_filenames, batch_images = next(output_generator)
         result = session.run(output_tensor, feed_dict={input_tensor: batch_images})
         cls = np.argmax(result, axis=1)
+        scr = np.max(result, axis=1)
         cls_name = [cls_labels[i] for i in cls]
         filenames.extend(batch_filenames)
         cls_index.extend(cls)
         cls_names.extend(cls_name)
+        score.extend(scr)
     enq.stop()
     print()
     print("Done")
@@ -138,7 +141,7 @@ def process(network_info, images_dir, output_dir):
     parents = [Path(f).parent.name for f in filenames]
     files = [Path(f).name for f in filenames]
 
-    df = pd.DataFrame(data={'filename': filenames, 'parent': parents, 'file': files, 'class': cls_names, 'class_index': cls_index})
+    df = pd.DataFrame(data={'filename': filenames, 'parent': parents, 'file': files, 'class': cls_names, 'class_index': cls_index, 'score': score})
     os.makedirs(output_directory, exist_ok=True)
     df.to_csv(os.path.join(output_dir, "inference.csv"))
 

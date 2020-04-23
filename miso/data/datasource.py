@@ -200,14 +200,16 @@ class DataSource:
         idx = 0
         print("@ Loading images... ")
         for filename in filenames:
-            im = self.load_image(filename, img_size, img_type)
-            im = self.preprocess_image(im)
-            # Convert to format
-            im = im.astype(dtype)
-            if im.ndim == 2:
-                im = im[:, :, np.newaxis]
-            # print(self.images.shape)
-            self.images[idx] = im
+            try:
+                im = self.load_image(filename, img_size, img_type)
+                im = self.preprocess_image(im)
+                # Convert to format
+                im = im.astype(dtype)
+                if im.ndim == 2:
+                    im = im[:, :, np.newaxis]
+                self.images[idx] = im
+            except:
+                print("@ Error loading image {}".format(filename))
             idx += 1
             if idx % 100 == 0:
                 print("\r@ Loading images {}%".format((int)(idx / len(filenames) * 100)))
@@ -244,9 +246,14 @@ class DataSource:
 
     def split(self, split=0.20, seed=None):
         dtype=self.images.dtype
-        # Split with stratify
-        train_idx, test_idx = train_test_split(range(len(self.images)), test_size=split, random_state=seed, shuffle=True, stratify=self.cls)
-        self.random_idx = train_idx + test_idx
+        if split > 0.0:
+            # Split with stratify
+            train_idx, test_idx = train_test_split(range(len(self.images)), test_size=split, random_state=seed, shuffle=True, stratify=self.cls)
+            self.random_idx = train_idx + test_idx
+        else:
+            train_idx = np.random.permutation(range(len(self.images)))
+            test_idx = []
+            self.random_idx = train_idx
         print("@ Split mapping...")
         img_size = self.images.shape[1:]
         # Memmap splitting
