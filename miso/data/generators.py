@@ -74,7 +74,6 @@ def tf_augmented_image_generator(images,
     onehot_size = (None, onehot_size[1])
     images_tensor = tf.placeholder(tf.float32, shape=img_size)
     onehots_tensor = tf.placeholder(tf.float32, shape=onehot_size)
-
     # Create dataset
     dataset = tf.data.Dataset.from_tensor_slices((images_tensor, onehots_tensor))
     if map_fn is not None:
@@ -82,11 +81,9 @@ def tf_augmented_image_generator(images,
     dataset = dataset.shuffle(shuffle_size, reshuffle_each_iteration=True).repeat()
     dataset = dataset.batch(batch_size)
     dataset = dataset.prefetch(1)
-
     iterator = dataset.make_initializable_iterator()
     init_op = iterator.initializer
     next_val = iterator.get_next()
-
     with K.get_session().as_default() as sess:
         sess.run(init_op, feed_dict={images_tensor: images, onehots_tensor: onehots})
         while True:
