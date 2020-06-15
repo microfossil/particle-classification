@@ -12,8 +12,20 @@ def plot_mislabelled(images,
                      cls_labels,
                      image_names,
                      output_dir,
-                     num_neighbours=11
-                     ):
+                     num_neighbours=11):
+    """
+    Uses nearest neighbour to classify the vectors and checks this matches the actual classifications.
+    If not, prints the most similar other images. Also writes to a csv file with this list.
+    Args:
+        images: Images (for use in plots)
+        vectors: Vectors for each image
+        cls: Class label for each image
+        cls_labels: List of class labels in order [class_0, class_1, ..., class_N]
+        image_names: List of ids for each image, e.g. their filenames
+        output_dir: Directory to save the results
+        num_neighbours: Number of neighbours to use for the kNN classification
+    Returns: None
+    """
     # Normalise vectors
     vectors = normalize(vectors, axis=1)
     # Nearest neighbours fit
@@ -66,10 +78,6 @@ def plot_mislabelled(images,
         plt.set_cmap('gray')
         fig.set_facecolor("white")
         for i, ax in enumerate(axes.flat):
-            # Original image
-            # if i > num_neighbours:
-            #     ax.set_axis_off()
-            #     continue
             if i == 0:
                 image = images[im_idx].astype(np.float32)
                 if images.shape[3] == 1:
