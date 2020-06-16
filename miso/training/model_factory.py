@@ -4,6 +4,7 @@ from miso.models.transfer_learning import *
 from miso.models.base_cyclic import *
 from miso.models.resnet import *
 from classification_models.tfkeras import Classifiers
+import efficientnet.tfkeras as efk
 
 
 def generate(params: dict):
@@ -52,7 +53,28 @@ def generate(params: dict):
                                     None,
                                     use_cyclic=True)
         model = ResNetCyclic(resnet_params, input_shape, None, True, params['num_classes'])
-
+    elif type.startswith("efficientnet"):
+        params = {'input_shape': (img_height, img_width, img_channels),
+                  'weights': None,
+                  'classes': params['num_classes']}
+        if type.endswith("B0"):
+            model = efk.EfficientNetB0(**params)
+        elif type.endswith("B1"):
+            model = efk.EfficientNetB1(**params)
+        elif type.endswith("B2"):
+            model = efk.EfficientNetB2(**params)
+        elif type.endswith("B3"):
+            model = efk.EfficientNetB3(**params)
+        elif type.endswith("B4"):
+            model = efk.EfficientNetB4(**params)
+        elif type.endswith("B5"):
+            model = efk.EfficientNetB5(**params)
+        elif type.endswith("B6"):
+            model = efk.EfficientNetB6(**params)
+        elif type.endswith("B7"):
+            model = efk.EfficientNetB7(**params)
+        else:
+            raise ValueError("Unknown network, available efficientnet is B0 to B7")
     # ResNet50 Transfer Learning
     # Uses the pre-trained ResNet50 network from tf.keras with full image input and augmentation
     # Has a lambda layer to rescale the normal image input (range 0-1) to that expected by the pre-trained network

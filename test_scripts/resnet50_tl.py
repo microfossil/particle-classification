@@ -18,7 +18,7 @@ params['description'] = None
 # - resnet34
 # - resnet50
 # - resnet50_tl     (resnet50 using transfer learning)
-params['type'] = 'resnet50_tl'
+params['type'] = 'efficientnetB0'
 params['filters'] = 4
 
 # The input dimensions of the image.
