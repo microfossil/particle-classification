@@ -212,7 +212,7 @@ class DataSource:
                 print("@ Error loading image {}".format(filename))
             idx += 1
             if idx % 100 == 0:
-                print("\r@ Loading images {}%".format((int)(idx / len(filenames) * 100)))
+                print("\r@ Loading images {}%".format((int)(idx / len(filenames) * 100)), end='')
         if self.use_mmap:
             self.images.flush()
 

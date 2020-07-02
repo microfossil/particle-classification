@@ -28,7 +28,10 @@ def base_cyclic(input_shape,
     # }
 
     inputs = Input(shape=input_shape)
-    x = cyclic.CyclicSlice4()(inputs)
+    x = inputs
+    # if range_uint8:
+    #     x = Lambda(lambda t: tf.multiply(x, 255, name='input_255'))(x)
+    x = cyclic.CyclicSlice4()(x)
     for i in range(blocks):
         conv_filters = filters * 2 ** i
         # First layer

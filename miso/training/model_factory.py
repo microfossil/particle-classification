@@ -173,6 +173,9 @@ def generate_vector(model, params: dict):
     elif cnn_type.startswith("vgg") or cnn_type.startswith("densenet"):
         vector_layer = model.get_layer(index=-2)
         vector_model = Model(model.inputs, vector_layer.output)
+    elif cnn_type.startswith("efficientnet"):
+        vector_layer = model.get_layer(index=-2)
+        vector_model = Model(model.inputs, vector_layer.output)
     else:
         raise ValueError("The network type, {}, is not valid".format(cnn_type))
 
