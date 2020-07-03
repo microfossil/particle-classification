@@ -20,6 +20,12 @@ from miso.training.model_factory import *
 
 
 def train_image_classification_model(params: dict, data_source: DataSource = None):
+
+    physical_devices = tf.config.experimental.list_physical_devices('GPU')
+    if len(physical_devices) > 1:
+        for physical_device in physical_devices:
+            tf.config.experimental.set_memory_growth(physical_device, True)
+
     K.clear_session()
     intro()
 

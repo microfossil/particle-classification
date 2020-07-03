@@ -30,6 +30,18 @@ def generate(params: dict):
                             conv_activation=params['activation'],
                             use_batch_norm=params['use_batch_norm'],
                             global_pooling=params['global_pooling'])
+    elif type.startswith("base_nocyclic"):
+        blocks = int(math.log2(img_height) - 2)
+        model = base_cyclic(input_shape=input_shape,
+                            nb_classes=params['num_classes'],
+                            filters=params['filters'],
+                            blocks=blocks,
+                            dropout=0.5,
+                            dense=512,
+                            conv_activation=params['activation'],
+                            use_batch_norm=params['use_batch_norm'],
+                            global_pooling=params['global_pooling'],
+                            use_cyclic_layers=False)
     # Mirror Cyclic
     elif type.startswith("mirror_cyclic"):
         blocks = int(math.log2(img_height) - 2)
@@ -52,6 +64,16 @@ def generate(params: dict):
                                     residual_conv_block,
                                     None,
                                     use_cyclic=True)
+        model = ResNetCyclic(resnet_params, input_shape, None, True, params['num_classes'])
+    elif type.startswith("resnet_nocyclic"):
+        blocks = int(math.log2(img_height) - 2)
+        blocks -= 1  # Resnet has one block to start with already
+        resnet_params = ModelParams('resnet_cyclic',
+                                    params['filters'],
+                                    [1 for i in range(4)],
+                                    residual_conv_block,
+                                    None,
+                                    use_cyclic=False)
         model = ResNetCyclic(resnet_params, input_shape, None, True, params['num_classes'])
     elif type.startswith("efficientnet"):
         params = {'input_shape': (img_height, img_width, img_channels),

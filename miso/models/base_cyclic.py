@@ -17,6 +17,7 @@ def base_cyclic(input_shape,
                 conv_activation='relu',
                 use_batch_norm=True,
                 global_pooling=None,
+                use_cyclic_layers=True,
                 use_depthwise_conv=True):
 
     # default_bn_params = {

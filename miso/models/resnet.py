@@ -274,7 +274,8 @@ def ResNetCyclic(model_params, input_shape=None, input_tensor=None, include_top=
     x = tfkeras.layers.Activation('relu', name='relu1')(x)
 
     x = tfkeras.layers.Flatten()(x)
-    x = CyclicDensePool4(pool_op=tf.reduce_mean)(x)
+    if model_params.use_cyclic:
+        x = CyclicDensePool4(pool_op=tf.reduce_mean)(x)
     x = tfkeras.layers.Dropout(0.5)(x)
     x = tfkeras.layers.Dense(512, activation='relu')(x)
     x = tfkeras.layers.Dense(classes, activation='softmax')(x)
