@@ -17,14 +17,17 @@ from miso.training.augmentation import *
 from miso.deploy.saving import freeze, convert_to_inference_mode
 from miso.deploy.model_info import ModelInfo
 from miso.training.model_factory import *
+from tensorflow.python.framework import ops
 
 
 def train_image_classification_model(params: dict, data_source: DataSource = None):
 
-    physical_devices = tf.config.experimental.list_physical_devices('GPU')
-    if len(physical_devices) > 1:
-        for physical_device in physical_devices:
-            tf.config.experimental.set_memory_growth(physical_device, True)
+
+
+    # physical_devices = tf.config.experimental.list_physical_devices('GPU')
+    # if len(physical_devices) > 1:
+    #     for physical_device in physical_devices:
+    #         tf.config.experimental.set_memory_growth(physical_device, True)
 
     K.clear_session()
     intro()
@@ -219,7 +222,6 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
                                    batch_size)
 
         # Training -----------------------------------------------------------------------------------------------------
-
         alr_cb = AdaptiveLearningRateScheduler(nb_epochs=alr_epochs,
                                                nb_drops=alr_drops)
         print("@ Training")

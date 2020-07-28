@@ -105,6 +105,8 @@ def default_params():
     params['aug_zoom'] = [0.9, 1, 1.1]
     params['aug_gaussian_noise'] = None
 
+    params['gpu'] = None
+
     return params
 
 def default_params():
