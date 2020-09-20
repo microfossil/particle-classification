@@ -10,3 +10,5 @@ scipy
 segmentation-models
 dill
 flask
+tqdm
+xlrd

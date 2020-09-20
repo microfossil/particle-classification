@@ -19,17 +19,25 @@ def process(data_csv_filename, species_filename, save_dir=None):
     # The directory where we will save the images
     if save_dir is None:
         save_dir = os.path.join(base_dir, os.path.basename(base_dir) + "_images_individuelles")
-    os.makedirs(save_dir, exist_ok=False)
+    os.makedirs(save_dir, exist_ok=True)
 
     # Load the data csv
     df = pd.read_csv(data_csv_filename)
-    print(df.keys())
+    # print(df.keys())
 
     # Group the results by image
-    df = df.groupby("Image File")
+    df_grouped = df.groupby("Image File")
 
+    print('-' * 80)
+    print("Flowcam segmenter")
+    print('-' * 80)
+    print("Dataset: {}".format(run_name))
+    print("Directory: {}".format(base_dir))
+    print("Data CSV: {}".format(data_csv_filename))
+    print("Species XLSX: {}".format(species_filename))
+    print("Processing...")
     # Process each image
-    for filename, group in tqdm(df):
+    for filename, group in tqdm(df_grouped):
         # Load the image
         im_filename = os.path.join(base_dir, filename)
         im = skio.imread(im_filename)
@@ -45,7 +53,7 @@ def process(data_csv_filename, species_filename, save_dir=None):
             if cls in doublons.iloc[:,0].values:
                 vals = doublons[doublons.iloc[:,0] == cls]
                 new_cls = vals.iloc[0,1]
-                print("- {} -> {}".format(cls, new_cls))
+                # print("- {} -> {}".format(cls, new_cls))
                 cls = new_cls
             # Get image coordinates
             x = row['Image X']
@@ -58,6 +66,8 @@ def process(data_csv_filename, species_filename, save_dir=None):
             seg_im_filename = os.path.join(save_dir, cls, run_name + "_{:08d}_{}.png".format(id, cls))
             os.makedirs(os.path.dirname(seg_im_filename), exist_ok=True)
             skio.imsave(seg_im_filename, seg_im)
+    print("Complete!")
+    return df
 
 
 #
