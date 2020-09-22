@@ -45,11 +45,11 @@ def process(input_dir, species_filename, name, save_dir=None, save_csv=True):
     if len(cla_filename) == 0 or len(lst_filename) == 0:
         print("! No .cla or .lst file found in {} !".format(input_dir))
         return
+    cla_filename = cla_filename[0]
+    lst_filename = lst_filename[0]
     if os.path.getsize(cla_filename) == 0:
         print("! .cla file is empty !")
         return
-    cla_filename = cla_filename[0]
-    lst_filename = lst_filename[0]
 
     print("- classifications: {}".format(cla_filename))
     print("- image data: {}".format(lst_filename))
