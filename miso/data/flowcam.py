@@ -8,7 +8,7 @@ import argparse
 
 
 def process_dir(input_dir, species_filename, name, save_dir=None, save_csv=True):
-    dirs = [d for d in glob(os.path.join(input_dir, "*")) if os.path.isdir(d)]
+    dirs = [d for d in sorted(glob(os.path.join(input_dir, "*"))) if os.path.isdir(d)]
     df_master = None
     for d in dirs:
         df = process(d, species_filename, name, save_dir, save_csv=False)
@@ -27,6 +27,17 @@ def process(input_dir, species_filename, name, save_dir=None, save_csv=True):
     doublons = pd.read_excel(species_filename, sheet_name=1).dropna()
     feuil1 = pd.read_excel(species_filename, sheet_name=2).dropna()
 
+    # The directory the data csv is located in
+    base_dir = input_dir
+    run_name = os.path.basename(base_dir).replace(' ', '_')
+
+    print('-' * 80)
+    print("Flowcam segmenter")
+    print('-' * 80)
+    print("- species XLSX: {}".format(species_filename))
+    print("Dataset: {}".format(run_name))
+    print("- directory: {}".format(base_dir))
+
     # Data csv
     # data_csv_filename = glob(os.path.join(input_dir, "*_data.csv"))[0]
     cla_filename = glob(os.path.join(input_dir, "*.cla"))
@@ -37,12 +48,14 @@ def process(input_dir, species_filename, name, save_dir=None, save_csv=True):
     cla_filename = cla_filename[0]
     lst_filename = lst_filename[0]
 
+    print("- classifications: {}".format(cla_filename))
+    print("- image data: {}".format(lst_filename))
+    print()
+    print("Processing...")
+
     cls_dict = get_class_list(cla_filename)
     df = get_classifications(lst_filename)
 
-    # The directory the data csv is located in
-    base_dir = input_dir
-    run_name = os.path.basename(base_dir).replace(' ', '_')
     # The directory where we will save the images
     if save_dir is None:
         save_dir = os.path.join(base_dir, os.path.basename(base_dir) + "_images_individuelles")
@@ -51,15 +64,6 @@ def process(input_dir, species_filename, name, save_dir=None, save_csv=True):
     # Group the results by image
     df_grouped = df.groupby("collage_file")
 
-    print('-' * 80)
-    print("Flowcam segmenter")
-    print('-' * 80)
-    print("Dataset: {}".format(run_name))
-    print("Directory: {}".format(base_dir))
-    print("Classifications: {}".format(cla_filename))
-    print("Image data: {}".format(lst_filename))
-    print("Species XLSX: {}".format(species_filename))
-    print("Processing...")
     # Process each image
     for filename, group in tqdm(df_grouped):
         # Load the image
@@ -123,7 +127,7 @@ def get_classifications(filename):
         numfields = int(f.readline().split('|')[1])
         for i in range(numfields):
             field_names.append(f.readline().split('|')[0])
-        print(field_names)
+        # print(field_names)
     df = pd.read_csv(filename, '|', skiprows=numfields + 2, header=None)
     df.columns = field_names
     return df
