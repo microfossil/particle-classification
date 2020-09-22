@@ -43,7 +43,10 @@ def process(input_dir, species_filename, name, save_dir=None, save_csv=True):
     cla_filename = glob(os.path.join(input_dir, "*.cla"))
     lst_filename = glob(os.path.join(input_dir, "*.lst"))
     if len(cla_filename) == 0 or len(lst_filename) == 0:
-        print("No .cla or .lst file found in {}".format(input_dir))
+        print("! No .cla or .lst file found in {} !".format(input_dir))
+        return
+    if os.path.getsize(cla_filename) == 0:
+        print("! .cla file is empty !")
         return
     cla_filename = cla_filename[0]
     lst_filename = lst_filename[0]
