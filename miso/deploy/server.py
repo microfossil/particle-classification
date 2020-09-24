@@ -116,28 +116,6 @@ def classify_file():
                 result_str = "{{\"error\":\"{}\"}}".format(e)
                 return result_str
 
-        # im =
-        # # if user does not select file, browser also
-        # # submit a empty part without filename
-        # if file.filename == '':
-        #     flash('No selected file')
-        #     return redirect(request.url)
-        # if file and allowed_file(file.filename):
-        #     # filename = secure_filename(file.filename)
-        #     filename = file.filename
-        #     im = Image.open(BytesIO(file.read())).convert('L')
-        #     im = np.asarray(im, dtype=np.float)  # numpy array
-        #     im = resize(im, [width, width], order=1)  # resize using linear interpolation
-        #     im = np.divide(im, 255)  # divide to put in range [0 - 1]
-        #     im = im[np.newaxis, :, :, np.newaxis]
-        #     probs = session.run(output, feed_dict={input: im})
-        #     cls = np.argmax(probs)
-        #     response_format = request.args.get('format', default='html')
-        #     if response_format == "raw":
-        #         return labels[cls]
-        #     else:
-        #         return render_template("classification_result.html", image=filename, cls=cls)
-
 
 def test():
     session, input, output, img_size, cls_labels = load_from_xml(r"C:\Users\rossm\Documents\Data\TrainedNetworks\OB\OB\model\network_info.xml")
