@@ -77,6 +77,8 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
         params['img_channels'] = 4
     elif img_type == 'greyscaled':
         params['img_channels'] = 2
+    elif img_type == 'greyscaledm':
+        params['img_channels'] = 3
 
     print('@ Image type: {}'.format(img_type))
 
@@ -90,7 +92,7 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
                                min_count_to_others=params['data_map_others'],
                                mmap_directory=params['mmap_directory'])
         data_source.load_dataset(img_size=(img_height, img_width), img_type=img_type)
-    data_source.split(data_split, data_split_offset, seed)
+    data_source.split(data_split, seed)
 
     if params['use_class_weights'] is True:
         params['class_weights'] = data_source.get_class_weights()

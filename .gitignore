@@ -9,3 +9,5 @@ test_scripts/output/
 datasets/endless_forams/PathOfBuilding-Setup-1.4.147.exe
 datasets/endless_forams/
 miso.egg-info/
+test_scripts/background/output/check_20200310-163518/accuracy_vs_epoch.pdf
+test_scripts/background/output/
