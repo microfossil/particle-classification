@@ -106,7 +106,7 @@ class ModelInfo:
 
         ET.SubElement(root, "source_data").text = str(self.data_source_name)
         ET.SubElement(root, "source_size").text = str(np.sum(self.counts))
-        parent_node = ET.SubElement(root, "labels")
+        parent_node = ET.SubElement(root, "cls")
         for idx, value in enumerate(self.labels):
             node = ET.SubElement(parent_node, "label")
             ET.SubElement(node, "code").text = value

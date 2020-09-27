@@ -128,7 +128,7 @@ def image_generator_from_dataframe(dataframe,
 
     The dataframe must have at least two columns:
     - "filename" with the absolute path to the file
-    - "labels" with the class label of each image (text)
+    - "cls" with the class label of each image (text)
 
     Images will be preprocessed using an ImageDataGenerator, resized to a fixed shape and converted to grayscale if desired.
 
@@ -143,7 +143,7 @@ def image_generator_from_dataframe(dataframe,
     return datagen.flow_from_dataframe(
         dataframe,
         x_col="filenames",
-        y_col="labels",
+        y_col="cls",
         classes=cls_labels,
         target_size=img_size,
         batch_size=batch_size,

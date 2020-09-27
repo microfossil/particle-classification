@@ -40,7 +40,7 @@ def plot_confusion_matrix(y_true,
     plt.figure(facecolor="white", figsize=figsize)
     plt.imshow(cm, interpolation='nearest', cmap=cmap)
     plt.title(title)
-    # Add axes labels
+    # Add axes cls
     tick_marks = np.arange(len(cls_labels))
     plt.xticks(tick_marks, cls_labels, rotation=90)
     plt.yticks(tick_marks, cls_labels)
@@ -99,7 +99,7 @@ def plot_confusion_accuracy_matrix(y_true,
                                       'wspace': 0,
                                       'hspace': 0},
                          figsize=figsize)
-    # Add counts to class labels
+    # Add counts to class cls
     cls_labels = ['{} ({})'.format(cls_labels[i], s[i]) for i in range(len(cls_labels))]
     thresh = cm.max() / 2.
     # Axes
@@ -108,7 +108,7 @@ def plot_confusion_accuracy_matrix(y_true,
     ax_top = ax[0, 0]
     ax_unused = ax[0, 1]
     ax_unused.axis('off')
-    # Axes labels
+    # Axes cls
     tick_marks = np.arange(len(cls_labels))
     ax_cm.set_xticks(tick_marks)
     ax_cm.set_xticklabels(cls_labels, rotation=90)
@@ -225,13 +225,13 @@ def plot_comparison_matrix(y_true,
     #                                   'wspace': 0,
     #                                   'hspace': 0},
     #                      figsize=figsize)
-    # Add counts to class labels
+    # Add counts to class cls
 
     true_cls_labels = ['{} ({})'.format(true_cls_labels[i], support[i]) for i in range(len(true_cls_labels))]
     thresh = cm.max() / 2.
 
     fig, ax = plt.subplots(1, 1, figsize=figsize)
-    # Axes labels
+    # Axes cls
     true_tick_marks = np.arange(len(true_cls_labels))
     pred_tick_marks = np.arange(len(pred_cls_labels))
 
@@ -282,8 +282,8 @@ def plot_comparison_matrix(y_true,
                 ax.add_line(line1)
                 ax.add_line(line2)
     # Labels
-    ax.set_ylabel('True labels')
-    ax.set_xlabel('Predicted labels')
+    ax.set_ylabel('True cls')
+    ax.set_xlabel('Predicted cls')
     plt.tight_layout()
     if show is True:
         plt.show()

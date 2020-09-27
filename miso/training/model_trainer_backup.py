@@ -6,8 +6,8 @@ import datetime
 from collections import OrderedDict
 
 from miso.stats.mislabelling import plot_mislabelled
-from miso.data.datasource import DataSource
-from miso.data.generators import *
+from miso.data.archive.datasource import DataSource
+from miso.data.archive.generators import *
 from miso.training.wave import *
 from miso.training.adaptive_learning_rate import AdaptiveLearningRateScheduler
 from miso.training.training_result import TrainingResult

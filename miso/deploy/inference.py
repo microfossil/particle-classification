@@ -5,7 +5,7 @@ and its classification
 import tensorflow as tf
 from tensorflow.keras.utils import Sequence, OrderedEnqueuer
 import numpy as np
-from miso.data.datasource import DataSource
+from miso.data.archive.datasource import DataSource
 import lxml.etree as ET
 from tensorflow.python.platform import gfile
 import tensorflow.keras.backend as K
@@ -71,7 +71,7 @@ def load_from_xml(filename, session=None):
     img_size = np.zeros(3, dtype=np.int)
     cls_labels = []
 
-    list_xml = project.find('labels')
+    list_xml = project.find('cls')
     for i, entry_xml  in enumerate(list_xml.iter('label')):
         code = entry_xml.find('code').text
         cls_labels.append(code)

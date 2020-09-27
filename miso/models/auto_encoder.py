@@ -1,13 +1,12 @@
-import tensorflow as tf
 import tensorflow.keras.backend as K
-from tensorflow.keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPooling2D, Input, Activation, \
-                                    GlobalMaxPooling2D, GlobalAveragePooling2D, Lambda, UpSampling2D, \
-                                    Conv2DTranspose, Reshape, BatchNormalization, Cropping2D
+from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, Input, Activation, \
+    Lambda, UpSampling2D, \
+                                    Conv2DTranspose, Reshape, BatchNormalization
 from tensorflow.keras.models import Model
 from tensorflow.keras.losses import mse, binary_crossentropy
 
 from miso.layers import cyclic
-from miso.data.datasource import DataSource
+from miso.data.archive.datasource import DataSource
 import numpy as np
 
 

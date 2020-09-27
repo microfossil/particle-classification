@@ -1,8 +1,7 @@
-from flask import Flask, request, redirect, flash, render_template
+from flask import Flask, request, flash
 from PIL import Image
-from io import BytesIO
 import numpy as np
-from miso.data.datasource import DataSource
+from miso.data.archive.datasource import DataSource
 from miso.deploy.saving import load_from_xml
 from skimage.transform import resize
 import sys

@@ -304,7 +304,7 @@ class DataSource:
           |-- class 3 directory
           `-- ...
 
-        The labels for the class are taken as the sub-directory names
+        The cls for the class are taken as the sub-directory names
 
         :param source: Path to the directory containing sub-directories of classes
         :param extension: Extension of the images in directory (e.g. "jpg"). If `None`, it looks for jpg, png and tiff
@@ -465,7 +465,7 @@ class DataSource:
 
         if 'other' in filenames:
             self.cls_labels.append('other')
-        df = {"filenames": long_filenames, "short_filenames": short_filenames, "labels": cls_labels, "cls": cls_index}
+        df = {"filenames": long_filenames, "short_filenames": short_filenames, "cls": cls_labels, "cls": cls_index}
 
         self.data_df = pd.DataFrame(df)
         self.num_classes = len(self.cls_labels)

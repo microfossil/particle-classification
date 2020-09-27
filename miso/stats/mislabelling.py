@@ -20,7 +20,7 @@ def plot_mislabelled(images,
         images: Images (for use in plots)
         vectors: Vectors for each image
         cls: Class label for each image
-        cls_labels: List of class labels in order [class_0, class_1, ..., class_N]
+        cls_labels: List of class cls in order [class_0, class_1, ..., class_N]
         image_names: List of ids for each image, e.g. their filenames
         output_dir: Directory to save the results
         num_neighbours: Number of neighbours to use for the kNN classification

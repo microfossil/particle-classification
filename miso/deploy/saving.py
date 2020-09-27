@@ -109,7 +109,7 @@ def load_from_xml(filename, session=None):
     img_size = np.zeros(3, dtype=np.int)
     cls_labels = []
 
-    list_xml = project.find('labels')
+    list_xml = project.find('cls')
     for i, entry_xml  in enumerate(list_xml.iter('label')):
         code = entry_xml.find('code').text
         cls_labels.append(code)
