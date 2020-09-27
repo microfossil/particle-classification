@@ -19,7 +19,6 @@ class ImageDataset(DatasetBase):
                  dtype=np.uint8):
         self.filenames = filenames
         self.cls = cls
-        self.rescale = rescale_transform
         self.transform_fn = transform_fn
         self.transform_args = transform_args
         self.unique_id = unique_id

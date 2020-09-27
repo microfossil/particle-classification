@@ -26,7 +26,7 @@ def download_images(origin, directory):
         with ZipFile(zip_path, 'r') as zip_obj:
             # Get list of files names in zip
             paths = [path for path in zip_obj.namelist() if not path.startswith("_")]
-            dir_name = paths[0].replace(',','/').replace(',','\\')
+            dir_name = paths[0].replace(',', '/').replace(',','\\')
             folder_path = os.path.join(directory, dir_name)
         os.remove(os.path.join(directory, "download.zip"))
     else:

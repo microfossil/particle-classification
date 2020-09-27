@@ -1,7 +1,7 @@
 from flask import Flask, request, flash
 from PIL import Image
 import numpy as np
-from miso.data.archive.datasource import DataSource
+from miso.archive.datasource import DataSource
 from miso.deploy.saving import load_from_xml
 from skimage.transform import resize
 import sys

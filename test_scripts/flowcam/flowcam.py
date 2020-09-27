@@ -1,4 +1,4 @@
-from miso.data.flowcam import process, process_dir
+from miso.utils.flowcam import process_dir
 
 
 process_dir(r"C:\Users\marchanr\OneDrive\Datasets\Plankton",

@@ -7,6 +7,7 @@ import os
 from collections import OrderedDict
 import platform
 import pandas as pd
+import xml.etree.ElementTree as ET
 
 
 def ls(source_dir):
@@ -169,12 +170,10 @@ class FilenamesDataset(object):
             self.cls_filenames = filtered_cls_filenames
             print()
 
-        # Flatten filename dictionary to a list
+        # Flatten filename and class dictionary to a list
         self.filenames = [v for key, val in self.cls_filenames.items() for v in val]
-        self.cls = np.asarray([self.cls_labels.index(key) for key, val in self.cls_filenames.items() for v in val])
-
-        # Get the class cls and indexes
         self.cls_labels = list(self.cls_filenames.keys())
+        self.cls = np.asarray([self.cls_labels.index(key) for key, val in self.cls_filenames.items() for v in val])
         self.cls_counts = np.asarray([len(val) for key, val in self.cls_filenames.items()])
         self.num_classes = len(self.cls_filenames.keys())
 
@@ -186,5 +185,5 @@ class FilenamesDataset(object):
         train_filenames, test_filenames, train_cls, test_cls = \
             train_test_split(self.filenames, self.cls, test_size=test_size, stratify=stratify, shuffle=True, random_state=seed)
         self.train = LabelledFilenames(train_filenames, train_cls)
-        self.test = LabelledFilenames(test_filenames, train_filenames)
+        self.test = LabelledFilenames(test_filenames, test_cls)
 

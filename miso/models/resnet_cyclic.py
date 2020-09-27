@@ -2,16 +2,8 @@ import os
 import collections
 import tensorflow as tf
 import tensorflow.keras as tfkeras
-
-
 from miso.layers._common_blocks import ChannelSE
 from miso.layers.cyclic import *
-
-
-ModelParams = collections.namedtuple(
-    'ModelParams',
-    ['model_name','filters','repetitions','residual_block','attention','use_cyclic']
-)
 
 
 # -------------------------------------------------------------------------
@@ -171,8 +163,13 @@ def residual_bottleneck_block(filters, stage, block, strides=None, attention=Non
 # -------------------------------------------------------------------------
 
 
-def ResNetCyclic(model_params, input_shape=None, input_tensor=None, include_top=True,
-           classes=1000, weights='imagenet', **kwargs):
+def ResNetCyclic(model_params,
+                 input_shape=None,
+                 input_tensor=None,
+                 include_top=True,
+                 classes=1000,
+                 weights='imagenet',
+                 **kwargs):
     """Instantiates the ResNet, SEResNet architecture.
     Optionally loads weights pre-trained on ImageNet.
     Note that the data format convention used by the model is
@@ -255,7 +252,7 @@ def ResNetCyclic(model_params, input_shape=None, input_tensor=None, include_top=
     for stage, rep in enumerate(model_params.repetitions):
         for block in range(rep):
 
-            filters = init_filters * (2 ** (stage+1))
+            filters = init_filters * (2 ** (stage + 1))
 
             # first block of first stage without strides because we have maxpooling before
             # if block == 0 and stage == 0:
@@ -284,7 +281,6 @@ def ResNetCyclic(model_params, input_shape=None, input_tensor=None, include_top=
     #     x = tfkeras.layers.GlobalAveragePooling2D(name='pool1')(x)
     #     x = tfkeras.layers.Dense(classes, name='fc1')(x)
     #     x = tfkeras.layers.Activation('softmax', name='softmax')(x)
-
     # Ensure that the model takes into account any potential predecessors of `input_tensor`.
     if input_tensor is not None:
         inputs = tfkeras.keras_utils.get_source_inputs(input_tensor)
@@ -293,116 +289,24 @@ def ResNetCyclic(model_params, input_shape=None, input_tensor=None, include_top=
 
     # Create model.
     model = tfkeras.models.Model(inputs, x)
-
-    # if weights:
-    #     if type(weights) == str and os.path.exists(weights):
-    #         model.load_weights(weights)
-    #     else:
-    #         tfkeras.load_model_weights(model, model_params.model_name,
-    #                            weights, classes, include_top, **kwargs)
-
     return model
 
 
-# -------------------------------------------------------------------------
-#   Residual Models
-# -------------------------------------------------------------------------
+ResnetModelParameters = collections.namedtuple(
+    'ModelParams',
+    ['model_name', 'filters', 'repetitions', 'residual_block', 'attention', 'use_cyclic']
+)
 
 MODELS_PARAMS = {
-    'resnet18': ModelParams('resnet18', 64, (2, 2, 2, 2), residual_conv_block, None, use_cyclic=True),
-    'resnet34': ModelParams('resnet34', 64, (3, 4, 6, 3), residual_conv_block, None, use_cyclic=True),
-    'resnet50': ModelParams('resnet50', 64, (3, 4, 6, 3), residual_bottleneck_block, None, use_cyclic=True),
-    'resnet101': ModelParams('resnet101', 64, (3, 4, 23, 3), residual_bottleneck_block, None, use_cyclic=True),
-    'resnet152': ModelParams('resnet152', 64, (3, 8, 36, 3), residual_bottleneck_block, None, use_cyclic=True),
-    'seresnet18': ModelParams('seresnet18', 64, (2, 2, 2, 2), residual_conv_block, ChannelSE, use_cyclic=True),
-    'seresnet34': ModelParams('seresnet34', 64, (3, 4, 6, 3), residual_conv_block, ChannelSE, use_cyclic=True),
+    'resnet18': ResnetModelParameters('resnet18', 64, (2, 2, 2, 2), residual_conv_block, None, use_cyclic=True),
+    'resnet34': ResnetModelParameters('resnet34', 64, (3, 4, 6, 3), residual_conv_block, None, use_cyclic=True),
+    'resnet50': ResnetModelParameters('resnet50', 64, (3, 4, 6, 3), residual_bottleneck_block, None, use_cyclic=True),
+    'resnet101': ResnetModelParameters('resnet101', 64, (3, 4, 23, 3), residual_bottleneck_block, None,
+                                       use_cyclic=True),
+    'resnet152': ResnetModelParameters('resnet152', 64, (3, 8, 36, 3), residual_bottleneck_block, None,
+                                       use_cyclic=True),
+    'seresnet18': ResnetModelParameters('seresnet18', 64, (2, 2, 2, 2), residual_conv_block, ChannelSE,
+                                        use_cyclic=True),
+    'seresnet34': ResnetModelParameters('seresnet34', 64, (3, 4, 6, 3), residual_conv_block, ChannelSE,
+                                        use_cyclic=True),
 }
-
-#
-# def ResNet18(input_shape=None, input_tensor=None, weights=None, classes=1000, include_top=True, **kwargs):
-#     return ResNet(
-#         MODELS_PARAMS['resnet18'],
-#         input_shape=input_shape,
-#         input_tensor=input_tensor,
-#         include_top=include_top,
-#         classes=classes,
-#         weights=weights,
-#         **kwargs
-#     )
-#
-#
-# def ResNet34(input_shape=None, input_tensor=None, weights=None, classes=1000, include_top=True, **kwargs):
-#     return ResNet(
-#         MODELS_PARAMS['resnet34'],
-#         input_shape=input_shape,
-#         input_tensor=input_tensor,
-#         include_top=include_top,
-#         classes=classes,
-#         weights=weights,
-#         **kwargs
-#     )
-#
-#
-# def ResNet50(input_shape=None, input_tensor=None, weights=None, classes=1000, include_top=True, **kwargs):
-#     return ResNet(
-#         MODELS_PARAMS['resnet50'],
-#         input_shape=input_shape,
-#         input_tensor=input_tensor,
-#         include_top=include_top,
-#         classes=classes,
-#         weights=weights,
-#         **kwargs
-#     )
-#
-#
-# def ResNet101(input_shape=None, input_tensor=None, weights=None, classes=1000, include_top=True, **kwargs):
-#     return ResNet(
-#         MODELS_PARAMS['resnet101'],
-#         input_shape=input_shape,
-#         input_tensor=input_tensor,
-#         include_top=include_top,
-#         classes=classes,
-#         weights=weights,
-#         **kwargs
-#     )
-#
-#
-# def ResNet152(input_shape=None, input_tensor=None, weights=None, classes=1000, include_top=True, **kwargs):
-#     return ResNet(
-#         MODELS_PARAMS['resnet152'],
-#         input_shape=input_shape,
-#         input_tensor=input_tensor,
-#         include_top=include_top,
-#         classes=classes,
-#         weights=weights,
-#         **kwargs
-#     )
-#
-#
-# def SEResNet18(input_shape=None, input_tensor=None, weights=None, classes=1000, include_top=True, **kwargs):
-#     return ResNet(
-#         MODELS_PARAMS['seresnet18'],
-#         input_shape=input_shape,
-#         input_tensor=input_tensor,
-#         include_top=include_top,
-#         classes=classes,
-#         weights=weights,
-#         **kwargs
-#     )
-#
-#
-# def SEResNet34(input_shape=None, input_tensor=None, weights=None, classes=1000, include_top=True, **kwargs):
-#     return ResNet(
-#         MODELS_PARAMS['seresnet34'],
-#         input_shape=input_shape,
-#         input_tensor=input_tensor,
-#         include_top=include_top,
-#         classes=classes,
-#         weights=weights,
-#         **kwargs
-#     )
-#
-#
-# def preprocess_input(x, **kwargs):
-#     return x
-

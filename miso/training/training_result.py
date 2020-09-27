@@ -1,10 +1,20 @@
+"""
+Results of training
+"""
 import numpy as np
 from sklearn.metrics import precision_recall_fscore_support, accuracy_score
 
 
 class TrainingResult:
-
-    def __init__(self, model_params, history, y_true, y_pred, y_prob, cls_labels, training_time, inference_time):
+    def __init__(self,
+                 model_params,
+                 history,
+                 y_true,
+                 y_pred,
+                 y_prob,
+                 cls_labels,
+                 training_time,
+                 inference_time):
 
         # Model configuration
         self.model_params = model_params
@@ -28,24 +38,18 @@ class TrainingResult:
             self.val_loss = []
             self.val_acc = []
 
-        # Class history
+        # Accuracy metrics
         p, r, f1, s = precision_recall_fscore_support(y_true, y_pred, labels=range(len(self.cls_labels)))
         self.recall = r
         self.precision = p
         self.f1_score = f1
         self.support = s
+        self.mean_precision = np.mean(self.precision)
+        self.mean_recall = np.mean(self.recall)
+        self.mean_f1_score = np.mean(self.f1_score)
 
-        # Test predictions (for later analysis)
+        # Save predictions (for later analysis)
         self.y_true = y_true
         self.y_pred = y_pred
         self.y_prob = y_prob
-
-    def mean_precision(self):
-        return np.mean(self.precision)
-
-    def mean_recall(self):
-        return np.mean(self.recall)
-
-    def mean_f1_score(self):
-        return np.mean(self.f1_score)
 

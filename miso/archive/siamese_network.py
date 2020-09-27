@@ -76,7 +76,7 @@ def create_pairs(x, digit_indices):
 
 
 if __name__ == "__main__":
-    from miso.data.archive.datasource import DataSource
+    from miso.archive.datasource import DataSource
     from miso.models.transfer_learning import head
 
     # num_classes = 10

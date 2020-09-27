@@ -64,14 +64,14 @@ def resize_and_pad_image(im, img_size):
                     mode='constant',
                     constant_values=consts[c])
              for c in range(im.shape[2])], axis=2)
+        # Revert if was greyscale
+        if im.shape[2] == 1:
+            im = im[..., 0]
     # Resize
     if im.dtype == np.uint8:
         im = im / 255
     if im.shape[0] != img_size[0] or im.shape[1] != img_size[1]:
         im = skt.resize(im, img_size)
-    # Revert if was greyscale
-    if im.shape[2] == 1:
-        im = im[..., 0]
     return im
 
 
