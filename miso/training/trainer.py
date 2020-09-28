@@ -23,6 +23,8 @@ from miso.models.factory import *
 def train_image_classification_model(tp: TrainingParameters):
     K.clear_session()
 
+    tp.sanitise()
+
     print("+------------------------------------------------------------------------------+")
     print("| MISO Particle Classification Library                                         |")
     print("+------------------------------------------------------------------------------+")
@@ -47,12 +49,13 @@ def train_image_classification_model(tp: TrainingParameters):
                          tp.random_seed,
                          tp.memmap_directory)
     ds.load(tp.batch_size)
+    tp.num_classes = ds.num_classes
 
     # ------------------------------------------------------------------------------
     # Transfer learning
     # ------------------------------------------------------------------------------
     if tp.type.endswith('tl'):
-        print('-' * 60)
+        print('-' * 80)
         start = time.time()
         # Generate head model and predict vectors
         model_head = generate_tl_head(tp.type, tp.img_shape)
@@ -76,12 +79,17 @@ def train_image_classification_model(tp: TrainingParameters):
         alr_cb = AdaptiveLearningRateScheduler(nb_epochs=tp.alr_epochs,
                                                nb_drops=tp.alr_drops,
                                                verbose=1)
-        print('-' * 60)
+        print('-' * 80)
         print("@ Training")
         if tp.test_split > 0:
             validation_data = (test_vectors, ds.test_cls_onehot)
         else:
             validation_data = None
+        if tp.use_class_weights is True:
+            class_weights = ds.class_weights
+            print("@ Class weights: {}".format(class_weights))
+        else:
+            class_weights = None
         # log_dir = "C:\\logs\\profile\\" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
         # tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1, profile_batch=3)
         history = model_tail.fit(x=train_vectors,
@@ -110,7 +118,7 @@ def train_image_classification_model(tp: TrainingParameters):
     # Full network train
     # ------------------------------------------------------------------------------
     else:
-        print('-' * 60)
+        print('-' * 80)
         start = time.time()
 
         # Generate model
@@ -140,16 +148,30 @@ def train_image_classification_model(tp: TrainingParameters):
         alr_cb = AdaptiveLearningRateScheduler(nb_epochs=tp.alr_epochs,
                                                nb_drops=tp.alr_drops,
                                                verbose=1)
-        print('-' * 60)
+        print('-' * 80)
         print("@ Training")
         if tp.test_split > 0:
             validation_data = ds.test_tfdataset
         else:
             validation_data = None
+        if tp.use_class_weights is True:
+            class_weights = ds.class_weights
+            print("@ Class weights: {}".format(class_weights))
+        else:
+            class_weights = None
+
+        def create_gen(tfdataset):
+            iterator = tfdataset.make_one_shot_iterator()
+            next_val = iterator.get_next()
+            with K.get_session().as_default() as sess:
+                while True:
+                    inputs, labels = sess.run(next_val)
+                    yield inputs, labels
+
         history = model.fit_generator(
-            ds.train_tfdataset,
+            ds.train_generator.tf1_compat_generator(),
             steps_per_epoch=ds.train_batches_per_epoch,
-            validation_data=validation_data,
+            validation_data=ds.test_generator.tf1_compat_generator(),
             validation_steps=ds.test_batches_per_epoch,
             epochs=tp.max_epochs,
             verbose=0,
@@ -298,7 +320,7 @@ def train_image_classification_model(tp: TrainingParameters):
     print("@ Cleaning up")
     ds.release()
     print("@ Complete")
-    print('-' * 60)
+    print('-' * 80)
     print()
     # return model, vector_model, ds, result
 

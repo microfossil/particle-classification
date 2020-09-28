@@ -1,4 +1,8 @@
+from typing import NamedTuple
+
 from tensorflow.keras.utils import to_categorical
+import numpy as np
+from scipy.stats.mstats import gmean
 
 from miso.data.filenames_dataset import FilenamesDataset
 from miso.data.image_dataset import ImageDataset
@@ -30,6 +34,15 @@ class TrainingDataset(object):
         self.train: ImageDataset = None
         self.test: ImageDataset = None
         self.cls_labels = None
+        self.num_classes = None
+        self.class_weights = None
+
+    def get_class_weights(self):
+        count = np.bincount(self.data_df['cls'])
+        weights = gmean(count) / count
+        weights[weights < 0.1] = 0.1
+        weights[weights > 10] = 10
+        return weights
 
     def load(self, batch_size=32):
         # Get filenames
@@ -38,6 +51,13 @@ class TrainingDataset(object):
         fs.split(self.test_split, stratify=True, seed=self.random_seed)
         self.filenames_dataset = fs
         self.cls_labels = fs.cls_labels
+        self.num_classes = fs.num_classes
+
+        # Class weights
+        weights = gmean(fs.cls_counts) / fs.cls_counts
+        weights[weights < 0.1] = 0.1
+        weights[weights > 10] = 10
+        self.class_weights = weights
 
         # Load images and labels as onehot vectors
         to_greyscale = False

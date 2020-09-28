@@ -1,10 +1,10 @@
 """
 Training parameters
 """
-from typing import NamedTuple
+from collections import OrderedDict
 
 
-class TrainingParameters(NamedTuple):
+class TrainingParameters(object):
     # Network identifier
     name = "default"
     description = "description"
@@ -56,7 +56,17 @@ class TrainingParameters(NamedTuple):
     save_model = 'frozen'
     save_mislabeled = True
 
+    def sanitise(self):
+        # Make sure image shape is 3 for transfer learning
+        if self.type.endswith("tl"):
+            self.img_shape[2] = 3
 
+    def asdict(self):
+        return OrderedDict((name, getattr(self, name)) for name in dir(self) if not name.startswith('__') and not callable(getattr(self, name)))
+
+
+t = TrainingParameters()
+print(t.asdict())
 
 
 # def default_params():

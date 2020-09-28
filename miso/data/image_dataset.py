@@ -37,7 +37,7 @@ class ImageDataset(DatasetBase):
         super().__init__(memmap_directory=memmap_directory, overwrite_memmap=overwrite_memmap, dtype=dtype)
         self.hash_data = ["ImageDataset", self.filenames, str(self.dtype), self.unique_id]
 
-        print('-' * 60)
+        print('-' * 80)
         print("@ Image dataset, id: {}".format(self.get_hash_id()))
         if memmap_directory is None:
             print("@ - stored in RAM")

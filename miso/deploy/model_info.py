@@ -73,7 +73,7 @@ class ModelInfo:
         ET.SubElement(root, "protobuf").text = self.protobuf
 
         parent_node = ET.SubElement(root, "params")
-        for key, value in self.params._asdict().items():
+        for key, value in self.params.asdict().items():
             ET.SubElement(parent_node, key).text = str(value)
 
         parent_node = ET.SubElement(root, "inputs")

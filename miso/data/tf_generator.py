@@ -1,6 +1,6 @@
 import numpy as np
 import tensorflow as tf
-
+import tensorflow.keras.backend as K
 
 class TFGenerator(object):
     def __init__(self,
@@ -98,6 +98,33 @@ class TFGenerator(object):
             ds = ds.repeat()
         ds = ds.batch(self.batch_size).prefetch(self.prefetch)
         return ds
+
+    def tf1_compat_generator(self):
+        # Get shapes from input data
+        images = self.data
+        onehots = self.labels
+        shuffle_size = 1000
+        img_size = images.shape
+        img_size = (None, *img_size[1:])
+        onehot_size = onehots.shape
+        onehot_size = (None, onehot_size[1])
+        images_tensor = tf.placeholder(tf.float32, shape=img_size)
+        onehots_tensor = tf.placeholder(tf.float32, shape=onehot_size)
+        # Create dataset
+        dataset = tf.data.Dataset.from_tensor_slices((images_tensor, onehots_tensor))
+        if self.map_fn is not None:
+            dataset = dataset.map(lambda x, y: (self.map_fn(x), y), num_parallel_calls=tf.data.experimental.AUTOTUNE)
+        dataset = dataset.shuffle(shuffle_size, reshuffle_each_iteration=True).repeat()
+        dataset = dataset.batch(self.batch_size)
+        dataset = dataset.prefetch(1)
+        iterator = dataset.make_initializable_iterator()
+        init_op = iterator.initializer
+        next_val = iterator.get_next()
+        with K.get_session().as_default() as sess:
+            sess.run(init_op, feed_dict={images_tensor: images, onehots_tensor: onehots})
+            while True:
+                inputs, labels = sess.run(next_val)
+                yield inputs, labels
 
     @staticmethod
     def map_fn_divide_255(t):

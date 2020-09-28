@@ -24,7 +24,7 @@ def parse_directory(source_dir, skip='~', has_classes=True):
     :return: Dictionary with class names for the keys and lists of filenames for the values
     """
     if has_classes:
-        sub_dirs = sorted(glob.glob(os.path.join(source_dir, "*")))
+        sub_dirs = sorted(glob(os.path.join(source_dir, "*")))
     else:
         sub_dirs = [source_dir]
     filenames = OrderedDict()
@@ -128,7 +128,7 @@ class FilenamesDataset(object):
         self.cls_filenames = OrderedDict()
 
     def load(self, min_count=0, map_others=False):
-        print('-' * 60)
+        print('-' * 80)
         print("@ Parsing {}".format(self.source))
 
         # Load filenames
