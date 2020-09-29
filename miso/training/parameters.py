@@ -6,7 +6,7 @@ from collections import OrderedDict
 
 class TrainingParameters(object):
     # Network identifier
-    name = "default"
+    name = ""
     description = "description"
     type = "base_cyclic"
 
@@ -60,13 +60,12 @@ class TrainingParameters(object):
         # Make sure image shape is 3 for transfer learning
         if self.type.endswith("tl"):
             self.img_shape[2] = 3
+        # Make sure name is somewhat descriptive
+        if self.name == "":
+            self.name = self.type
 
     def asdict(self):
         return OrderedDict((name, getattr(self, name)) for name in dir(self) if not name.startswith('__') and not callable(getattr(self, name)))
-
-
-t = TrainingParameters()
-print(t.asdict())
 
 
 # def default_params():

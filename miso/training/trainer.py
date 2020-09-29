@@ -56,16 +56,19 @@ def train_image_classification_model(tp: TrainingParameters):
     # ------------------------------------------------------------------------------
     if tp.type.endswith('tl'):
         print('-' * 80)
+        print("@ Transfer learning network training")
         start = time.time()
         # Generate head model and predict vectors
         model_head = generate_tl_head(tp.type, tp.img_shape)
         print("@ Calculating train vectors")
         t = time.time()
-        train_vectors = model_head.predict(ds.train.data)
+        gen = ds.train.create_generator(32, one_shot=True)
+        train_vectors = model_head.predict_generator(gen.tf1_compat_generator(), steps=len(gen))
         print("! {}s elapsed".format(time.time() - t))
         print("@ Calculating test vectors")
         t = time.time()
-        test_vectors = model_head.predict(ds.test.data)
+        gen = ds.test.create_generator(32, one_shot=True)
+        test_vectors = model_head.predict_generator(gen.tf1_compat_generator(), steps=len(gen))
         print("! {}s elapsed".format(time.time() - t))
 
         # Clear session
@@ -119,6 +122,7 @@ def train_image_classification_model(tp: TrainingParameters):
     # ------------------------------------------------------------------------------
     else:
         print('-' * 80)
+        print("@ Full network training")
         start = time.time()
 
         # Generate model
@@ -140,18 +144,19 @@ def train_image_classification_model(tp: TrainingParameters):
                                          bias=tp.aug_bias)
 
         if tp.use_augmentation is True:
+            print("@ - using augmentation")
             augment_fn = augment
         else:
+            print("@ - NOT using augmentation")
             augment_fn = None
 
         # Training
         alr_cb = AdaptiveLearningRateScheduler(nb_epochs=tp.alr_epochs,
                                                nb_drops=tp.alr_drops,
                                                verbose=1)
-        print('-' * 80)
-        print("@ Training")
         if tp.test_split > 0:
-            validation_data = ds.test_tfdataset
+            validation_data = ds.test.create_generator(tp.batch_size, one_shot=False)
+            print(len(validation_data))
         else:
             validation_data = None
         if tp.use_class_weights is True:
@@ -160,19 +165,12 @@ def train_image_classification_model(tp: TrainingParameters):
         else:
             class_weights = None
 
-        def create_gen(tfdataset):
-            iterator = tfdataset.make_one_shot_iterator()
-            next_val = iterator.get_next()
-            with K.get_session().as_default() as sess:
-                while True:
-                    inputs, labels = sess.run(next_val)
-                    yield inputs, labels
-
+        train_gen = ds.train.create_generator(tp.batch_size, map_fn=augment_fn)
         history = model.fit_generator(
-            ds.train_generator.tf1_compat_generator(),
-            steps_per_epoch=ds.train_batches_per_epoch,
-            validation_data=ds.test_generator.tf1_compat_generator(),
-            validation_steps=ds.test_batches_per_epoch,
+            train_gen.tf1_compat_generator(),
+            steps_per_epoch=len(train_gen),
+            validation_data=validation_data.tf1_compat_generator(),
+            validation_steps=len(validation_data),
             epochs=tp.max_epochs,
             verbose=0,
             shuffle=False,
@@ -184,7 +182,7 @@ def train_image_classification_model(tp: TrainingParameters):
         print("@ Training time: {}s".format(training_time))
         time.sleep(3)
 
-        # Vector mode.
+        # Vector model
         vector_model = generate_vector(model, tp.type)
 
     # ------------------------------------------------------------------------------
@@ -197,7 +195,8 @@ def train_image_classification_model(tp: TrainingParameters):
     # Accuracy
     if tp.test_split > 0:
         y_true = ds.test_cls
-        y_prob = model.predict(ds.test.data, batch_size=32)
+        gen = ds.test.create_generator(1, one_shot=True)
+        y_prob = model.predict_generator(gen.tf1_compat_generator(), len(gen))
         y_pred = y_prob.argmax(axis=1)
     else:
         y_true = np.asarray([])
@@ -206,7 +205,7 @@ def train_image_classification_model(tp: TrainingParameters):
     # Inference time
     print("@ Calculating inference time")
     max_count = np.min([1000, len(ds.train.data)])
-    to_predict = np.copy(ds.train.data[0:max_count])
+    to_predict = np.copy(ds.train.data[0:max_count] / 255)
     inf_times = []
     for i in range(3):
         start = time.time()
@@ -269,17 +268,6 @@ def train_image_classification_model(tp: TrainingParameters):
                      training_time,
                      tp.test_split,
                      inference_time)
-    info.save(os.path.join(save_dir, "model", "network_info.xml"))
-    # ------------------------------------------------------------------------------
-    # Save model
-    # ------------------------------------------------------------------------------
-    print("@ Saving model")
-    # Convert if necessary to fix TF batch normalisation issues
-    model = convert_to_inference_mode(model, lambda: generate(tp))
-    vector_model = generate_vector(model, tp.type)
-    # Freeze and save graph
-    if tp.save_model is not None:
-        freeze(model, os.path.join(save_dir, "model"), info)
     # ------------------------------------------------------------------------------
     # Plots
     # ------------------------------------------------------------------------------
@@ -296,8 +284,12 @@ def train_image_classification_model(tp: TrainingParameters):
         plt.close('all')
     # Mislabeled
     if tp.save_mislabeled is True:
+        # Needs fixing
         print("@ Estimating mislabeled")
-        vectors = vector_model.predict(ds.train.data)
+        gen = ds.train.create_generator(1, one_shot=True)
+        vectors = vector_model.predict_generator(gen.tf1_compat_generator(), steps=len(gen))
+        plt.matshow(vectors)
+        plt.show()
         plot_mislabelled(ds.train.data,
                          vectors,
                          ds.train_cls,
@@ -305,7 +297,8 @@ def train_image_classification_model(tp: TrainingParameters):
                          [os.path.basename(f) for f in ds.filenames_dataset.train.filenames],
                          save_dir,
                          11)
-        vectors = vector_model.predict(ds.test.data)
+        gen = ds.test.create_generator(1, one_shot=True)
+        vectors = vector_model.predict_generator(gen.tf1_compat_generator(), steps=len(gen))
         plot_mislabelled(ds.test.data,
                          vectors,
                          ds.test_cls,
@@ -313,7 +306,16 @@ def train_image_classification_model(tp: TrainingParameters):
                          [os.path.basename(f) for f in ds.filenames_dataset.test.filenames],
                          save_dir,
                          11)
-
+    # ------------------------------------------------------------------------------
+    # Save model (has to be last thing it seems)
+    # ------------------------------------------------------------------------------
+    print("@ Saving model")
+    # Convert if necessary to fix TF batch normalisation issues
+    inference_model = convert_to_inference_mode(model, lambda: generate(tp))
+    # Freeze and save graph
+    if tp.save_model is not None:
+        freeze(inference_model, os.path.join(save_dir, "model"))
+    info.save(os.path.join(save_dir, "model", "network_info.xml"))
     # ------------------------------------------------------------------------------
     # Clean up
     # ------------------------------------------------------------------------------
@@ -322,7 +324,7 @@ def train_image_classification_model(tp: TrainingParameters):
     print("@ Complete")
     print('-' * 80)
     print()
-    # return model, vector_model, ds, result
+    return model, vector_model, ds, result
 
 # tensorboard_cb = TensorBoard(log_dir='./tensorboard',
 #                              histogram_freq=0,
@@ -335,3 +337,10 @@ def train_image_classification_model(tp: TrainingParameters):
 #                              embeddings_metadata=None,
 #                              embeddings_data=None,
 #                              update_freq='epoch')
+
+if __name__ == "__main__":
+    tp = TrainingParameters()
+    tp.source = r"D:\Datasets\Plankton\F44 80 micron_images_individuelles"
+    tp.output_dir = r"D:\Datasets\Plankton"
+    tp.type = "base_cyclic"
+    train_image_classification_model(tp)

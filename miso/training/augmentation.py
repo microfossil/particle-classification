@@ -8,11 +8,14 @@ def augmentation_complete(im_x,
                           gamma=[0.5, 1.0, 2],
                           zoom=[0.9, 1.0, 1.1],
                           gaussian_noise=None,
-                          bias=None):
+                          bias=None,
+                          divide_by_255=True):
     """
     Method used with tf.data.Dataset to implement pre-processing
     """
     im_x = tf.cast(im_x, tf.float32)
+    if divide_by_255:
+        im_x = tf.divide(im_x, 255)
     shape = tf.shape(im_x)
     # ROTATION
     if rotation is not None:

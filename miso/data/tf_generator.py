@@ -114,7 +114,10 @@ class TFGenerator(object):
         dataset = tf.data.Dataset.from_tensor_slices((images_tensor, onehots_tensor))
         if self.map_fn is not None:
             dataset = dataset.map(lambda x, y: (self.map_fn(x), y), num_parallel_calls=tf.data.experimental.AUTOTUNE)
-        dataset = dataset.shuffle(shuffle_size, reshuffle_each_iteration=True).repeat()
+        if self.one_shot:
+            dataset = dataset.repeat(1)
+        else:
+            dataset = dataset.shuffle(shuffle_size, reshuffle_each_iteration=True).repeat()
         dataset = dataset.batch(self.batch_size)
         dataset = dataset.prefetch(1)
         iterator = dataset.make_initializable_iterator()

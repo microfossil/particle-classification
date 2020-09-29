@@ -4,6 +4,7 @@ import skimage.io as skio
 from miso.data.dataset import DatasetBase
 from miso.data.image_loader import ParallelImageLoader
 from miso.data.image_utils import resize_transform, resize_with_pad_transform, null_transform
+from miso.data.tf_generator import TFGenerator
 
 
 class ImageDataset(DatasetBase):
@@ -54,7 +55,7 @@ class ImageDataset(DatasetBase):
             self.img_size = im.shape
         else:
             self.img_size = img_size
-        self.arr_size = (len(self.filenames), ) + self.img_size
+        self.arr_size = (len(self.filenames),) + self.img_size
         print("Array size is {}".format(self.arr_size))
 
     def load(self):
@@ -65,5 +66,11 @@ class ImageDataset(DatasetBase):
                                          transform_args=self.transform_args)
             loader.load()
 
-
-
+    def create_generator(self, batch_size, map_fn=TFGenerator.map_fn_divide_255, one_shot=False):
+        # Create generators for training
+        gen = TFGenerator(self.data,
+                          self.cls,
+                          batch_size=batch_size,
+                          map_fn=map_fn,
+                          one_shot=one_shot)
+        return gen

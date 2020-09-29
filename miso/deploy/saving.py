@@ -41,7 +41,7 @@ def save(model, save_dir):
                                outputs={"output": model.outputs[0]})
 
 
-def freeze(model, save_dir, metadata: ModelInfo=None):
+def freeze(model, save_dir):
     # if metadata is not None:
     #     metadata_tensor = K.constant(metadata.to_xml(), name="metadata", dtype='string')
     #     model = Model(model.inputs[0], [model.outputs[0], metadata_tensor])
@@ -49,11 +49,6 @@ def freeze(model, save_dir, metadata: ModelInfo=None):
 
     # Save using simple save
     save(model, save_dir)
-    # Freeze graph
-    if metadata is not None:
-        ext = ".pb"
-    else:
-        ext = ".pb"
     freeze_graph.freeze_graph(None,
                               None,
                               None,
@@ -61,15 +56,13 @@ def freeze(model, save_dir, metadata: ModelInfo=None):
                               model.outputs[0].op.name,
                               None,
                               None,
-                              os.path.join(save_dir, "frozen_model" + ext),
+                              os.path.join(save_dir, "frozen_model.pb"),
                               False,
                               "",
                               input_saved_model_dir=save_dir)
     # Delete saved models
     remove(os.path.join(save_dir, "saved_model.pb"))
     remove(os.path.join(save_dir, "variables"))
-    # Save info
-    metadata.save(os.path.join(save_dir, "network_info.xml"))
 
 
 def load_from_frozen(source: str,

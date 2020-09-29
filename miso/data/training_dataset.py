@@ -80,23 +80,6 @@ class TrainingDataset(object):
                                  memmap_directory=self.memmap_directory)
         self.test.load()
 
-        # Create generators for training
-        self.train_generator = TFGenerator(self.train.data,
-                                           self.train.cls,
-                                           batch_size=batch_size,
-                                           map_fn=TFGenerator.map_fn_divide_255,
-                                           one_shot=False)
-        self.test_generator = TFGenerator(self.test.data,
-                                          self.test.cls,
-                                          batch_size=batch_size,
-                                          map_fn=TFGenerator.map_fn_divide_255,
-                                          one_shot=True)
-        self.train_batches_per_epoch = len(self.train_generator)
-        self.test_batches_per_epoch = len(self.test_generator)
-        # Also create tf datasets
-        self.train_tfdataset = self.train_generator.to_tfdataset()
-        self.test_tfdataset = self.test_generator.to_tfdataset()
-
     def release(self):
         self.train.release()
         self.test.release()
