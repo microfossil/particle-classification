@@ -4,12 +4,10 @@ Creates and trains a generic network
 import time
 import datetime
 from collections import OrderedDict
+import tensorflow.keras.backend as K
 
 from miso.data.training_dataset import TrainingDataset
 from miso.stats.mislabelling import plot_mislabelled
-from miso.archive.datasource import DataSource
-from miso.archive.generators import *
-from miso.utils.wave import *
 from miso.training.adaptive_learning_rate import AdaptiveLearningRateScheduler
 from miso.training.training_result import TrainingResult
 from miso.stats.confusion_matrix import *
