@@ -82,8 +82,8 @@ def to_channels(im, out_channels, to_greyscale=False):
         im = im[..., np.newaxis]
         img_channels = 1
     # Convert to greyscale if needed:
-    if img_channels == 3 and to_greyscale == True:
-        im = skc.rgb2gray(im)
+    if img_channels == 3 and to_greyscale is True:
+        im = skc.rgb2gray(im)[..., np.newaxis]
         img_channels = 1
     # Repeat if needed
     if img_channels == 1 and out_channels == 3:

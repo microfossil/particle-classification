@@ -57,6 +57,7 @@ class AdaptiveLearningRateScheduler(Callback):
             self.buffer = RollingBuffer(math.ceil(samples * self.nb_epochs / batch_size))
         else:
             self.buffer = RollingBuffer(self.params['steps'] * self.nb_epochs)
+        self.previous_time = time.time()
 
     def on_epoch_begin(self, epoch, logs=None):
         self.current_epoch = epoch

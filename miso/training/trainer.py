@@ -19,8 +19,9 @@ from miso.models.factory import *
 
 
 def train_image_classification_model(tp: TrainingParameters):
-    K.clear_session()
+    tf_version = int(tf.__version__[0])
 
+    K.clear_session()
     tp.sanitise()
 
     print("+------------------------------------------------------------------------------+")
@@ -29,6 +30,9 @@ def train_image_classification_model(tp: TrainingParameters):
     print("| To update library:                                                           |")
     print("| pip install -U git+http://www.github.com/microfossil/particle-classification |")
     print("+------------------------------------------------------------------------------+")
+    print("@ Tensorflow version: {}".format(tf.__version__))
+    print()
+    print("@ Train information:")
     print("@ Name: {}".format(tp.name))
     print("@ {}".format(tp.description))
     print("")
@@ -133,13 +137,22 @@ def train_image_classification_model(tp: TrainingParameters):
             rotation_range = None
 
         def augment(x):
-            return augmentation_complete(x,
-                                         rotation=rotation_range,
-                                         gain=tp.aug_gain,
-                                         gamma=tp.aug_gamma,
-                                         zoom=tp.aug_zoom,
-                                         gaussian_noise=tp.aug_gaussian_noise,
-                                         bias=tp.aug_bias)
+            if tf_version == 2:
+                return augmentation_complete_tf2(x,
+                                                 rotation=rotation_range,
+                                                 gain=tp.aug_gain,
+                                                 gamma=tp.aug_gamma,
+                                                 zoom=tp.aug_zoom,
+                                                 gaussian_noise=tp.aug_gaussian_noise,
+                                                 bias=tp.aug_bias)
+            else:
+                return augmentation_complete(x,
+                                             rotation=rotation_range,
+                                             gain=tp.aug_gain,
+                                             gamma=tp.aug_gamma,
+                                             zoom=tp.aug_zoom,
+                                             gaussian_noise=tp.aug_gaussian_noise,
+                                             bias=tp.aug_bias)
 
         if tp.use_augmentation is True:
             print("@ - using augmentation")
@@ -153,8 +166,10 @@ def train_image_classification_model(tp: TrainingParameters):
                                                nb_drops=tp.alr_drops,
                                                verbose=1)
         if tp.test_split > 0:
-            validation_data = ds.test.create_generator(tp.batch_size, one_shot=False)
-            print(len(validation_data))
+            if tf_version == 2:
+                validation_data = ds.test.create_generator(tp.batch_size, one_shot=True)
+            else:
+                validation_data = ds.test.create_generator(tp.batch_size, one_shot=False)
         else:
             validation_data = None
         if tp.use_class_weights is True:
@@ -164,17 +179,27 @@ def train_image_classification_model(tp: TrainingParameters):
             class_weights = None
 
         train_gen = ds.train.create_generator(tp.batch_size, map_fn=augment_fn)
-        history = model.fit_generator(
-            train_gen.tf1_compat_generator(),
-            steps_per_epoch=len(train_gen),
-            validation_data=validation_data.tf1_compat_generator(),
-            validation_steps=len(validation_data),
-            epochs=tp.max_epochs,
-            verbose=0,
-            shuffle=False,
-            max_queue_size=1,
-            class_weight=class_weights,
-            callbacks=[alr_cb])
+        if tf_version == 2:
+            history = model.fit(train_gen.to_tfdataset(),
+                                          steps_per_epoch=len(train_gen),
+                                          validation_data=validation_data.to_tfdataset(),
+                                          epochs=tp.max_epochs,
+                                          verbose=0,
+                                          shuffle=False,
+                                          max_queue_size=1,
+                                          class_weight=dict(enumerate(class_weights)),
+                                          callbacks=[alr_cb])
+        else:
+            history = model.fit_generator(train_gen.tf1_compat_generator(),
+                                          steps_per_epoch=len(train_gen),
+                                          validation_data=validation_data.tf1_compat_generator(),
+                                          validation_steps=len(validation_data),
+                                          epochs=tp.max_epochs,
+                                          verbose=0,
+                                          shuffle=False,
+                                          max_queue_size=1,
+                                          class_weight=class_weights,
+                                          callbacks=[alr_cb])
         end = time.time()
         training_time = end - start
         print("@ Training time: {}s".format(training_time))
@@ -324,6 +349,7 @@ def train_image_classification_model(tp: TrainingParameters):
     print()
     return model, vector_model, ds, result
 
+
 # tensorboard_cb = TensorBoard(log_dir='./tensorboard',
 #                              histogram_freq=0,
 #                              batch_size=32,
@@ -338,7 +364,7 @@ def train_image_classification_model(tp: TrainingParameters):
 
 if __name__ == "__main__":
     tp = TrainingParameters()
-    tp.source = r"D:\Datasets\Plankton\F44 80 micron_images_individuelles"
-    tp.output_dir = r"D:\Datasets\Plankton"
-    tp.type = "base_cyclic"
+    tp.source = "https://1drv.ws/u/s!AiQM7sVIv7fah4MNU5lCmgcx4Ud_dQ?e=nPpUmT"
+    tp.output_dir = "/Users/chaos/Documents/Development/Data/Pollen_training"
+    tp.type = "efficientnetb0"
     train_image_classification_model(tp)

@@ -9,6 +9,11 @@ import platform
 import pandas as pd
 import xml.etree.ElementTree as ET
 
+from miso.data.download import download_images
+
+from pathlib import Path
+
+
 
 def ls(source_dir):
     return sorted(glob(os.path.join(source_dir, "*")))
@@ -136,6 +141,11 @@ class FilenamesDataset(object):
             self.cls_filenames = parse_xml(self.source)
         elif self.source.endswith(".csv"):
             self.cls_filenames = parse_csv(self.source, self.source, self.csv_idxs[0], self.csv_idxs[1], self.csv_idxs[2])
+        elif self.source.startswith("http"):
+            dir_for_download = os.path.join(str(Path.home()), 'miso_datasets')
+            os.makedirs(dir_for_download, exist_ok=True)
+            dir_path = download_images(self.source, dir_for_download)
+            self.cls_filenames = parse_directory(dir_path, has_classes=self.has_classes)
         else:
             self.cls_filenames = parse_directory(self.source, has_classes=self.has_classes)
 

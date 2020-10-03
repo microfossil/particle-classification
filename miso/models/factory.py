@@ -5,6 +5,11 @@ from miso.models.resnet_cyclic import *
 from classification_models.tfkeras import Classifiers
 from miso.training.parameters import TrainingParameters
 
+try:
+    from tensorflow.keras.applications.efficientnet import *
+except ImportError:
+    pass
+
 
 def generate(tp: TrainingParameters):
     # Base Cyclic
@@ -31,12 +36,32 @@ def generate(tp: TrainingParameters):
                                     None,
                                     use_cyclic=True)
         model = ResNetCyclic(resnet_params, tp.img_shape, None, True, tp.num_classes)
-
+    # EfficientNet
+    elif tp.type.lower().startswith(("efficientnet")):
+        if tp.type.lower() == "efficientnetb0":
+            model_fn = EfficientNetB0
+        elif tp.type.lower() == "efficientnetb1":
+            model_fn = EfficientNetB1
+        elif tp.type.lower() == "efficientnetb2":
+            model_fn = EfficientNetB2
+        elif tp.type.lower() == "efficientnetb3":
+            model_fn = EfficientNetB3
+        elif tp.type.lower() == "efficientnetb4":
+            model_fn = EfficientNetB4
+        elif tp.type.lower() == "efficientnetb5":
+            model_fn = EfficientNetB5
+        elif tp.type.lower() == "efficientnetb6":
+            model_fn = EfficientNetB6
+        elif tp.type.lower() == "efficientnetb7":
+            model_fn = EfficientNetB7
+        model = model_fn(weights=None,
+                         input_shape=tp.img_shape,
+                         classes=tp.num_classes)
     # ResNet50 Transfer Learning
     # Uses the pre-trained ResNet50 network from tf.keras with full image input and augmentation
     # Has a lambda layer to rescale the normal image input (range 0-1) to that expected by the pre-trained network
     elif tp.type.endswith('tl'):
-        model_head, model_tail = generate_tl(params)
+        model_head, model_tail = generate_tl(tp.type, tp.num_classes, tp.img_shape)
         outputs = model_tail(model_head.outputs[0])
         model = Model(model_head.inputs[0], outputs)
         return model
@@ -44,13 +69,12 @@ def generate(tp: TrainingParameters):
     # Uses normal keras
     else:
         classifier, preprocess_input = Classifiers.get(type)
-        model = classifier(input_shape=(img_height, img_width, img_channels),
+        model = classifier(input_shape=tp.img_shape,
                            weights=None,
-                           classes=params['num_classes'])
+                           classes=tp.num_classes)
 
     model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
     model.summary()
-
     return model
 
 

@@ -1,6 +1,86 @@
 import math
 import tensorflow as tf
 
+try:
+    import tensorflow_addons as tfa
+except ImportError:
+    pass
+
+
+def augmentation_complete_tf2(im_x,
+                          rotation=[0, 360],
+                          gain=[0.8, 1.0, 1.2],
+                          gamma=[0.5, 1.0, 2],
+                          zoom=[0.9, 1.0, 1.1],
+                          gaussian_noise=None,
+                          bias=None,
+                          divide_by_255=True):
+    """
+    Method used with tf.data.Dataset to implement pre-processing
+    """
+    im_x = tf.cast(im_x, tf.float32)
+    if divide_by_255:
+        im_x = tf.divide(im_x, 255)
+    shape = tf.shape(im_x)
+    # ROTATION
+    if rotation is not None:
+        if len(rotation) > 2:
+            rotation_factor = tf.random.shuffle(tf.constant(rotation))[0]
+        elif len(rotation) == 2:
+            rotation_factor = tf.random.uniform([], rotation[0] / 180 * math.pi, rotation[1] / 180 * math.pi)
+        im_x = tfa.image.rotate(im_x, rotation_factor, interpolation='BILINEAR')
+    # ZOOM
+    if zoom is not None:
+        if len(zoom) > 2:
+            zoom_value = tf.random.shuffle(tf.constant(zoom))[0]
+        elif len(zoom) == 2:
+            zoom_value = tf.random.uniform([], zoom[0], zoom[1])
+        zoom_start_factor = tf.divide(tf.subtract(1.0, zoom_value), 2)
+        zoom_end_factor = tf.subtract(1.0, zoom_start_factor)
+        zoom_factor = [[zoom_start_factor, zoom_start_factor, zoom_end_factor, zoom_end_factor]]
+        im_x = \
+            tf.image.crop_and_resize([im_x], boxes=zoom_factor, box_indices=tf.constant([0]), crop_size=tf.shape(im_x)[0:2],
+                                     method='bilinear', extrapolation_value=0)[0]
+    # GAIN
+    if gain is not None:
+        if len(gain) > 2:
+            gain_factor = tf.random.shuffle(tf.constant(gain))[0]
+        elif len(gain) == 2:
+            gain_factor = tf.random.uniform([], gain[0], gain[1])
+    else:
+        gain_factor = tf.constant(1.0)
+    # GAMMA
+    if gamma is not None:
+        if len(gamma) > 2:
+            gamma_factor = tf.random.shuffle(tf.constant(gamma))[0]
+        elif len(gamma) == 2:
+            gamma_factor = tf.random.uniform([], gamma[0], gamma[1])
+    else:
+        gamma_factor = tf.constant(1.0)
+    if gamma is not None or gain is not None:
+        im_x = tf.image.adjust_gamma(im_x, gamma_factor, gain_factor)
+    # NOISE
+    if gaussian_noise is not None:
+        if len(gaussian_noise) > 2:
+            gaussian_noise_factor = tf.random.shuffle(tf.constant(gaussian_noise))[0]
+        elif len(gaussian_noise) == 2:
+            gaussian_noise_factor = tf.random.uniform([], gaussian_noise[0], gaussian_noise[1])
+        noise_tensor = tf.random.normal(shape,
+                                        mean=0.0,
+                                        stddev=gaussian_noise_factor,
+                                        dtype=tf.float32,
+                                        seed=None,
+                                        name=None)
+        im_x = tf.add(im_x, noise_tensor)
+    # OFFSET
+    if bias is not None:
+        if len(bias) > 2:
+            bias_factor = tf.random.shuffle(tf.constant(bias))[0]
+        elif len(bias) == 2:
+            bias_factor = tf.random.uniform([], bias[0], bias[1])
+        im_x = tf.add(im_x, bias_factor)
+    return im_x
+
 
 def augmentation_complete(im_x,
                           rotation=[0, 360],

@@ -67,6 +67,7 @@ class TrainingDataset(object):
         self.test_cls = fs.test.cls
         self.train_cls_onehot = to_categorical(fs.train.cls)
         self.test_cls_onehot = to_categorical(fs.test.cls)
+        print(self.img_size)
         self.train = ImageDataset(fs.train.filenames,
                                   self.train_cls_onehot,
                                   transform_fn='resize_with_pad',
