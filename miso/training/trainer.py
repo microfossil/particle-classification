@@ -65,13 +65,19 @@ def train_image_classification_model(tp: TrainingParameters):
         print("@ Calculating train vectors")
         t = time.time()
         gen = ds.train.create_generator(32, one_shot=True)
-        train_vectors = model_head.predict_generator(gen.tf1_compat_generator(), steps=len(gen))
-        print("! {}s elapsed".format(time.time() - t))
+        if tf_version == 2:
+            train_vectors = model_head.predict(gen.to_tfdataset())
+        else:
+            train_vectors = model_head.predict_generator(gen.tf1_compat_generator(), steps=len(gen))
+        print("! {}s elapsed, ({} vectors)".format(time.time() - t, len(train_vectors)))
         print("@ Calculating test vectors")
         t = time.time()
         gen = ds.test.create_generator(32, one_shot=True)
-        test_vectors = model_head.predict_generator(gen.tf1_compat_generator(), steps=len(gen))
-        print("! {}s elapsed".format(time.time() - t))
+        if tf_version == 2:
+            test_vectors = model_head.predict(gen.to_tfdataset())
+        else:
+            test_vectors = model_head.predict_generator(gen.tf1_compat_generator(), steps=len(gen))
+        print("! {}s elapsed, ({} vectors)".format(time.time() - t, len(test_vectors)))
 
         # Clear session
         K.clear_session()
@@ -93,6 +99,8 @@ def train_image_classification_model(tp: TrainingParameters):
         if tp.use_class_weights is True:
             class_weights = ds.class_weights
             print("@ Class weights: {}".format(class_weights))
+            if tf_version == 2:
+                class_weights = dict(enumerate(class_weights))
         else:
             class_weights = None
         # log_dir = "C:\\logs\\profile\\" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -365,6 +373,9 @@ def train_image_classification_model(tp: TrainingParameters):
 if __name__ == "__main__":
     tp = TrainingParameters()
     tp.source = "https://1drv.ws/u/s!AiQM7sVIv7fah4MNU5lCmgcx4Ud_dQ?e=nPpUmT"
-    tp.output_dir = "/Users/chaos/Documents/Development/Data/Pollen_training"
-    tp.type = "efficientnetb0"
+    tp.source = "/Users/chaos/OneDrive/Datasets/DeepWeeds/"
+    tp.output_dir = "/Users/chaos/Documents/Development/Data/DeepWeeds/Training"
+    tp.type = "resnet50_tl"
+    tp.img_shape = [224, 224, 3]
+    tp.img_type = 'rgb'
     train_image_classification_model(tp)

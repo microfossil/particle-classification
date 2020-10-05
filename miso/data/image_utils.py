@@ -95,7 +95,7 @@ def resize_transform(im, shape, to_greyscale=False):
     im = to_channels(im, shape[2], to_greyscale)
     if im.shape[0] == shape[0] and im.shape[1] == shape[1]:
         return im
-    im = skt.resize(im, shape[:2])
+    im = skt.resize(im, shape)
     return (im * 255).astype(np.uint8)
 
 
@@ -103,7 +103,7 @@ def resize_with_pad_transform(im, shape, to_greyscale=False):
     im = to_channels(im, shape[2], to_greyscale)
     if im.shape[0] == shape[0] and im.shape[1] == shape[1]:
         return im
-    im = resize_and_pad_image(im, shape[:2])
+    im = resize_and_pad_image(im, shape)
     return (im * 255).astype(np.uint8)
 
 
