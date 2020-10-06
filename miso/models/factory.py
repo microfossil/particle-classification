@@ -96,7 +96,7 @@ def generate_tl(cnn_type, num_classes, img_shape):
 
 def generate_vector(model, cnn_type):
     if cnn_type.endswith("tl"):
-        vector_tensor = model.get_layer(index=-2).get_output_at(1)
+        vector_tensor = model.get_layer(index=-2).get_output_at(0)
         vector_model = Model(model.inputs, vector_tensor)
     elif cnn_type.startswith("base_cyclic"):
         vector_layer = model.get_layer(index=-2)

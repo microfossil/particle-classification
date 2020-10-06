@@ -12,3 +12,4 @@ miso.egg-info/
 test_scripts/background/output/check_20200310-163518/accuracy_vs_epoch.pdf
 test_scripts/background/output/
 .idea/particle-classification.iml
+test/

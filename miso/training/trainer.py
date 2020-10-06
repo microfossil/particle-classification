@@ -64,7 +64,7 @@ def train_image_classification_model(tp: TrainingParameters):
         model_head = generate_tl_head(tp.type, tp.img_shape)
         print("@ Calculating train vectors")
         t = time.time()
-        gen = ds.train.create_generator(32, one_shot=True)
+        gen = ds.train.create_generator(32, shuffle=False, one_shot=True)
         if tf_version == 2:
             train_vectors = model_head.predict(gen.to_tfdataset())
         else:
@@ -72,7 +72,7 @@ def train_image_classification_model(tp: TrainingParameters):
         print("! {}s elapsed, ({} vectors)".format(time.time() - t, len(train_vectors)))
         print("@ Calculating test vectors")
         t = time.time()
-        gen = ds.test.create_generator(32, one_shot=True)
+        gen = ds.test.create_generator(32, shuffle=False, one_shot=True)
         if tf_version == 2:
             test_vectors = model_head.predict(gen.to_tfdataset())
         else:
@@ -226,8 +226,11 @@ def train_image_classification_model(tp: TrainingParameters):
     # Accuracy
     if tp.test_split > 0:
         y_true = ds.test_cls
-        gen = ds.test.create_generator(1, one_shot=True)
-        y_prob = model.predict_generator(gen.tf1_compat_generator(), len(gen))
+        gen = ds.test.create_generator(1, shuffle=False, one_shot=True)
+        if tf_version == 2:
+            y_prob = model.predict_generator(gen.to_tfdataset(), len(gen))
+        else:
+            y_prob = model.predict_generator(gen.tf1_compat_generator(), len(gen))
         y_pred = y_prob.argmax(axis=1)
     else:
         y_true = np.asarray([])
@@ -248,6 +251,10 @@ def train_image_classification_model(tp: TrainingParameters):
     inference_time = np.median(inf_times)
     print("@ - average: {}".format(inference_time))
     # Store results
+    # - fix to make key same for tensorflow 1 and 2
+    if 'accuracy' in history.history:
+        history.history['acc'] = history.history.pop('accuracy')
+        history.history['val_acc'] = history.history.pop('val_accuracy')
     result = TrainingResult(tp,
                             history,
                             y_true,
@@ -317,8 +324,11 @@ def train_image_classification_model(tp: TrainingParameters):
     if tp.save_mislabeled is True:
         # Needs fixing
         print("@ Estimating mislabeled")
-        gen = ds.train.create_generator(1, one_shot=True)
-        vectors = vector_model.predict_generator(gen.tf1_compat_generator(), steps=len(gen))
+        gen = ds.train.create_generator(1, shuffle=False, one_shot=True)
+        if tf_version == 2:
+            vectors = vector_model.predict(gen.to_tfdataset(), steps=len(gen))
+        else:
+            vectors = vector_model.predict_generator(gen.tf1_compat_generator(), steps=len(gen))
         plt.matshow(vectors)
         plt.show()
         plot_mislabelled(ds.train.data,
@@ -328,8 +338,11 @@ def train_image_classification_model(tp: TrainingParameters):
                          [os.path.basename(f) for f in ds.filenames_dataset.train.filenames],
                          save_dir,
                          11)
-        gen = ds.test.create_generator(1, one_shot=True)
-        vectors = vector_model.predict_generator(gen.tf1_compat_generator(), steps=len(gen))
+        gen = ds.test.create_generator(1, shuffle=False, one_shot=True)
+        if tf_version == 2:
+            vectors = vector_model.predict(gen.to_tfdataset(), steps=len(gen))
+        else:
+            vectors = vector_model.predict_generator(gen.tf1_compat_generator(), steps=len(gen))
         plot_mislabelled(ds.test.data,
                          vectors,
                          ds.test_cls,
@@ -373,9 +386,12 @@ def train_image_classification_model(tp: TrainingParameters):
 if __name__ == "__main__":
     tp = TrainingParameters()
     tp.source = "https://1drv.ws/u/s!AiQM7sVIv7fah4MNU5lCmgcx4Ud_dQ?e=nPpUmT"
-    tp.source = "/Users/chaos/OneDrive/Datasets/DeepWeeds/"
+    # tp.source = "/Users/chaos/OneDrive/Datasets/DeepWeeds/"
+    tp.source = r"D:\Datasets\Weeds\DeepWeedsConverted"
     tp.output_dir = "/Users/chaos/Documents/Development/Data/DeepWeeds/Training"
-    tp.type = "resnet50_tl"
+    tp.output_dir = "..\\..\\test"
+    tp.output_dir = r"D:\Training\DeepWeeds"
+    tp.type = "resnet50_cyclic_tl"
     tp.img_shape = [224, 224, 3]
     tp.img_type = 'rgb'
     train_image_classification_model(tp)

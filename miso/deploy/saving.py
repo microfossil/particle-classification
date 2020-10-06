@@ -65,14 +65,12 @@ def freeze(model, save_dir):
     remove(os.path.join(save_dir, "variables"))
 
 
-def load_from_frozen(source: str,
-                     input_tensor="input_1:0",
-                     output_tensor="conv2d_23/Sigmoid:0",
-                     session=None):
-
+def load_frozen_model(source: str,
+                      input_tensor="input_1:0",
+                      output_tensor="conv2d_23/Sigmoid:0",
+                      session=None):
     if not os.path.exists(source):
         raise FileNotFoundError('The graph file was not found on the system.\nThe path was: ' + source)
-
     # Load network
     if session is None:
         session = K.get_session()
@@ -102,8 +100,8 @@ def load_from_xml(filename, session=None):
     img_size = np.zeros(3, dtype=np.int)
     cls_labels = []
 
-    list_xml = project.find('cls')
-    for i, entry_xml  in enumerate(list_xml.iter('label')):
+    list_xml = project.find('labels')
+    for i, entry_xml in enumerate(list_xml.iter('label')):
         code = entry_xml.find('code').text
         cls_labels.append(code)
 
@@ -121,27 +119,77 @@ def load_from_xml(filename, session=None):
             output_name = entry_xml.find('operation').text + ":0"
 
     full_protobuf_path = os.path.join(os.path.dirname(filename), protobuf)
-    session, input, output = load_from_frozen(full_protobuf_path, input_name, output_name)
+    session, input, output = load_frozen_model(full_protobuf_path, input_name, output_name)
     return session, input, output, img_size, cls_labels
 
-    # if not os.path.exists(filename):
-    #     raise FileNotFoundError('The xml information file was not found on the system.\nThe path was: ' + filename)
-    #
-    # # Load network
-    # if session is None:
-    #     session = K.get_session()
-    # with gfile.Open(source, 'rb') as f:
-    #     graph_def = tf.GraphDef()
-    #     graph_def.ParseFromString(f.read())
-    #     session.graph.as_default()
-    #     tf.import_graph_def(graph_def, name='')
-    #
-    # # Information
-    # names = [n.name for n in tf.get_default_graph().as_graph_def().node]
-    # for n in names:
-    #     print(n)
-    #
-    # # Input / output tensors
-    # input = session.graph.get_tensor_by_name(input_tensor)
-    # output = session.graph.get_tensor_by_name(output_tensor)
-    # return session, input, output
+
+
+"""
+Adapted from https://leimao.github.io/blog/Save-Load-Inference-From-TF2-Frozen-Graph/
+"""
+from tensorflow.python.framework.convert_to_constants import convert_variables_to_constants_v2
+
+
+def wrap_frozen_graph_tf2(graph_def, inputs, outputs, print_graph=False):
+    def _imports_graph_def():
+        tf.compat.v1.import_graph_def(graph_def, name="")
+
+    wrapped_import = tf.compat.v1.wrap_function(_imports_graph_def, [])
+    import_graph = wrapped_import.graph
+    if print_graph == True:
+        print("-" * 50)
+        print("Frozen model layers: ")
+        layers = [op.name for op in import_graph.get_operations()]
+        for layer in layers:
+            print(layer)
+        print("-" * 50)
+    return wrapped_import.prune(
+        tf.nest.map_structure(import_graph.as_graph_element, inputs),
+        tf.nest.map_structure(import_graph.as_graph_element, outputs))
+
+
+def save_frozen_model_tf2(model, out_dir, filename):
+    # Convert Keras model to ConcreteFunction
+    full_model = tf.function(lambda x: model(x))
+    full_model = full_model.get_concrete_function(
+        tf.TensorSpec(model.inputs[0].shape, model.inputs[0].dtype))
+
+    # Get frozen ConcreteFunction
+    frozen_func = convert_variables_to_constants_v2(full_model)
+    frozen_func.graph.as_graph_def()
+
+    layers = [op.name for op in frozen_func.graph.get_operations()]
+    print("-" * 50)
+    print("Frozen model layers: ")
+    for layer in layers:
+        print(layer)
+
+    print("-" * 50)
+    print("Frozen model inputs: ")
+    print(frozen_func.inputs)
+    print("Frozen model outputs: ")
+    print(frozen_func.outputs)
+
+    # Save frozen graph from frozen ConcreteFunction to hard drive
+    # logdir="./frozen_models",
+    tf.io.write_graph(graph_or_graph_def=frozen_func.graph,
+                      logdir=os.path.join(out_dir, "frozen_logs"),
+                      name=os.path.join(out_dir, filename),
+                      as_text=False)
+
+
+def load_frozen_model_tf2(filepath, inputs, outputs):
+    with tf.io.gfile.GFile(filepath, "rb") as f:
+        graph_def = tf.compat.v1.GraphDef()
+        loaded = graph_def.ParseFromString(f.read())
+    # Wrap frozen graph to ConcreteFunctions
+    frozen_func = wrap_frozen_graph_tf2(graph_def=graph_def,
+                                        inputs=inputs,
+                                        outputs=outputs,
+                                        print_graph=True)
+    print("-" * 50)
+    print("Frozen model inputs: ")
+    print(frozen_func.inputs)
+    print("Frozen model outputs: ")
+    print(frozen_func.outputs)
+    return frozen_func

@@ -30,10 +30,10 @@ class TrainingResult:
         # Training history
         self.epochs = history.epoch
         self.loss = history.history['loss']
-        self.acc = history.history['acc']
+        self.acc = history.history.get('acc') or history.history.get('accuracy')
         if 'val_loss' in history.history.keys():
             self.val_loss = history.history['val_loss']
-            self.val_acc = history.history['val_acc']
+            self.val_acc = history.history.get('val_acc') or history.history.get('val_accuracy')
         else:
             self.val_loss = []
             self.val_acc = []

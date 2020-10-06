@@ -79,7 +79,7 @@ def plot_mislabelled(images,
         fig.set_facecolor("white")
         for i, ax in enumerate(axes.flat):
             if i == 0:
-                image = images[im_idx].astype(np.float32)
+                image = images[im_idx].astype(np.uint8)
                 if images.shape[3] == 1:
                     ax.imshow(image[:, :, 0])
                 else:
