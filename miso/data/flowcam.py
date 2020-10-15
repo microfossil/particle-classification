@@ -8,10 +8,10 @@ import argparse
 
 
 def process_dir(input_dir, save_dir, species_filename, campaign_name, save_csv=True):
-    # Find all cla files
-    cls_filenames = sorted(glob(os.path.join(input_dir, "**", "*.cla")))
+    # Find all lst files
+    lst_filenames = sorted(glob(os.path.join(input_dir, "**", "*.lst")))
     # Extract the base directories
-    dirs = [os.path.dirname(fn) for fn in cls_filenames]
+    dirs = [os.path.dirname(fn) for fn in lst_filenames]
     # Only take unique ones
     dirs = sorted(list(set(dirs)))
     # dirs = [d for d in sorted(glob(os.path.join(input_dir, "*"))) if os.path.isdir(d)]
@@ -49,28 +49,34 @@ def process(input_dir, save_dir, species_filename, campaign_name, run_name=None,
     print("Sample: {}".format(run_name))
     print("- input directory: {}".format(input_dir))
 
-    # Data csv
-    cla_filename = glob(os.path.join(input_dir, "*.cla"))
+    # Image data
     lst_filename = glob(os.path.join(input_dir, "*.lst"))
-    if len(cla_filename) == 0 or len(lst_filename) == 0:
-        print("! No .cla or .lst file found in {} !".format(input_dir))
+    if len(lst_filename) == 0:
+        print("! No .lst file found in {}, skipping !".format(input_dir))
         return
-    cla_filename = cla_filename[0]
     lst_filename = lst_filename[0]
-    if os.path.getsize(cla_filename) == 0:
-        print("! .cla file is empty !")
-        return
+    df = parse_image_list(lst_filename)
 
-    print("- classification filename: {}".format(cla_filename))
+    # Classification data
+    cla_filename = glob(os.path.join(input_dir, "*.cla"))
+    if len(cla_filename) == 0 or os.path.getsize(cla_filename[0]) == 0:
+        print("- classification (.cla) file is missing or empty, all images will be placed in \"unlabeled\" class")
+        cls_dict = dict()
+    else:
+        cla_filename = cla_filename[0]
+        cls_dict = parse_classifications(cla_filename)
+        print("- classification filename: {}".format(cla_filename))
     print("- image data filename: {}".format(lst_filename))
     print("- output directory: {}".format(save_dir))
     print("Processing...")
 
-    cls_dict = get_class_list(cla_filename)
-    df = get_classifications(lst_filename)
-
     # Group the results by image
     df_grouped = df.groupby("collage_file")
+
+    # Extra info to save
+    df_cls = [""] * len(df)
+    df_campaign = [campaign_name] * len(df)
+    df_sample = [run_name] * len(df)
 
     # Process each image
     for filename, group in tqdm(df_grouped):
@@ -104,13 +110,17 @@ def process(input_dir, save_dir, species_filename, campaign_name, run_name=None,
             seg_im_filename = os.path.join(save_dir, cls, "{}_{}_{:08d}.png".format(campaign_name, run_name, id))
             os.makedirs(os.path.dirname(seg_im_filename), exist_ok=True)
             skio.imsave(seg_im_filename, seg_im)
+            df_cls[id-1] = cls
+    df.insert(0, 'campaign', df_campaign)
+    df.insert(1, 'sample', df_sample)
+    df.insert(3, 'class', df_cls)
     if save_csv:
         df.to_csv(os.path.join(save_dir, "{}_{}_data.csv".format(campaign_name, run_name)))
     print("Complete!")
     return df
 
 
-def get_class_list(filename):
+def parse_classifications(filename):
     cls_dict = OrderedDict()
     with open(filename, "r") as f:
         f.readline()
@@ -128,7 +138,7 @@ def get_class_list(filename):
     return cls_dict
 
 
-def get_classifications(filename):
+def parse_image_list(filename):
     field_names = []
     with open(filename, "r") as f:
         f.readline()
