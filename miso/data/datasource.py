@@ -52,7 +52,7 @@ class DataSource:
         self.mmap_directory = None
 
     def get_class_weights(self):
-        count = np.bincount(self.data_df['cls'])
+        count = np.bincount(self.data_df['cls']).astype(np.float64)
         weights = gmean(count) / count
         weights[weights < 0.1] = 0.1
         weights[weights > 10] = 10
