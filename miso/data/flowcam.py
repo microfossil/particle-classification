@@ -20,7 +20,7 @@ def process_dir(input_dir, save_dir, species_filename, campaign_name, save_csv=T
         # Last part of directory
         run_save_dir = os.path.join(save_dir, d[len(input_dir)+1:])
         run_name = d[len(input_dir)+1:].replace("/", "_").replace(" ", "_").replace("\\", "_")
-        df = process(d, run_save_dir, species_filename, campaign_name, run_name, save_csv=False)
+        df = process(d, run_save_dir, species_filename, campaign_name, run_name, save_csv=True)
         if df_master is None:
             df_master = df
         else:
