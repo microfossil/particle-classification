@@ -12,32 +12,40 @@ def produce(producer_queue, data, workers):
 
 def work(producer_queue, consumer_queue, transform_fn, transform_args):
     while True:
-        res = producer_queue.get()
-        if res is None:
+        try:
+            res = producer_queue.get()
+            if res is None:
+                producer_queue.task_done()
+                consumer_queue.put(None)
+                break
+            im = skio.imread(res[1])
+            if transform_fn is not None:
+                if transform_args is not None:
+                    im = transform_fn(im, *transform_args)
+                else:
+                    im = transform_fn(im)
+            consumer_queue.put((res[0], im))
             producer_queue.task_done()
-            consumer_queue.put(None)
+        except (KeyboardInterrupt, SystemExit):
+            print("- exiting worker")
             break
-        im = skio.imread(res[1])
-        if transform_fn is not None:
-            if transform_args is not None:
-                im = transform_fn(im, *transform_args)
-            else:
-                im = transform_fn(im)
-        consumer_queue.put((res[0], im))
-        producer_queue.task_done()
 
 
 def consume(consumer_queue, array, multiplier, num_workers):
     pbar = tqdm(total=len(array))
     while num_workers > 0:
-        res = consumer_queue.get()
-        if res is None:
+        try:
+            res = consumer_queue.get()
+            if res is None:
+                consumer_queue.task_done()
+                num_workers -= 1
+                continue
+            array[res[0]*multiplier:(res[0]+1)*multiplier] = res[1]
             consumer_queue.task_done()
-            num_workers -= 1
-            continue
-        array[res[0]*multiplier:(res[0]+1)*multiplier] = res[1]
-        consumer_queue.task_done()
-        pbar.update(multiplier)
+            pbar.update(multiplier)
+        except (KeyboardInterrupt, SystemExit):
+            print("- exiting consumer")
+            break
     pbar.close()
 
 
