@@ -50,7 +50,7 @@ def train_image_classification_model(tp: TrainingParameters):
                          tp.test_split,
                          tp.random_seed,
                          tp.memmap_directory)
-    ds.load(tp.batch_size)
+    ds.load()
     tp.num_classes = ds.num_classes
 
     # ------------------------------------------------------------------------------
