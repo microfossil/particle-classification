@@ -91,7 +91,7 @@ def plot_mislabelled(images,
                 ax.set_xlabel(xlabel)
             else:
                 kidx = idx[im_idx, i - 1]
-                image = images[kidx].astype(np.float32)
+                image = images[kidx].astype(np.uint8)
                 if images.shape[3] == 1:
                     ax.imshow(image[:, :, 0])
                 else:

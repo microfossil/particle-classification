@@ -21,9 +21,10 @@ from miso.models.factory import *
 def train_image_classification_model(tp: TrainingParameters):
     tf_version = int(tf.__version__[0])
 
-    physical_devices = tf.config.list_physical_devices('GPU')
-    for device in physical_devices:
-        tf.config.experimental.set_memory_growth(device, True)
+    if tf_version == 2:
+        physical_devices = tf.config.list_physical_devices('GPU')
+        for device in physical_devices:
+            tf.config.experimental.set_memory_growth(device, True)
 
     K.clear_session()
     tp.sanitise()
