@@ -13,13 +13,17 @@ from miso.training.training_result import TrainingResult
 from miso.stats.confusion_matrix import *
 from miso.stats.training import *
 from miso.training.augmentation import *
-from miso.deploy.saving import freeze, convert_to_inference_mode
+from miso.deploy.saving import freeze, convert_to_inference_mode, save_frozen_model_tf2
 from miso.deploy.model_info import ModelInfo
 from miso.models.factory import *
 
 
 def train_image_classification_model(tp: TrainingParameters):
     tf_version = int(tf.__version__[0])
+
+    physical_devices = tf.config.list_physical_devices('GPU')
+    for device in physical_devices:
+        tf.config.experimental.set_memory_growth(device, True)
 
     K.clear_session()
     tp.sanitise()
@@ -67,12 +71,12 @@ def train_image_classification_model(tp: TrainingParameters):
         model_head = generate_tl_head(tp.type, tp.img_shape)
         print("@ Calculating vectors")
         t = time.time()
-        vectors = model_head.predict(ds.images.data, batch_size=32, verbose=1)
-        # gen = ds.images.create_generator(32, shuffle=False, one_shot=True)
-        # if tf_version == 2:
-        #     vectors = model_head.predict(gen.to_tfdataset(), verbose=1)
-        # else:
-        #     vectors = model_head.predict_generator(gen.tf1_compat_generator(), steps=len(gen), verbose=1)
+        # vectors = model_head.predict(ds.images.data, batch_size=32, verbose=1)
+        gen = ds.images.create_generator(32, shuffle=False, one_shot=True)
+        if tf_version == 2:
+            vectors = model_head.predict(gen.to_tfdataset())
+        else:
+            vectors = model_head.predict_generator(gen.tf1_compat_generator(), steps=len(gen))
         print("! {}s elapsed, ({}/{} vectors)".format(time.time() - t, len(vectors), len(ds.images.data)))
 
         # Clear session
@@ -89,7 +93,7 @@ def train_image_classification_model(tp: TrainingParameters):
         print('-' * 80)
         print("@ Training")
         if tp.test_split > 0:
-            validation_data = (vectors[ds.test_idx], ds.cls[ds.test_idx])
+            validation_data = (vectors[ds.test_idx], ds.cls_onehot[ds.test_idx])
         else:
             validation_data = None
         if tp.use_class_weights is True:
@@ -215,7 +219,7 @@ def train_image_classification_model(tp: TrainingParameters):
     # ------------------------------------------------------------------------------
     # Results
     # ------------------------------------------------------------------------------
-    print("@ Generating results")
+    print("Evaluating model")
     now = datetime.datetime.now()
     save_dir = os.path.join(tp.output_dir, "{0}_{1:%Y%m%d-%H%M%S}".format(tp.name, now))
     os.makedirs(save_dir, exist_ok=True)
@@ -224,7 +228,7 @@ def train_image_classification_model(tp: TrainingParameters):
         y_true = ds.cls[ds.test_idx]
         gen = ds.test_generator(1, shuffle=False, one_shot=True)
         if tf_version == 2:
-            y_prob = model.predict_generator(gen.to_tfdataset(), len(gen))
+            y_prob = model.predict(gen.to_tfdataset())
         else:
             y_prob = model.predict_generator(gen.tf1_compat_generator(), len(gen))
         y_pred = y_prob.argmax(axis=1)
@@ -233,19 +237,22 @@ def train_image_classification_model(tp: TrainingParameters):
         y_prob = np.asarray([])
         y_pred = np.asarray([])
     # Inference time
-    print("@ Calculating inference time")
-    max_count = np.min([1000, len(ds.images.data)])
-    to_predict = np.copy(ds.images.data[0:max_count] / 255)
+    print("- calculating inference time:", end='')
+    max_count = np.min([128, len(ds.images.data)])
     inf_times = []
     for i in range(3):
+        gen = ds.images.create_generator(32, idxs=np.arange(max_count), shuffle=False, one_shot=True)
         start = time.time()
-        model.predict(to_predict)
+        if tf_version == 2:
+            model.predict(gen.to_tfdataset())
+        else:
+            model.predict_generator(gen.tf1_compat_generator(), len(gen))
         end = time.time()
         diff = (end - start) / max_count * 1000
         inf_times.append(diff)
-        print("@ - {}/3: {:.3f}ms".format(i + 1, diff))
+        print(" {:.3f}ms".format(i + 1, diff), end='')
     inference_time = np.median(inf_times)
-    print("@ - average: {}".format(inference_time))
+    print(", median: {}".format(inference_time))
     # Store results
     # - fix to make key same for tensorflow 1 and 2
     if 'accuracy' in history.history:
@@ -259,6 +266,9 @@ def train_image_classification_model(tp: TrainingParameters):
                             ds.cls_labels,
                             training_time,
                             inference_time)
+    print("- accuracy {:.2f}".format(result.accuracy * 100))
+    print("- mean precision {:.2f}".format(result.mean_precision * 100))
+    print("- mean recall {:.2f}".format(result.mean_recall * 100))
     # ------------------------------------------------------------------------------
     # Save results
     # ------------------------------------------------------------------------------
@@ -341,7 +351,12 @@ def train_image_classification_model(tp: TrainingParameters):
     inference_model = convert_to_inference_mode(model, lambda: generate(tp))
     # Freeze and save graph
     if tp.save_model is not None:
-        freeze(inference_model, os.path.join(save_dir, "model"))
+        if tf_version == 2:
+            tf.saved_model.save(inference_model, os.path.join(os.path.join(save_dir, "model_keras")))
+            save_frozen_model_tf2(inference_model, os.path.join(save_dir, "model"), "frozen_model.pb")
+        else:
+            tf.saved_model.save(inference_model, os.path.join(os.path.join(save_dir, "model_keras")))
+            freeze(inference_model, os.path.join(save_dir, "model"))
     info.save(os.path.join(save_dir, "model", "network_info.xml"))
     # ------------------------------------------------------------------------------
     # Clean up
@@ -370,11 +385,10 @@ if __name__ == "__main__":
     tp = TrainingParameters()
     tp.source = "https://1drv.ws/u/s!AiQM7sVIv7fah4MNU5lCmgcx4Ud_dQ?e=nPpUmT"
     # tp.source = "/Users/chaos/OneDrive/Datasets/DeepWeeds/"
-    tp.source = r"D:\Datasets\Weeds\DeepWeedsConverted"
-    tp.output_dir = "/Users/chaos/Documents/Development/Data/DeepWeeds/Training"
-    tp.output_dir = "..\\..\\test"
-    tp.output_dir = r"D:\Training\DeepWeeds"
+    tp.source = "https://1drv.ws/u/s!AiQM7sVIv7fak98qYjFt5GELIEqSMQ?e=EUiUIX"
+    tp.output_dir = "/media/ross/DATA/tmp"
     tp.type = "resnet50_cyclic_tl"
     tp.img_shape = [224, 224, 3]
     tp.img_type = 'rgb'
+    tp.save_mislabeled = False
     train_image_classification_model(tp)

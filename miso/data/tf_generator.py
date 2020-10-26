@@ -59,7 +59,7 @@ class TFGenerator(object):
         :return: generator of (data[i], cls[i])
         """
         i = 0
-        while i < len(self.data):
+        while i < len(self.idxs):
             idx = self.idxs[i]
             if self.labels is None:
                 yield self.data[idx]
