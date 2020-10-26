@@ -28,17 +28,20 @@ def train_image_classification_model(tp: TrainingParameters):
     print("| MISO Particle Classification Library                                         |")
     print("+------------------------------------------------------------------------------+")
     print("| To update library:                                                           |")
+    print("| - stable version:                                                            |")
+    print("| pip install -U miso2                                                         |")
+    print("| - development version:                                                       |")
     print("| pip install -U git+http://www.github.com/microfossil/particle-classification |")
     print("+------------------------------------------------------------------------------+")
-    print("@ Tensorflow version: {}".format(tf.__version__))
+    print("Tensorflow version: {}".format(tf.__version__))
     print()
-    print("@ Train information:")
-    print("@ Name: {}".format(tp.name))
-    print("@ Description: {}".format(tp.description))
-    print()
-    print("@ CNN type: {}".format(tp.type))
-    print("@ Image type: {}".format(tp.img_type))
-    print("@ Image shape: {}".format(tp.img_shape))
+    print("-" * 80)
+    print("Train information:")
+    print("- name: {}".format(tp.name))
+    print("- description: {}".format(tp.description))
+    print("- CNN type: {}".format(tp.type))
+    print("- image type: {}".format(tp.img_type))
+    print("- mage shape: {}".format(tp.img_shape))
     print()
 
     # Load data
@@ -63,28 +66,21 @@ def train_image_classification_model(tp: TrainingParameters):
 
         # Generate head model and predict vectors
         model_head = generate_tl_head(tp.type, tp.img_shape)
-        print("@ Calculating train vectors")
+        print("@ Calculating vectors")
         t = time.time()
-        gen = ds.train_generator(32, shuffle=False, one_shot=True)
-        if tf_version == 2:
-            train_vectors = model_head.predict(gen.to_tfdataset(), verbose=1)
-        else:
-            train_vectors = model_head.predict_generator(gen.tf1_compat_generator(), steps=len(gen), verbose=1)
-        print("! {}s elapsed, ({}/{} vectors)".format(time.time() - t, len(train_vectors), len(ds.images.data)))
-        print("@ Calculating test vectors")
-        t = time.time()
-        gen = ds.test_generator(32, shuffle=False, one_shot=True)
-        if tf_version == 2:
-            test_vectors = model_head.predict(gen.to_tfdataset(), verbose=1)
-        else:
-            test_vectors = model_head.predict_generator(gen.tf1_compat_generator(), steps=len(gen), verbose=1)
-        print("! {}s elapsed, ({} vectors)".format(time.time() - t, len(test_vectors)))
+        vectors = model_head.predict(ds.images.data, batch_size=32)
+        # gen = ds.images.create_generator(32, shuffle=False, one_shot=True)
+        # if tf_version == 2:
+        #     vectors = model_head.predict(gen.to_tfdataset(), verbose=1)
+        # else:
+        #     vectors = model_head.predict_generator(gen.tf1_compat_generator(), steps=len(gen), verbose=1)
+        print("! {}s elapsed, ({}/{} vectors)".format(time.time() - t, len(vectors), len(ds.images.data)))
 
         # Clear session
         K.clear_session()
 
         # Generate tail model and compile
-        model_tail = generate_tl_tail(tp.num_classes, [train_vectors.shape[-1], ])
+        model_tail = generate_tl_tail(tp.num_classes, [vectors.shape[-1], ])
         model_tail.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
         # Train
@@ -94,7 +90,7 @@ def train_image_classification_model(tp: TrainingParameters):
         print('-' * 80)
         print("@ Training")
         if tp.test_split > 0:
-            validation_data = (test_vectors, ds.test_cls_onehot)
+            validation_data = (vectors[ds.test_idx], ds.cls[ds.test_idx])
         else:
             validation_data = None
         if tp.use_class_weights is True:
@@ -106,7 +102,7 @@ def train_image_classification_model(tp: TrainingParameters):
             class_weights = None
         # log_dir = "C:\\logs\\profile\\" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
         # tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1, profile_batch=3)
-        history = model_tail.fit(x=train_vectors,
+        history = model_tail.fit(x=vectors[ds.train_idx],
                                  y=ds.cls_onehot[ds.train_idx],
                                  batch_size=tp.batch_size,
                                  epochs=tp.max_epochs,

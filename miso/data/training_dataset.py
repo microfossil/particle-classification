@@ -67,7 +67,10 @@ class TrainingDataset(object):
         self.class_weights = weights
 
         # Create split
-        self.train_idx, self.test_idx = train_test_split(np.arange(len(self.filenames.filenames)), stratify=self.cls, random_state=self.random_seed)
+        self.train_idx, self.test_idx = train_test_split(np.arange(len(self.filenames.filenames)),
+                                                         stratify=self.cls,
+                                                         test_size=self.test_split,
+                                                         random_state=self.random_seed)
 
         # Load images
         to_greyscale = False
