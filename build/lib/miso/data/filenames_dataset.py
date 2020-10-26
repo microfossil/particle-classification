@@ -115,20 +115,22 @@ def parse_xml(xml_filename):
     return filenames_dict
 
 
+class LabelledFilenames(NamedTuple):
+    filenames: list
+    cls: np.array
+
+
 class FilenamesDataset(object):
     def __init__(self,
                  source: str,
                  csv_idxs=(0, 1, 2),
                  has_classes=True):
         self.source = source
+        self.train: LabelledFilenames = None
+        self.test: LabelledFilenames = None
         self.csv_idxs = csv_idxs
         self.has_classes = has_classes
         self.cls_filenames = OrderedDict()
-        self.filenames = None
-        self.cls_labels = None
-        self.cls = None
-        self.cls_counts = None
-        self.num_classes = None
 
     def load(self, min_count=0, map_others=False):
         print('-' * 80)
@@ -184,4 +186,14 @@ class FilenamesDataset(object):
         self.cls = np.asarray([self.cls_labels.index(key) for key, val in self.cls_filenames.items() for v in val])
         self.cls_counts = np.asarray([len(val) for key, val in self.cls_filenames.items()])
         self.num_classes = len(self.cls_filenames.keys())
+
+    def split(self, test_size, stratify=True, seed=0):
+        if stratify:
+            stratify = self.cls
+        else:
+            stratify = None
+        train_filenames, test_filenames, train_cls, test_cls = \
+            train_test_split(self.filenames, self.cls, test_size=test_size, stratify=stratify, shuffle=True, random_state=seed)
+        self.train = LabelledFilenames(train_filenames, train_cls)
+        self.test = LabelledFilenames(test_filenames, test_cls)
 

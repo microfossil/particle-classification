@@ -193,7 +193,6 @@ def parse_image_list(filename):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Segment flowcam images into individual images sorted by class')
     parser.add_argument("-i", "--input", type=str, help="Input directory containing the flowcam data CSV file and collated images")
-    # parser.add_argument("-d", "--dir", type=str, help="Input directory containing directories of samples of the flowcam data CSV file and collated images")
     parser.add_argument("-s", "--species", type=str, required=True,  help="XLSX file with the map of class names to true species identifiers")
     parser.add_argument("-o", "--output", type=str, default=None, required=True,
                         help="Output directory to save images (if not used, images will be saved in a directory alongside the data CSV file)")
@@ -203,4 +202,4 @@ if __name__ == "__main__":
     print('-' * 80)
     print("Flowcam segmenter")
     print("- species XLSX: {}".format(args.species))
-    process_dir(args.input, args.output, args.species, args.name)
+    process_dir(args.input, args.output, args.species, args.name, True)

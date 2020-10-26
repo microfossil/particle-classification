@@ -1,6 +1,5 @@
 from typing import NamedTuple
 
-from sklearn.model_selection import train_test_split
 from tensorflow.keras.utils import to_categorical
 import numpy as np
 from scipy.stats.mstats import gmean
@@ -31,12 +30,9 @@ class TrainingDataset(object):
         self.random_seed = random_seed
         self.memmap_directory = memmap_directory
 
-        self.filenames: FilenamesDataset = None
-        self.images: ImageDataset = None
-        self.train_idx = None
-        self.test_idx = None
-        self.cls = None
-        self.cls_onehot = None
+        self.filenames_dataset: FilenamesDataset = None
+        self.train: ImageDataset = None
+        self.test: ImageDataset = None
         self.cls_labels = None
         self.num_classes = None
         self.class_weights = None
@@ -48,17 +44,14 @@ class TrainingDataset(object):
         weights[weights > 10] = 10
         return weights
 
-    def load(self):
+    def load(self, batch_size=32):
         # Get filenames
         fs = FilenamesDataset(self.source, has_classes=True)
         fs.load(self.min_count, self.map_others)
-        self.filenames = fs
-        self.cls = self.filenames.cls
+        fs.split(self.test_split, stratify=True, seed=self.random_seed)
+        self.filenames_dataset = fs
         self.cls_labels = fs.cls_labels
         self.num_classes = fs.num_classes
-
-        # Create one hot
-        self.cls_onehot = to_categorical(fs.cls)
 
         # Class weights
         weights = gmean(fs.cls_counts) / fs.cls_counts
@@ -66,29 +59,31 @@ class TrainingDataset(object):
         weights[weights > 10] = 10
         self.class_weights = weights
 
-        # Create split
-        self.train_idx, self.test_idx = train_test_split(np.arange(len(self.filenames.filenames)), stratify=self.cls, random_state=self.random_seed)
-
-        # Load images
+        # Load images and labels as onehot vectors
         to_greyscale = False
         if self.img_type == 'k' or self.img_type == 'greyscale':
             to_greyscale = True
+        self.train_cls = fs.train.cls
+        self.test_cls = fs.test.cls
+        self.train_cls_onehot = to_categorical(fs.train.cls)
+        self.test_cls_onehot = to_categorical(fs.test.cls)
         print(self.img_size)
-        self.images = ImageDataset(self.filenames.filenames,
-                                   self.cls_onehot,
-                                   transform_fn='resize_with_pad',
-                                   transform_args=[self.img_size, to_greyscale],
-                                   memmap_directory=self.memmap_directory)
-        self.images.load()
-
-    def train_generator(self, batch_size=32, shuffle=True, one_shot=False):
-        return self.images.create_generator(batch_size, self.train_idx, shuffle=shuffle, one_shot=one_shot)
-
-    def test_generator(self, batch_size=32, shuffle=True, one_shot=False):
-        return self.images.create_generator(batch_size, self.test_idx, shuffle=shuffle, one_shot=one_shot)
+        self.train = ImageDataset(fs.train.filenames,
+                                  self.train_cls_onehot,
+                                  transform_fn='resize_with_pad',
+                                  transform_args=[self.img_size, to_greyscale],
+                                  memmap_directory=self.memmap_directory)
+        self.train.load()
+        self.test = ImageDataset(fs.test.filenames,
+                                 self.test_cls_onehot,
+                                 transform_fn='resize_with_pad',
+                                 transform_args=[self.img_size, to_greyscale],
+                                 memmap_directory=self.memmap_directory)
+        self.test.load()
 
     def release(self):
-        self.images.release()
+        self.train.release()
+        self.test.release()
 
 
 if __name__ == "__main__":
@@ -104,7 +99,7 @@ if __name__ == "__main__":
                          random_seed=0,
                          memmap_directory=None)
     ts.load(32)
-    im = ts.images.data[0]
+    im = ts.train.data[0]
     plt.imshow(im)
     plt.title("shape: {}, max: {}, min: {}".format(im.shape, im.max(), im.min()))
     plt.show()
@@ -118,7 +113,7 @@ if __name__ == "__main__":
                          random_seed=0,
                          memmap_directory=None)
     ts.load(32)
-    im = ts.images.data[0]
+    im = ts.train.data[0]
     plt.imshow(im)
     plt.title("shape: {}, max: {}, min: {}".format(im.shape, im.max(), im.min()))
     plt.show()
@@ -132,7 +127,7 @@ if __name__ == "__main__":
                          random_seed=0,
                          memmap_directory=None)
     ts.load(32)
-    im = ts.images.data[0]
+    im = ts.train.data[0]
     plt.imshow(im)
     plt.title("shape: {}, max: {}, min: {}".format(im.shape, im.max(), im.min()))
     plt.show()

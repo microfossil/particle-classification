@@ -5,7 +5,7 @@ here = pathlib.Path(__file__).parent.resolve()
 long_description = (here / 'README.md').read_text(encoding='utf-8')
 
 setup(
-    name='miso',
+    name='miso2',
     version='2.3.0',
     description='Python scripts for training CNNs for particle classification',
     long_description=long_description,
@@ -33,8 +33,8 @@ setup(
                       'flask',
                       'tqdm',
                       'xlrd'],
-    url='',
-    license='',
+    url='https://github.com/microfossil/particle-classification',
+    license='MIT',
     project_urls={  # Optional
         'Source': 'https://github.com/microfossil/particle-classification',
         'Paper': 'https://jm.copernicus.org/articles/39/183/2020/',

@@ -34,12 +34,12 @@ def train_image_classification_model(tp: TrainingParameters):
     print()
     print("@ Train information:")
     print("@ Name: {}".format(tp.name))
-    print("@ Description: {}".format(tp.description))
-    print()
+    print("@ {}".format(tp.description))
+    print("")
     print("@ CNN type: {}".format(tp.type))
     print("@ Image type: {}".format(tp.img_type))
     print("@ Image shape: {}".format(tp.img_shape))
-    print()
+    print("")
 
     # Load data
     ds = TrainingDataset(tp.source,
@@ -60,24 +60,23 @@ def train_image_classification_model(tp: TrainingParameters):
         print('-' * 80)
         print("@ Transfer learning network training")
         start = time.time()
-
         # Generate head model and predict vectors
         model_head = generate_tl_head(tp.type, tp.img_shape)
         print("@ Calculating train vectors")
         t = time.time()
-        gen = ds.train_generator(32, shuffle=False, one_shot=True)
+        gen = ds.images.create_generator(32, shuffle=False, one_shot=True)
         if tf_version == 2:
-            train_vectors = model_head.predict(gen.to_tfdataset(), verbose=1)
+            train_vectors = model_head.predict(gen.to_tfdataset())
         else:
-            train_vectors = model_head.predict_generator(gen.tf1_compat_generator(), steps=len(gen), verbose=1)
-        print("! {}s elapsed, ({}/{} vectors)".format(time.time() - t, len(train_vectors), len(ds.images.data)))
+            train_vectors = model_head.predict_generator(gen.tf1_compat_generator(), steps=len(gen))
+        print("! {}s elapsed, ({} vectors)".format(time.time() - t, len(train_vectors)))
         print("@ Calculating test vectors")
         t = time.time()
-        gen = ds.test_generator(32, shuffle=False, one_shot=True)
+        gen = ds.test.create_generator(32, shuffle=False, one_shot=True)
         if tf_version == 2:
-            test_vectors = model_head.predict(gen.to_tfdataset(), verbose=1)
+            test_vectors = model_head.predict(gen.to_tfdataset())
         else:
-            test_vectors = model_head.predict_generator(gen.tf1_compat_generator(), steps=len(gen), verbose=1)
+            test_vectors = model_head.predict_generator(gen.tf1_compat_generator(), steps=len(gen))
         print("! {}s elapsed, ({} vectors)".format(time.time() - t, len(test_vectors)))
 
         # Clear session
@@ -90,7 +89,7 @@ def train_image_classification_model(tp: TrainingParameters):
         # Train
         alr_cb = AdaptiveLearningRateScheduler(nb_epochs=tp.alr_epochs,
                                                nb_drops=tp.alr_drops,
-                                               verbose=2)
+                                               verbose=1)
         print('-' * 80)
         print("@ Training")
         if tp.test_split > 0:
@@ -107,7 +106,7 @@ def train_image_classification_model(tp: TrainingParameters):
         # log_dir = "C:\\logs\\profile\\" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
         # tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1, profile_batch=3)
         history = model_tail.fit(x=train_vectors,
-                                 y=ds.cls_onehot[ds.train_idx],
+                                 y=ds.train_cls_onehot,
                                  batch_size=tp.batch_size,
                                  epochs=tp.max_epochs,
                                  verbose=0,
@@ -226,8 +225,8 @@ def train_image_classification_model(tp: TrainingParameters):
     os.makedirs(save_dir, exist_ok=True)
     # Accuracy
     if tp.test_split > 0:
-        y_true = ds.cls[ds.test_idx]
-        gen = ds.test_generator(1, shuffle=False, one_shot=True)
+        y_true = ds.test_cls
+        gen = ds.test.create_generator(1, shuffle=False, one_shot=True)
         if tf_version == 2:
             y_prob = model.predict_generator(gen.to_tfdataset(), len(gen))
         else:
@@ -323,6 +322,7 @@ def train_image_classification_model(tp: TrainingParameters):
         plt.close('all')
     # Mislabeled
     if tp.save_mislabeled is True:
+        # Needs fixing
         print("@ Estimating mislabeled")
         gen = ds.images.create_generator(1, shuffle=False, one_shot=True)
         if tf_version == 2:
@@ -333,9 +333,21 @@ def train_image_classification_model(tp: TrainingParameters):
         plt.show()
         plot_mislabelled(ds.images.data,
                          vectors,
-                         ds.cls,
+                         ds.train_cls,
                          ds.cls_labels,
-                         [os.path.basename(f) for f in ds.filenames.filenames],
+                         [os.path.basename(f) for f in ds.filenames.train.filenames],
+                         save_dir,
+                         11)
+        gen = ds.test.create_generator(1, shuffle=False, one_shot=True)
+        if tf_version == 2:
+            vectors = vector_model.predict(gen.to_tfdataset(), steps=len(gen))
+        else:
+            vectors = vector_model.predict_generator(gen.tf1_compat_generator(), steps=len(gen))
+        plot_mislabelled(ds.test.data,
+                         vectors,
+                         ds.test_cls,
+                         ds.cls_labels,
+                         [os.path.basename(f) for f in ds.filenames.test.filenames],
                          save_dir,
                          11)
     # ------------------------------------------------------------------------------

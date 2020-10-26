@@ -1,0 +1,21 @@
+Metadata-Version: 2.1
+Name: miso2
+Version: 2.3.0
+Summary: Python scripts for training CNNs for particle classification
+Home-page: https://github.com/microfossil/particle-classification
+Author: Ross Marchant
+Author-email: ross.g.marchant@gmail.com
+License: MIT
+Project-URL: Source, https://github.com/microfossil/particle-classification
+Project-URL: Paper, https://jm.copernicus.org/articles/39/183/2020/
+Description: # particle-classification
+        Python scripts for particle classification
+        
+        https://stackoverflow.com/questions/53779509/upload-failed-403-invalid-or-non-existent-authentication-information-python
+        
+Keywords: microfossil,cnn
+Platform: UNKNOWN
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Intended Audience :: Science/Research
+Requires-Python: >=3.6, <4
+Description-Content-Type: text/markdown
