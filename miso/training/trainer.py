@@ -251,7 +251,7 @@ def train_image_classification_model(tp: TrainingParameters):
         end = time.time()
         diff = (end - start) / max_count * 1000
         inf_times.append(diff)
-        print(" {:.3f}ms".format(i + 1, diff), end='')
+        print(" {:.3f}ms".format(diff), end='')
     inference_time = np.median(inf_times)
     print(", median: {}".format(inference_time))
     # Store results
