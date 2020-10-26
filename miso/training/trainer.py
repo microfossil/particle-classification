@@ -27,10 +27,9 @@ def train_image_classification_model(tp: TrainingParameters):
     print("+------------------------------------------------------------------------------+")
     print("| MISO Particle Classification Library                                         |")
     print("+------------------------------------------------------------------------------+")
-    print("| To update library:                                                           |")
-    print("| - stable version:                                                            |")
+    print("| Stable version:                                                              |")
     print("| pip install -U miso2                                                         |")
-    print("| - development version:                                                       |")
+    print("| Development version:                                                         |")
     print("| pip install -U git+http://www.github.com/microfossil/particle-classification |")
     print("+------------------------------------------------------------------------------+")
     print("Tensorflow version: {}".format(tf.__version__))
@@ -41,7 +40,7 @@ def train_image_classification_model(tp: TrainingParameters):
     print("- description: {}".format(tp.description))
     print("- CNN type: {}".format(tp.type))
     print("- image type: {}".format(tp.img_type))
-    print("- mage shape: {}".format(tp.img_shape))
+    print("- image shape: {}".format(tp.img_shape))
     print()
 
     # Load data
@@ -68,7 +67,7 @@ def train_image_classification_model(tp: TrainingParameters):
         model_head = generate_tl_head(tp.type, tp.img_shape)
         print("@ Calculating vectors")
         t = time.time()
-        vectors = model_head.predict(ds.images.data, batch_size=32)
+        vectors = model_head.predict(ds.images.data, batch_size=32, verbose=1)
         # gen = ds.images.create_generator(32, shuffle=False, one_shot=True)
         # if tf_version == 2:
         #     vectors = model_head.predict(gen.to_tfdataset(), verbose=1)
