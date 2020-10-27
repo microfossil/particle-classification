@@ -176,9 +176,9 @@ def train_image_classification_model(tp: TrainingParameters):
                                                verbose=1)
         if tp.test_split > 0:
             if tf_version == 2:
-                validation_data = ds.test.create_generator(tp.batch_size, one_shot=True)
+                validation_data = ds.test_generator(tp.batch_size, shuffle=False, one_shot=True)
             else:
-                validation_data = ds.test.create_generator(tp.batch_size, one_shot=False)
+                validation_data = ds.test_generator(tp.batch_size, shuffle=False, one_shot=True)
         else:
             validation_data = None
         if tp.use_class_weights is True:
