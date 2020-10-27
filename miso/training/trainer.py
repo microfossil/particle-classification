@@ -43,7 +43,7 @@ def train_image_classification_model(tp: TrainingParameters):
     print("Train information:")
     print("- name: {}".format(tp.name))
     print("- description: {}".format(tp.description))
-    print("- CNN type: {}".format(tp.type))
+    print("- CNN type: {}".format(tp.cnn_type))
     print("- image type: {}".format(tp.img_type))
     print("- image shape: {}".format(tp.img_shape))
     print()
@@ -63,13 +63,13 @@ def train_image_classification_model(tp: TrainingParameters):
     # ------------------------------------------------------------------------------
     # Transfer learning
     # ------------------------------------------------------------------------------
-    if tp.type.endswith('tl'):
+    if tp.cnn_type.endswith('tl'):
         print('-' * 80)
         print("@ Transfer learning network training")
         start = time.time()
 
         # Generate head model and predict vectors
-        model_head = generate_tl_head(tp.type, tp.img_shape)
+        model_head = generate_tl_head(tp.cnn_type, tp.img_shape)
         print("@ Calculating vectors")
         t = time.time()
         # vectors = model_head.predict(ds.images.data, batch_size=32, verbose=1)
@@ -120,13 +120,13 @@ def train_image_classification_model(tp: TrainingParameters):
         time.sleep(3)
 
         # Now we join the trained dense layers to the resnet model to create a model that accepts images as input
-        model_head = generate_tl_head(tp.type, tp.img_shape)
+        model_head = generate_tl_head(tp.cnn_type, tp.img_shape)
         outputs = model_tail(model_head.output)
         model = Model(model_head.input, outputs)
         model.summary()
 
         # Vector model
-        vector_model = generate_vector(model, tp.type)
+        vector_model = generate_vector(model, tp.cnn_type)
 
     # ------------------------------------------------------------------------------
     # Full network train
@@ -215,7 +215,7 @@ def train_image_classification_model(tp: TrainingParameters):
         time.sleep(3)
 
         # Vector model
-        vector_model = generate_vector(model, tp.type)
+        vector_model = generate_vector(model, tp.cnn_type)
 
     # ------------------------------------------------------------------------------
     # Results
@@ -280,7 +280,7 @@ def train_image_classification_model(tp: TrainingParameters):
         tp.description = "{}: {} model trained on data from {} ({} images in {} classes).\n" \
                          "Accuracy: {:.1f} (P: {:.1f}, R: {:.1f}, F1 {:.1f})".format(
             tp.name,
-            tp.type,
+            tp.cnn_type,
             tp.source,
             len(ds.filenames.filenames),
             len(ds.cls_labels),
@@ -296,7 +296,7 @@ def train_image_classification_model(tp: TrainingParameters):
     outputs["vector"] = vector_model.outputs[0]
     info = ModelInfo(tp.name,
                      tp.description,
-                     tp.type,
+                     tp.cnn_type,
                      now,
                      "frozen_model.pb",
                      tp,
@@ -391,7 +391,7 @@ if __name__ == "__main__":
     # tp.source = "/Users/chaos/OneDrive/Datasets/DeepWeeds/"
     tp.source = "https://1drv.ws/u/s!AiQM7sVIv7fak98qYjFt5GELIEqSMQ?e=EUiUIX"
     tp.output_dir = "/media/ross/DATA/tmp"
-    tp.type = "resnet50_cyclic_tl"
+    tp.cnn_type = "resnet50_cyclic_tl"
     tp.img_shape = [224, 224, 3]
     tp.img_type = 'rgb'
     tp.save_mislabeled = False

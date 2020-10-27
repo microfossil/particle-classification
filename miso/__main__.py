@@ -17,7 +17,7 @@ if __name__ == "__main__":
     tp = TrainingParameters()
     tp.source = args.input
     tp.output_dir = args.output
-    tp.type = args.type
+    tp.cnn_type = args.type
     tp.filters = args.filters
     tp.min_count = args.min_count
     tp.map_others = args.map_others

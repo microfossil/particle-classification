@@ -8,7 +8,7 @@ class TrainingParameters(object):
     # Network identifier
     name = ""
     description = "description"
-    type = "base_cyclic"
+    cnn_type = "base_cyclic"
 
     # Network hyper-parameters
     filters = 4
@@ -58,11 +58,11 @@ class TrainingParameters(object):
 
     def sanitise(self):
         # Make sure image shape is 3 for transfer learning
-        if self.type.endswith("tl"):
+        if self.cnn_type.endswith("tl"):
             self.img_shape[2] = 3
         # Make sure name is somewhat descriptive
         if self.name == "":
-            self.name = self.type
+            self.name = self.cnn_type
 
     def asdict(self):
         return OrderedDict((name, getattr(self, name)) for name in dir(self) if not name.startswith('__') and not callable(getattr(self, name)))
