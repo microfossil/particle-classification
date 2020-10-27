@@ -232,7 +232,10 @@ def train_image_classification_model(tp: TrainingParameters):
             y_prob = model.predict(gen.to_tfdataset())
         else:
             y_prob = model.predict_generator(gen.tf1_compat_generator(), len(gen))
+        print(y_prob)
         y_pred = y_prob.argmax(axis=1)
+        print(y_pred)
+        print(y_true)
     else:
         y_true = np.asarray([])
         y_prob = np.asarray([])
