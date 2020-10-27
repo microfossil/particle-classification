@@ -99,7 +99,7 @@ class TFGenerator(object):
         ds = ds.batch(self.batch_size).prefetch(self.prefetch)
         return ds
 
-    def tf1_compat_generator(self):
+    def tf1_compat_generator_error(self):
         # Get shapes from input data
         images = self.data
         onehots = self.labels
@@ -125,6 +125,33 @@ class TFGenerator(object):
         next_val = iterator.get_next()
         with K.get_session().as_default() as sess:
             sess.run(init_op, feed_dict={images_tensor: images, onehots_tensor: onehots})
+            while True:
+                inputs, labels = sess.run(next_val)
+                yield inputs, labels
+
+    def tf1_compat_generator(self):
+        if isinstance(self.labels, list) or np.ndim(self.labels) <= 1:
+            label_shape = None
+        else:
+            label_shape = self.labels[0].shape
+        if self.labels is not None:
+            ds = tf.data.Dataset.from_generator(self.generator,
+                                                output_types=(self.data_dtype, self.labels_dtype),
+                                                output_shapes=(self.data[0].shape, label_shape))
+        else:
+            ds = tf.data.Dataset.from_generator(self.generator,
+                                                output_types=self.data_dtype,
+                                                output_shapes=self.data[0].shape)
+        if self.map_fn is not None:
+            ds = ds.map(lambda x, y: (self.map_fn(x), y), num_parallel_calls=tf.data.experimental.AUTOTUNE)
+        if self.one_shot is False:
+            ds = ds.repeat()
+        ds = ds.batch(self.batch_size).prefetch(self.prefetch)
+        iterator = ds.make_initializable_iterator()
+        init_op = iterator.initializer
+        next_val = iterator.get_next()
+        with K.get_session().as_default() as sess:
+            sess.run(init_op)
             while True:
                 inputs, labels = sess.run(next_val)
                 yield inputs, labels
