@@ -1,4 +1,4 @@
-from multiprocessing import Process, cpu_count, JoinableQueue
+from multiprocessing import Process, cpu_count, Queue
 import skimage.io as skio
 import numpy as np
 from tqdm import tqdm
@@ -10,42 +10,31 @@ def produce(producer_queue, data, workers):
     [producer_queue.put(None) for i in range(workers)]
 
 
-def work(producer_queue, consumer_queue, transform_fn, transform_args):
+def work(producer_queue, consumer_queue, transform_fn):
     while True:
-        try:
-            res = producer_queue.get()
-            if res is None:
-                producer_queue.task_done()
-                consumer_queue.put(None)
-                break
-            im = skio.imread(res[1])
-            if transform_fn is not None:
-                if transform_args is not None:
-                    im = transform_fn(im, *transform_args)
-                else:
-                    im = transform_fn(im)
-            consumer_queue.put((res[0], im))
-            producer_queue.task_done()
-        except (KeyboardInterrupt, SystemExit):
-            print("- exiting worker")
+        res = producer_queue.get()
+        if res is None:
+            consumer_queue.put(None)
             break
+        im = skio.imread(res[1])
+        if transform_fn is not None:
+            if transform_args is not None:
+                im = transform_fn(im, *transform_args)
+            else:
+                im = transform_fn(im)
+        consumer_queue.put((res[0], im))
 
 
 def consume(consumer_queue, array, multiplier, num_workers):
     pbar = tqdm(total=len(array))
     while num_workers > 0:
-        try:
-            res = consumer_queue.get()
-            if res is None:
-                consumer_queue.task_done()
-                num_workers -= 1
-                continue
-            array[res[0]*multiplier:(res[0]+1)*multiplier] = res[1]
+        res = consumer_queue.get()
+        if res is None:
             consumer_queue.task_done()
-            pbar.update(multiplier)
-        except (KeyboardInterrupt, SystemExit):
-            print("- exiting consumer")
-            break
+            num_workers -= 1
+            continue
+        array[res[0]*multiplier:(res[0]+1)*multiplier] = res[1]
+        pbar.update(multiplier)
     pbar.close()
 
 
@@ -62,8 +51,8 @@ class ParallelImageLoader:
         self.transform_args = transform_args
         self.multiplier = multiplier
 
-        self.producer_queue = JoinableQueue()
-        self.consumer_queue = JoinableQueue(cpu_count() * 4)
+        self.producer_queue = Queue()
+        self.consumer_queue = Queue(cpu_count() * 4)
         self.workers = None
         self.NUMBER_OF_PROCESSES = cpu_count()
 
@@ -75,10 +64,15 @@ class ParallelImageLoader:
             range(self.NUMBER_OF_PROCESSES)]
         for w in self.workers:
             w.start()
-        produce(self.producer_queue, payload, self.NUMBER_OF_PROCESSES)
-        consume(self.consumer_queue, self.array, self.multiplier, self.NUMBER_OF_PROCESSES)
-        # self.producer_queue.join()
-        # self.consumer_queue.join()
+        try:
+            produce(self.producer_queue, payload, self.NUMBER_OF_PROCESSES)
+            consume(self.consumer_queue, self.array, self.multiplier, self.NUMBER_OF_PROCESSES)
+        except KeyboardInterrupt:
+            print("Keyboard interrupt...")
+        finally:
+            for w in self.workers:
+                w.terminate()
+                w.join()
         self.producer_queue.close()
         self.consumer_queue.close()
 

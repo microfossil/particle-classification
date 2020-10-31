@@ -22,14 +22,14 @@ def augmentation_complete_tf2(im_x,
     if divide_by_255:
         im_x = tf.divide(im_x, 255)
     shape = tf.shape(im_x)
-    # ROTATION
+    # Rotation
     if rotation is not None:
         if len(rotation) > 2:
             rotation_factor = tf.random.shuffle(tf.constant(rotation))[0]
         elif len(rotation) == 2:
             rotation_factor = tf.random.uniform([], rotation[0] / 180 * math.pi, rotation[1] / 180 * math.pi)
         im_x = tfa.image.rotate(im_x, rotation_factor, interpolation='BILINEAR')
-    # ZOOM
+    # Zoom
     if zoom is not None:
         if len(zoom) > 2:
             zoom_value = tf.random.shuffle(tf.constant(zoom))[0]
@@ -41,7 +41,7 @@ def augmentation_complete_tf2(im_x,
         im_x = \
             tf.image.crop_and_resize([im_x], boxes=zoom_factor, box_indices=tf.constant([0]), crop_size=tf.shape(im_x)[0:2],
                                      method='bilinear', extrapolation_value=0)[0]
-    # GAIN
+    # Gain
     if gain is not None:
         if len(gain) > 2:
             gain_factor = tf.random.shuffle(tf.constant(gain))[0]
@@ -49,7 +49,7 @@ def augmentation_complete_tf2(im_x,
             gain_factor = tf.random.uniform([], gain[0], gain[1])
     else:
         gain_factor = tf.constant(1.0)
-    # GAMMA
+    # Gamma
     if gamma is not None:
         if len(gamma) > 2:
             gamma_factor = tf.random.shuffle(tf.constant(gamma))[0]
@@ -59,7 +59,7 @@ def augmentation_complete_tf2(im_x,
         gamma_factor = tf.constant(1.0)
     if gamma is not None or gain is not None:
         im_x = tf.image.adjust_gamma(im_x, gamma_factor, gain_factor)
-    # NOISE
+    # Noise
     if gaussian_noise is not None:
         if len(gaussian_noise) > 2:
             gaussian_noise_factor = tf.random.shuffle(tf.constant(gaussian_noise))[0]
@@ -72,7 +72,7 @@ def augmentation_complete_tf2(im_x,
                                         seed=None,
                                         name=None)
         im_x = tf.add(im_x, noise_tensor)
-    # OFFSET
+    # Offset
     if bias is not None:
         if len(bias) > 2:
             bias_factor = tf.random.shuffle(tf.constant(bias))[0]

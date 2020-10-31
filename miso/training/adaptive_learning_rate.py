@@ -1,7 +1,7 @@
 import tensorflow as tf
 from tensorflow.keras.callbacks import Callback
 import tensorflow.keras.backend as K
-from miso.training.rolling_buffer import RollingBuffer
+from miso.utils.rolling_buffer import RollingBuffer
 import math
 import time
 
