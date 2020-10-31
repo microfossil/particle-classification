@@ -7,6 +7,7 @@ from collections import OrderedDict
 import tensorflow.keras.backend as K
 
 import miso
+from miso.data.tf_generator import TFGenerator
 
 from miso.data.training_dataset import TrainingDataset
 from miso.stats.mislabelling import plot_mislabelled
@@ -146,19 +147,19 @@ def train_image_classification_model(tp: TrainingParameters):
             rotation_range = [0, 360]
         else:
             rotation_range = None
-        augment_fn = aug_all_fn(rotation=rotation_range,
-                                gain=tp.aug_gain,
-                                gamma=tp.aug_gamma,
-                                zoom=tp.aug_zoom,
-                                gaussian_noise=tp.aug_gaussian_noise,
-                                bias=tp.aug_bias,
-                                random_crop=tp.aug_random_crop,
-                                divide=255)
         if tp.use_augmentation is True:
             print("@ - using augmentation")
+            augment_fn = aug_all_fn(rotation=rotation_range,
+                                    gain=tp.aug_gain,
+                                    gamma=tp.aug_gamma,
+                                    zoom=tp.aug_zoom,
+                                    gaussian_noise=tp.aug_gaussian_noise,
+                                    bias=tp.aug_bias,
+                                    random_crop=tp.aug_random_crop,
+                                    divide=255)
         else:
             print("@ - NOT using augmentation")
-            augment_fn = None
+            augment_fn = TFGenerator.map_fn_divide_255
 
         # Training
         alr_cb = AdaptiveLearningRateScheduler(nb_epochs=tp.alr_epochs,
