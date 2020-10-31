@@ -19,7 +19,7 @@ def aug_all_fn(rotation=(0, 360),
     def wrapper(im_x):
         im_x = tf.cast(im_x, tf.float32)
         if divide is not None:
-            im_x = tf.divide(im_x, tf.constant(divide))
+            im_x = tf.divide(im_x, tf.constant(divide, dtype=float32))
         im_x = aug_rotation(im_x, rotation)
         im_x = aug_zoom(im_x, zoom)
         im_x = aug_gain_gamma(im_x, gain, gamma)
