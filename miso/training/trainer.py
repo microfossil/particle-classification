@@ -6,6 +6,8 @@ import datetime
 from collections import OrderedDict
 import tensorflow.keras.backend as K
 
+import miso
+
 from miso.data.training_dataset import TrainingDataset
 from miso.stats.mislabelling import plot_mislabelled
 from miso.training.adaptive_learning_rate import AdaptiveLearningRateScheduler
@@ -31,7 +33,7 @@ def train_image_classification_model(tp: TrainingParameters):
     tp.sanitise()
 
     print("+------------------------------------------------------------------------------+")
-    print("| MISO Particle Classification Library  v{}                                 |".format(miso.__version__))
+    print("| MISO Particle Classification Library                                         |")
     print("+------------------------------------------------------------------------------+")
     print("| Stable version:                                                              |")
     print("| pip install -U miso2                                                         |")
@@ -39,7 +41,6 @@ def train_image_classification_model(tp: TrainingParameters):
     print("| pip install -U git+http://www.github.com/microfossil/particle-classification |")
     print("+------------------------------------------------------------------------------+")
     print("Tensorflow version: {}".format(tf.__version__))
-    print()
     print("-" * 80)
     print("Train information:")
     print("- name: {}".format(tp.name))
