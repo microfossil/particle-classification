@@ -4,6 +4,7 @@ import tensorflow as tf
 import tensorflow.keras as tfkeras
 from miso.layers._common_blocks import ChannelSE
 from miso.layers.cyclic import *
+from tensorflow.keras.layers import GlobalMaxPooling2D, GlobalAveragePooling2D
 
 
 # -------------------------------------------------------------------------
@@ -169,6 +170,7 @@ def ResNetCyclic(model_params,
                  include_top=True,
                  classes=1000,
                  weights='imagenet',
+                 global_pooling=None,
                  **kwargs):
     """Instantiates the ResNet, SEResNet architecture.
     Optionally loads weights pre-trained on ImageNet.
@@ -270,6 +272,11 @@ def ResNetCyclic(model_params,
     x = tfkeras.layers.BatchNormalization(name='bn1', **bn_params)(x)
     x = tfkeras.layers.Activation('relu', name='relu1')(x)
 
+    if global_pooling == 'avg':
+        x = GlobalAveragePooling2D()(x)
+    elif global_pooling == 'max':
+        x = GlobalMaxPooling2D()(x)
+
     x = tfkeras.layers.Flatten()(x)
     x = CyclicDensePool4(pool_op=tf.reduce_mean)(x)
     x = tfkeras.layers.Dropout(0.5)(x)
@@ -294,19 +301,19 @@ def ResNetCyclic(model_params,
 
 ResnetModelParameters = collections.namedtuple(
     'ModelParams',
-    ['model_name', 'filters', 'repetitions', 'residual_block', 'attention', 'use_cyclic']
+    ['model_name', 'filters', 'repetitions', 'residual_block', 'attention', 'use_cyclic', 'global_pooling']
 )
 
 MODELS_PARAMS = {
-    'resnet18': ResnetModelParameters('resnet18', 64, (2, 2, 2, 2), residual_conv_block, None, use_cyclic=True),
-    'resnet34': ResnetModelParameters('resnet34', 64, (3, 4, 6, 3), residual_conv_block, None, use_cyclic=True),
-    'resnet50': ResnetModelParameters('resnet50', 64, (3, 4, 6, 3), residual_bottleneck_block, None, use_cyclic=True),
+    'resnet18': ResnetModelParameters('resnet18', 64, (2, 2, 2, 2), residual_conv_block, None, use_cyclic=True, global_pooling=None),
+    'resnet34': ResnetModelParameters('resnet34', 64, (3, 4, 6, 3), residual_conv_block, None, use_cyclic=True, global_pooling=None),
+    'resnet50': ResnetModelParameters('resnet50', 64, (3, 4, 6, 3), residual_bottleneck_block, None, use_cyclic=True, global_pooling=None),
     'resnet101': ResnetModelParameters('resnet101', 64, (3, 4, 23, 3), residual_bottleneck_block, None,
-                                       use_cyclic=True),
+                                       use_cyclic=True, global_pooling=None),
     'resnet152': ResnetModelParameters('resnet152', 64, (3, 8, 36, 3), residual_bottleneck_block, None,
-                                       use_cyclic=True),
+                                       use_cyclic=True, global_pooling=None),
     'seresnet18': ResnetModelParameters('seresnet18', 64, (2, 2, 2, 2), residual_conv_block, ChannelSE,
-                                        use_cyclic=True),
+                                        use_cyclic=True, global_pooling=None),
     'seresnet34': ResnetModelParameters('seresnet34', 64, (3, 4, 6, 3), residual_conv_block, ChannelSE,
-                                        use_cyclic=True),
+                                        use_cyclic=True, global_pooling=None),
 }

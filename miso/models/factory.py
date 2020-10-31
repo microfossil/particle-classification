@@ -34,7 +34,8 @@ def generate(tp: TrainingParameters):
                                     [1 for i in range(blocks)],
                                     residual_conv_block,
                                     None,
-                                    use_cyclic=True)
+                                    use_cyclic=True,
+                                    global_pooling=tp.global_pooling)
         model = ResNetCyclic(resnet_params, tp.img_shape, None, True, tp.num_classes)
     # EfficientNet
     elif tp.cnn_type.lower().startswith(("efficientnet")):
