@@ -10,7 +10,7 @@ def produce(producer_queue, data, workers):
     [producer_queue.put(None) for i in range(workers)]
 
 
-def work(producer_queue, consumer_queue, transform_fn):
+def work(producer_queue, consumer_queue, transform_fn, transform_args):
     while True:
         res = producer_queue.get()
         if res is None:
