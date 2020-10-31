@@ -38,6 +38,7 @@ class TrainingParameters(object):
     aug_bias = None
     aug_zoom = [0.9, 1, 1.1]
     aug_gaussian_noise = None
+    aug_random_crop = None
 
     # Data
     source = None

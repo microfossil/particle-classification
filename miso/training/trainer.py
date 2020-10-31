@@ -13,6 +13,7 @@ from miso.training.training_result import TrainingResult
 from miso.stats.confusion_matrix import *
 from miso.stats.training import *
 from miso.training.augmentation import *
+from miso.training.tf_augmentation import aug_all_fn
 from miso.deploy.saving import freeze, convert_to_inference_mode, save_frozen_model_tf2
 from miso.deploy.model_info import ModelInfo
 from miso.models.factory import *
@@ -144,28 +145,16 @@ def train_image_classification_model(tp: TrainingParameters):
             rotation_range = [0, 360]
         else:
             rotation_range = None
-
-        def augment(x):
-            if tf_version == 2:
-                return augmentation_complete_tf2(x,
-                                                 rotation=rotation_range,
-                                                 gain=tp.aug_gain,
-                                                 gamma=tp.aug_gamma,
-                                                 zoom=tp.aug_zoom,
-                                                 gaussian_noise=tp.aug_gaussian_noise,
-                                                 bias=tp.aug_bias)
-            else:
-                return augmentation_complete(x,
-                                             rotation=rotation_range,
-                                             gain=tp.aug_gain,
-                                             gamma=tp.aug_gamma,
-                                             zoom=tp.aug_zoom,
-                                             gaussian_noise=tp.aug_gaussian_noise,
-                                             bias=tp.aug_bias)
-
+        augment_fn = aug_all_fn(rotation=rotation_range,
+                            gain=tp.aug_gain,
+                            gamma=tp.aug_gamma,
+                            zoom=tp.aug_zoom,
+                            gaussian_noise=tp.aug_gaussian_noise,
+                            bias=tp.aug_bias,
+                            random_crop=tp.aug_random_crop,
+                            divide=255)
         if tp.use_augmentation is True:
             print("@ - using augmentation")
-            augment_fn = augment
         else:
             print("@ - NOT using augmentation")
             augment_fn = None
@@ -190,14 +179,14 @@ def train_image_classification_model(tp: TrainingParameters):
         train_gen = ds.images.create_generator(tp.batch_size, map_fn=augment_fn)
         if tf_version == 2:
             history = model.fit(train_gen.to_tfdataset(),
-                                          steps_per_epoch=len(train_gen),
-                                          validation_data=validation_data.to_tfdataset(),
-                                          epochs=tp.max_epochs,
-                                          verbose=0,
-                                          shuffle=False,
-                                          max_queue_size=1,
-                                          class_weight=dict(enumerate(class_weights)),
-                                          callbacks=[alr_cb])
+                                steps_per_epoch=len(train_gen),
+                                validation_data=validation_data.to_tfdataset(),
+                                epochs=tp.max_epochs,
+                                verbose=0,
+                                shuffle=False,
+                                max_queue_size=1,
+                                class_weight=dict(enumerate(class_weights)),
+                                callbacks=[alr_cb])
         else:
             history = model.fit_generator(train_gen.tf1_compat_generator(),
                                           steps_per_epoch=len(train_gen),

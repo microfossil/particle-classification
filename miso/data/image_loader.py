@@ -30,7 +30,6 @@ def consume(consumer_queue, array, multiplier, num_workers):
     while num_workers > 0:
         res = consumer_queue.get()
         if res is None:
-            consumer_queue.task_done()
             num_workers -= 1
             continue
         array[res[0]*multiplier:(res[0]+1)*multiplier] = res[1]
