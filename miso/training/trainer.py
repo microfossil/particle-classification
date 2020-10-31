@@ -31,7 +31,7 @@ def train_image_classification_model(tp: TrainingParameters):
     tp.sanitise()
 
     print("+------------------------------------------------------------------------------+")
-    print("| MISO Particle Classification Library                                         |")
+    print("| MISO Particle Classification Library  v{}                                 |".format(miso.__version__))
     print("+------------------------------------------------------------------------------+")
     print("| Stable version:                                                              |")
     print("| pip install -U miso2                                                         |")
