@@ -91,7 +91,7 @@ def train_image_classification_model(tp: TrainingParameters):
         # Train
         alr_cb = AdaptiveLearningRateScheduler(nb_epochs=tp.alr_epochs,
                                                nb_drops=tp.alr_drops,
-                                               verbose=2)
+                                               verbose=1)
         print('-' * 80)
         print("@ Training")
         if tp.test_split > 0:
