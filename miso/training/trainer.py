@@ -147,13 +147,13 @@ def train_image_classification_model(tp: TrainingParameters):
         else:
             rotation_range = None
         augment_fn = aug_all_fn(rotation=rotation_range,
-                            gain=tp.aug_gain,
-                            gamma=tp.aug_gamma,
-                            zoom=tp.aug_zoom,
-                            gaussian_noise=tp.aug_gaussian_noise,
-                            bias=tp.aug_bias,
-                            random_crop=tp.aug_random_crop,
-                            divide=255)
+                                gain=tp.aug_gain,
+                                gamma=tp.aug_gamma,
+                                zoom=tp.aug_zoom,
+                                gaussian_noise=tp.aug_gaussian_noise,
+                                bias=tp.aug_bias,
+                                random_crop=tp.aug_random_crop,
+                                divide=255)
         if tp.use_augmentation is True:
             print("@ - using augmentation")
         else:
