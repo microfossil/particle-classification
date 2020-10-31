@@ -9,7 +9,7 @@ class TFGenerator(object):
                  idxs=None,
                  batch_size=32,
                  shuffle=True,
-                 prefetch=8,
+                 prefetch=4,
                  map_fn=None,
                  one_shot=False,
                  data_dtype=tf.float32,
