@@ -170,7 +170,6 @@ def ResNetCyclic(model_params,
                  include_top=True,
                  classes=1000,
                  weights='imagenet',
-                 global_pooling=None,
                  **kwargs):
     """Instantiates the ResNet, SEResNet architecture.
     Optionally loads weights pre-trained on ImageNet.
@@ -272,9 +271,9 @@ def ResNetCyclic(model_params,
     x = tfkeras.layers.BatchNormalization(name='bn1', **bn_params)(x)
     x = tfkeras.layers.Activation('relu', name='relu1')(x)
 
-    if global_pooling == 'avg':
+    if model_params.global_pooling == 'avg':
         x = GlobalAveragePooling2D()(x)
-    elif global_pooling == 'max':
+    elif model_params.global_pooling == 'max':
         x = GlobalMaxPooling2D()(x)
 
     x = tfkeras.layers.Flatten()(x)
