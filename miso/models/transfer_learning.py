@@ -86,6 +86,7 @@ TransferLearningParams = collections.namedtuple(
     ['model_func','prepro_func','default_input_shape']
 )
 
+
 TRANSFER_LEARNING_PARAMS = {
         'xception': TransferLearningParams(ka.xception.Xception, tf_prepro, [299,299,3]),
         'vgg16': TransferLearningParams(ka.vgg16.VGG16, default_prepro, [224,224,3]),

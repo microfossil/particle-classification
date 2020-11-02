@@ -12,6 +12,7 @@ from miso.data.tf_generator import TFGenerator
 from miso.data.training_dataset import TrainingDataset
 from miso.stats.mislabelling import plot_mislabelled
 from miso.training.adaptive_learning_rate import AdaptiveLearningRateScheduler
+from miso.training.parameters import MisoParameters
 from miso.training.training_result import TrainingResult
 from miso.stats.confusion_matrix import *
 from miso.stats.training import *
@@ -22,7 +23,7 @@ from miso.deploy.model_info import ModelInfo
 from miso.models.factory import *
 
 
-def train_image_classification_model(tp: TrainingParameters):
+def train_image_classification_model(tp: MisoParameters):
     tf_version = int(tf.__version__[0])
 
     if tf_version == 2:
@@ -31,6 +32,8 @@ def train_image_classification_model(tp: TrainingParameters):
             tf.config.experimental.set_memory_growth(device, True)
 
     K.clear_session()
+
+    # Clean the training parameters
     tp.sanitise()
 
     print("+------------------------------------------------------------------------------+")
@@ -46,33 +49,33 @@ def train_image_classification_model(tp: TrainingParameters):
     print("Train information:")
     print("- name: {}".format(tp.name))
     print("- description: {}".format(tp.description))
-    print("- CNN type: {}".format(tp.cnn_type))
-    print("- image type: {}".format(tp.img_type))
-    print("- image shape: {}".format(tp.img_shape))
+    print("- CNN type: {}".format(tp.cnn.id))
+    print("- image type: {}".format(tp.cnn.img_type))
+    print("- image shape: {}".format(tp.cnn.img_shape))
     print()
 
     # Load data
-    ds = TrainingDataset(tp.source,
-                         tp.img_shape,
-                         tp.img_type,
-                         tp.min_count,
-                         tp.map_others,
-                         tp.test_split,
-                         tp.random_seed,
-                         tp.memmap_directory)
+    ds = TrainingDataset(tp.dataset.source,
+                         tp.cnn.img_shape,
+                         tp.cnn.img_type,
+                         tp.dataset.min_count,
+                         tp.dataset.map_others,
+                         tp.dataset.test_split,
+                         tp.dataset.random_seed,
+                         tp.dataset.memmap_directory)
     ds.load()
-    tp.num_classes = ds.num_classes
+    tp.dataset.num_classes = ds.num_classes
 
     # ------------------------------------------------------------------------------
     # Transfer learning
     # ------------------------------------------------------------------------------
-    if tp.cnn_type.endswith('tl'):
+    if tp.cnn.id.endswith('tl'):
         print('-' * 80)
         print("@ Transfer learning network training")
         start = time.time()
 
         # Generate head model and predict vectors
-        model_head = generate_tl_head(tp.cnn_type, tp.img_shape)
+        model_head = generate_tl_head(tp.cnn.id, tp.cnn.img_shape)
         print("@ Calculating vectors")
         t = time.time()
         # vectors = model_head.predict(ds.images.data, batch_size=32, verbose=1)
@@ -87,20 +90,20 @@ def train_image_classification_model(tp: TrainingParameters):
         K.clear_session()
 
         # Generate tail model and compile
-        model_tail = generate_tl_tail(tp.num_classes, [vectors.shape[-1], ])
+        model_tail = generate_tl_tail(tp.dataset.num_classes, [vectors.shape[-1], ])
         model_tail.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
         # Train
-        alr_cb = AdaptiveLearningRateScheduler(nb_epochs=tp.alr_epochs,
-                                               nb_drops=tp.alr_drops,
+        alr_cb = AdaptiveLearningRateScheduler(nb_epochs=tp.training.alr_epochs,
+                                               nb_drops=tp.training.alr_drops,
                                                verbose=1)
         print('-' * 80)
         print("@ Training")
-        if tp.test_split > 0:
+        if tp.dataset.test_split > 0:
             validation_data = (vectors[ds.test_idx], ds.cls_onehot[ds.test_idx])
         else:
             validation_data = None
-        if tp.use_class_weights is True:
+        if tp.training.use_class_weights is True:
             class_weights = ds.class_weights
             print("@ Class weights: {}".format(class_weights))
             if tf_version == 2:
@@ -111,8 +114,8 @@ def train_image_classification_model(tp: TrainingParameters):
         # tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1, profile_batch=3)
         history = model_tail.fit(x=vectors[ds.train_idx],
                                  y=ds.cls_onehot[ds.train_idx],
-                                 batch_size=tp.batch_size,
-                                 epochs=tp.max_epochs,
+                                 batch_size=tp.training.batch_size,
+                                 epochs=tp.training.max_epochs,
                                  verbose=0,
                                  callbacks=[alr_cb],
                                  validation_data=validation_data,
@@ -123,13 +126,13 @@ def train_image_classification_model(tp: TrainingParameters):
         time.sleep(3)
 
         # Now we join the trained dense layers to the resnet model to create a model that accepts images as input
-        model_head = generate_tl_head(tp.cnn_type, tp.img_shape)
+        model_head = generate_tl_head(tp.cnn.id, tp.cnn.img_shape)
         outputs = model_tail(model_head.output)
         model = Model(model_head.input, outputs)
         model.summary()
 
         # Vector model
-        vector_model = generate_vector(model, tp.cnn_type)
+        vector_model = generate_vector(model, tp.cnn.id)
 
     # ------------------------------------------------------------------------------
     # Full network train
@@ -143,47 +146,47 @@ def train_image_classification_model(tp: TrainingParameters):
         model = generate(tp)
 
         # Augmentation
-        if tp.aug_rotation is True:
+        if tp.augmentation.rotation is True:
             rotation_range = [0, 360]
         else:
             rotation_range = None
-        if tp.use_augmentation is True:
+        if tp.augmentation.use_augmentation is True:
             print("@ - using augmentation")
             augment_fn = aug_all_fn(rotation=rotation_range,
-                                    gain=tp.aug_gain,
-                                    gamma=tp.aug_gamma,
-                                    zoom=tp.aug_zoom,
-                                    gaussian_noise=tp.aug_gaussian_noise,
-                                    bias=tp.aug_bias,
-                                    random_crop=tp.aug_random_crop,
+                                    gain=tp.augmentation.gain,
+                                    gamma=tp.augmentation.gamma,
+                                    zoom=tp.augmentation.zoom,
+                                    gaussian_noise=tp.augmentation.gaussian_noise,
+                                    bias=tp.augmentation.bias,
+                                    random_crop=tp.augmentation.random_crop,
                                     divide=255)
         else:
             print("@ - NOT using augmentation")
             augment_fn = TFGenerator.map_fn_divide_255
 
         # Training
-        alr_cb = AdaptiveLearningRateScheduler(nb_epochs=tp.alr_epochs,
-                                               nb_drops=tp.alr_drops,
+        alr_cb = AdaptiveLearningRateScheduler(nb_epochs=tp.training.alr_epochs,
+                                               nb_drops=tp.training.alr_drops,
                                                verbose=1)
-        if tp.test_split > 0:
+        if tp.dataset.test_split > 0:
             if tf_version == 2:
-                validation_data = ds.test_generator(tp.batch_size, shuffle=False, one_shot=True)
+                validation_data = ds.test_generator(tp.training.batch_size, shuffle=False, one_shot=True)
             else:
-                validation_data = ds.test_generator(tp.batch_size, shuffle=False, one_shot=True)
+                validation_data = ds.test_generator(tp.training.batch_size, shuffle=False, one_shot=True)
         else:
             validation_data = None
-        if tp.use_class_weights is True:
+        if tp.training.use_class_weights is True:
             class_weights = ds.class_weights
             print("@ Class weights: {}".format(class_weights))
         else:
             class_weights = None
 
-        train_gen = ds.images.create_generator(tp.batch_size, map_fn=augment_fn)
+        train_gen = ds.images.create_generator(tp.training.batch_size, map_fn=augment_fn)
         if tf_version == 2:
             history = model.fit(train_gen.to_tfdataset(),
                                 steps_per_epoch=len(train_gen),
                                 validation_data=validation_data.to_tfdataset(),
-                                epochs=tp.max_epochs,
+                                epochs=tp.training.max_epochs,
                                 verbose=0,
                                 shuffle=False,
                                 max_queue_size=1,
@@ -194,7 +197,7 @@ def train_image_classification_model(tp: TrainingParameters):
                                           steps_per_epoch=len(train_gen),
                                           validation_data=validation_data.tf1_compat_generator(),
                                           validation_steps=len(validation_data),
-                                          epochs=tp.max_epochs,
+                                          epochs=tp.training.max_epochs,
                                           verbose=0,
                                           shuffle=False,
                                           max_queue_size=1,
@@ -213,10 +216,10 @@ def train_image_classification_model(tp: TrainingParameters):
     # ------------------------------------------------------------------------------
     print("Evaluating model")
     now = datetime.datetime.now()
-    save_dir = os.path.join(tp.output_dir, "{0}_{1:%Y%m%d-%H%M%S}".format(tp.name, now))
+    save_dir = os.path.join(tp.output.output_dir, "{0}_{1:%Y%m%d-%H%M%S}".format(tp.name, now))
     os.makedirs(save_dir, exist_ok=True)
     # Accuracy
-    if tp.test_split > 0:
+    if tp.dataset.test_split > 0:
         y_true = ds.cls[ds.test_idx]
         gen = ds.test_generator(1, shuffle=False, one_shot=True)
         if tf_version == 2:
@@ -287,13 +290,13 @@ def train_image_classification_model(tp: TrainingParameters):
     outputs["vector"] = vector_model.outputs[0]
     info = ModelInfo(tp.name,
                      tp.description,
-                     tp.cnn_type,
+                     tp.cnn.id,
                      now,
                      "frozen_model.pb",
                      tp,
                      inputs,
                      outputs,
-                     tp.source,
+                     tp.dataset.source,
                      ds.cls_labels,
                      ds.filenames.cls_counts,
                      "rescale",
@@ -305,14 +308,14 @@ def train_image_classification_model(tp: TrainingParameters):
                      result.support,
                      result.epochs[-1],
                      training_time,
-                     tp.test_split,
+                     tp.dataset.test_split,
                      inference_time)
     # ------------------------------------------------------------------------------
     # Plots
     # ------------------------------------------------------------------------------
     # Plot the graphs
     # plot_model(model, to_file=os.path.join(save_dir, "model_plot.pdf"), show_shapes=True)
-    if tp.test_split > 0:
+    if tp.dataset.test_split > 0:
         print("@ Generating graphs")
         plot_loss_vs_epochs(history)
         plt.savefig(os.path.join(save_dir, "loss_vs_epoch.pdf"))
@@ -345,7 +348,7 @@ def train_image_classification_model(tp: TrainingParameters):
     # Convert if necessary to fix TF batch normalisation issues
     inference_model = convert_to_inference_mode(model, lambda: generate(tp))
     # Freeze and save graph
-    if tp.save_model is not None:
+    if tp.output.save_model is not None:
         if tf_version == 2:
             tf.saved_model.save(inference_model, os.path.join(os.path.join(save_dir, "model_keras")))
             save_frozen_model_tf2(inference_model, os.path.join(save_dir, "model"), "frozen_model.pb")
@@ -377,13 +380,14 @@ def train_image_classification_model(tp: TrainingParameters):
 #                              update_freq='epoch')
 
 if __name__ == "__main__":
-    tp = TrainingParameters()
-    tp.source = "https://1drv.ws/u/s!AiQM7sVIv7fah4MNU5lCmgcx4Ud_dQ?e=nPpUmT"
+    tp = MisoParameters()
+    # tp.dataset.source = "https://1drv.ws/u/s!AiQM7sVIv7fah4MNU5lCmgcx4Ud_dQ?e=nPpUmT"
     # tp.source = "/Users/chaos/OneDrive/Datasets/DeepWeeds/"
-    tp.source = "https://1drv.ws/u/s!AiQM7sVIv7fak98qYjFt5GELIEqSMQ?e=EUiUIX"
-    tp.output_dir = "/media/ross/DATA/tmp"
-    tp.cnn_type = "resnet50_cyclic_tl"
-    tp.img_shape = [224, 224, 3]
-    tp.img_type = 'rgb'
-    tp.save_mislabeled = False
+    tp.dataset.source = "https://1drv.ws/u/s!AiQM7sVIv7fak98qYjFt5GELIEqSMQ?e=EUiUIX"
+    tp.dataset.source = "https://1drv.ws/u/s!AiQM7sVIv7falskYWoLgrbSD2RC-Fg?e=4yhC9b"
+    tp.output.output_dir = "/media/ross/DATA/tmp"
+    tp.cnn.id = "base_cyclic"
+    tp.cnn.img_shape = None
+    tp.cnn.img_type = 'rgb'
+    tp.output.save_mislabeled = False
     train_image_classification_model(tp)

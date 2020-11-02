@@ -5,7 +5,7 @@ import os
 import numpy as np
 from collections import OrderedDict
 
-from miso.training.parameters import TrainingParameters
+from miso.training.parameters import MisoParameters
 
 
 class ModelInfo:
@@ -16,7 +16,7 @@ class ModelInfo:
                  type: str,
                  date: datetime.datetime,
                  protobuf: str,
-                 params: TrainingParameters,
+                 params: MisoParameters,
                  inputs: OrderedDict,
                  outputs: OrderedDict,
                  data_source_name: str,

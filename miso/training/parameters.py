@@ -1,46 +1,51 @@
 """
 Training parameters
 """
+import json
 from collections import OrderedDict
 
+from miso.models.transfer_learning import TRANSFER_LEARNING_PARAMS
 
-class TrainingParameters(object):
-    # Network identifier
-    name = ""
-    description = "description"
-    cnn_type = "base_cyclic"
 
-    # Network hyper-parameters
+class Parameters(object):
+    def asdict(self):
+        d = OrderedDict()
+        for name in dir(self):
+            v = getattr(self, name)
+            if not name.startswith('__') and not callable(v):
+                if isinstance(v, Parameters):
+                    d[name] = v.asdict()
+                else:
+                    d[name] = v
+        return d
+
+    def to_json(self):
+        d = self.asdict()
+        return json.dumps(d)
+
+
+class CNNParameters(Parameters):
+    id = "base_cyclic"
+    img_shape = [128, 128, 1]
+    img_type = "greyscale"
     filters = 4
+    blocks = None
+    dense = None
     use_batch_norm = True
     global_pooling = None
     activation = "relu"
 
-    # Network input
-    img_shape = [128, 128, 1]
-    img_type = "greyscale"
 
-    # Network output
-    num_classes = None
-
-    # Training parameters
+class TrainingParameters(Parameters):
     batch_size = 64
     max_epochs = 10000
     alr_epochs = 10
     alr_drops = 4
     use_class_weights = True
 
-    # Augmentation
-    use_augmentation = True
-    aug_rotation = True
-    aug_gain = [0.8, 1, 1.2]
-    aug_gamma = [0.5, 1, 2]
-    aug_bias = None
-    aug_zoom = [0.9, 1, 1.1]
-    aug_gaussian_noise = None
-    aug_random_crop = None
 
-    # Data
+class DatasetParameters(Parameters):
+    num_classes = None
     source = None
     min_count = 10
     test_split = 0.2
@@ -48,25 +53,69 @@ class TrainingParameters(object):
     random_seed = 0
     memmap_directory = None
 
-    # Output
+
+class AugmentationParameters(Parameters):
+    use_augmentation = True
+    rotation = [0, 360]
+    gain = [0.8, 1, 1.2]
+    gamma = [0.5, 1, 2]
+    bias = None
+    zoom = [0.9, 1, 1.1]
+    gaussian_noise = None
+    random_crop = None
+
+
+class OutputParameters(Parameters):
     output_dir = None
-    # save_model:
-    # - None:          Don't save
-    # - 'saved_model': Tensorflow saved model format (model and weights separately)
-    # - 'frozen':      Frozen model
-    save_model = 'frozen'
+    save_model = True
     save_mislabeled = True
 
-    def sanitise(self):
-        # Make sure image shape is 3 for transfer learning
-        if self.cnn_type.endswith("tl"):
-            self.img_shape[2] = 3
-        # Make sure name is somewhat descriptive
-        if self.name == "":
-            self.name = self.cnn_type
 
-    def asdict(self):
-        return OrderedDict((name, getattr(self, name)) for name in dir(self) if not name.startswith('__') and not callable(getattr(self, name)))
+class MisoParameters(Parameters):
+    name = ""
+    description = ""
+    cnn = CNNParameters()
+    dataset = DatasetParameters()
+    training = TrainingParameters()
+    augmentation = AugmentationParameters()
+    output = OutputParameters()
+
+    def sanitise(self):
+        if self.cnn.img_shape is None:
+            if self.cnn.id.endswith("_tl"):
+                shape = TRANSFER_LEARNING_PARAMS[self.cnn.id.split('_')[0]].default_input_shape
+            else:
+                if self.cnn.id.startswith("base_cyclic") or self.cnn.id.startswith("resnet_cyclic"):
+                    shape = [128, 128, 3]
+                else:
+                    shape = [224, 224, 3]
+                if self.cnn.img_type == 'rgb':
+                    shape[2] = 3
+                else:
+                    shape[2] = 1
+            self.cnn.img_shape = shape
+
+
+if __name__ == "__main__":
+    m = MisoParameters()
+    print(m.asdict())
+    print(m.to_json())
+
+    # def sanitise(self):
+    #
+    #     # Make sure image shape is 3 for transfer learning
+    #     if self.cnn_type.endswith("tl"):
+    #         self.img_shape[2] = 3
+    #     # Make sure name is somewhat descriptive
+    #     if self.name == "":
+    #         self.name = self.cnn_type
+
+
+def get_default_shape(cnn_type):
+    if cnn_type.endswith("_tl"):
+        return TRANSFER_LEARNING_PARAMS[cnn_type.split('_')[0]].default_input_shape
+    else:
+        return [224, 224, None]
 
 
 # def default_params():
