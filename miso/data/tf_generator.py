@@ -156,6 +156,12 @@ class TFGenerator(object):
                 inputs, labels = sess.run(next_val)
                 yield inputs, labels
 
+    def create(self):
+        if int(tf.__version__[0]) == 2:
+            return self.to_tfdataset()
+        else
+            return self.tf1_compat_generator()
+
     @staticmethod
     def map_fn_divide_255(t):
         t = tf.cast(t, tf.float32)

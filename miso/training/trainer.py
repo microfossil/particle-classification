@@ -22,6 +22,8 @@ from miso.deploy.saving import freeze, convert_to_inference_mode, save_frozen_mo
 from miso.deploy.model_info import ModelInfo
 from miso.models.factory import *
 
+import matplotlib.pyplot as plt
+
 
 def train_image_classification_model(tp: MisoParameters):
     tf_version = int(tf.__version__[0])
@@ -76,14 +78,15 @@ def train_image_classification_model(tp: MisoParameters):
 
         # Generate head model and predict vectors
         model_head = generate_tl_head(tp.cnn.id, tp.cnn.img_shape)
+
+        # Calculate vectors
         print("@ Calculating vectors")
         t = time.time()
-        # vectors = model_head.predict(ds.images.data, batch_size=32, verbose=1)
         gen = ds.images.create_generator(32, shuffle=False, one_shot=True)
         if tf_version == 2:
-            vectors = model_head.predict(gen.to_tfdataset())
+            vectors = model_head.predict(gen.create())
         else:
-            vectors = model_head.predict_generator(gen.tf1_compat_generator(), steps=len(gen))
+            vectors = model_head.predict_generator(gen.create(), steps=len(gen))
         print("! {}s elapsed, ({}/{} vectors)".format(time.time() - t, len(vectors), len(ds.images.data)))
 
         # Clear session
@@ -93,25 +96,31 @@ def train_image_classification_model(tp: MisoParameters):
         model_tail = generate_tl_tail(tp.dataset.num_classes, [vectors.shape[-1], ])
         model_tail.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
-        # Train
+        # Learning rate scheduler
         alr_cb = AdaptiveLearningRateScheduler(nb_epochs=tp.training.alr_epochs,
                                                nb_drops=tp.training.alr_drops,
                                                verbose=1)
         print('-' * 80)
-        print("@ Training")
+        print("Training")
+
+        # Validation data
         if tp.dataset.test_split > 0:
             validation_data = (vectors[ds.test_idx], ds.cls_onehot[ds.test_idx])
         else:
             validation_data = None
+
+        # Class weights
         if tp.training.use_class_weights is True:
             class_weights = ds.class_weights
-            print("@ Class weights: {}".format(class_weights))
+            print("- class weights: {}".format(class_weights))
             if tf_version == 2:
                 class_weights = dict(enumerate(class_weights))
         else:
             class_weights = None
         # log_dir = "C:\\logs\\profile\\" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
         # tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1, profile_batch=3)
+
+        # Train
         history = model_tail.fit(x=vectors[ds.train_idx],
                                  y=ds.cls_onehot[ds.train_idx],
                                  batch_size=tp.training.batch_size,
@@ -120,9 +129,10 @@ def train_image_classification_model(tp: MisoParameters):
                                  callbacks=[alr_cb],
                                  validation_data=validation_data,
                                  class_weight=class_weights)
+        # Elapsed time
         end = time.time()
         training_time = end - start
-        print("@ Training time: {}s".format(training_time))
+        print("- training time: {}s".format(training_time))
         time.sleep(3)
 
         # Now we join the trained dense layers to the resnet model to create a model that accepts images as input
@@ -139,7 +149,7 @@ def train_image_classification_model(tp: MisoParameters):
     # ------------------------------------------------------------------------------
     else:
         print('-' * 80)
-        print("@ Full network training")
+        print("Full network training")
         start = time.time()
 
         # Generate model
@@ -164,52 +174,54 @@ def train_image_classification_model(tp: MisoParameters):
             print("@ - NOT using augmentation")
             augment_fn = TFGenerator.map_fn_divide_255
 
-        # Training
+        # Learning rate scheduler
         alr_cb = AdaptiveLearningRateScheduler(nb_epochs=tp.training.alr_epochs,
                                                nb_drops=tp.training.alr_drops,
                                                verbose=1)
+
+        # Training generator
+        train_gen = ds.images.create_generator(tp.training.batch_size, map_fn=augment_fn)
+
+        # Validation generator
         if tp.dataset.test_split > 0:
             if tf_version == 2:
-                validation_data = ds.test_generator(tp.training.batch_size, shuffle=False, one_shot=True)
+                validation_gen = ds.test_generator(tp.training.batch_size, shuffle=False, one_shot=True)
             else:
-                validation_data = ds.test_generator(tp.training.batch_size, shuffle=False, one_shot=True)
+                validation_gen = ds.test_generator(tp.training.batch_size, shuffle=False, one_shot=True)
         else:
-            validation_data = None
+            validation_gen = None
+
+        # Class weights
         if tp.training.use_class_weights is True:
             class_weights = ds.class_weights
-            print("@ Class weights: {}".format(class_weights))
+            print("- class weights: {}".format(class_weights))
+            if tf_version == 2:
+                class_weights = dict(enumerate(class_weights))
         else:
             class_weights = None
 
-        train_gen = ds.images.create_generator(tp.training.batch_size, map_fn=augment_fn)
-        if tf_version == 2:
-            history = model.fit(train_gen.to_tfdataset(),
-                                steps_per_epoch=len(train_gen),
-                                validation_data=validation_data.to_tfdataset(),
-                                epochs=tp.training.max_epochs,
-                                verbose=0,
-                                shuffle=False,
-                                max_queue_size=1,
-                                class_weight=dict(enumerate(class_weights)),
-                                callbacks=[alr_cb])
-        else:
-            history = model.fit_generator(train_gen.tf1_compat_generator(),
-                                          steps_per_epoch=len(train_gen),
-                                          validation_data=validation_data.tf1_compat_generator(),
-                                          validation_steps=len(validation_data),
-                                          epochs=tp.training.max_epochs,
-                                          verbose=0,
-                                          shuffle=False,
-                                          max_queue_size=1,
-                                          class_weight=class_weights,
-                                          callbacks=[alr_cb])
+
+
+        # Train the model
+        history = model.fit_generator(train_gen.create(),
+                                      steps_per_epoch=len(train_gen),
+                                      validation_data=validation_gen.create(),
+                                      validation_steps=len(validation_gen),
+                                      epochs=tp.training.max_epochs,
+                                      verbose=0,
+                                      shuffle=False,
+                                      max_queue_size=1,
+                                      class_weight=class_weights,
+                                      callbacks=[alr_cb])
+
+        # Elapsed time
         end = time.time()
         training_time = end - start
         print("@ Training time: {}s".format(training_time))
         time.sleep(3)
 
         # Vector model
-        vector_model = generate_vector(model, tp.cnn_type)
+        vector_model = generate_vector(model, tp.cnn.id)
 
     # ------------------------------------------------------------------------------
     # Results
@@ -274,8 +286,8 @@ def train_image_classification_model(tp: MisoParameters):
         tp.description = "{}: {} model trained on data from {} ({} images in {} classes).\n" \
                          "Accuracy: {:.1f} (P: {:.1f}, R: {:.1f}, F1 {:.1f})".format(
             tp.name,
-            tp.cnn_type,
-            tp.source,
+            tp.cnn.id,
+            tp.dataset.source,
             len(ds.filenames.filenames),
             len(ds.cls_labels),
             result.accuracy * 100,
