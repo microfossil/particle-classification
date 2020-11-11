@@ -32,7 +32,8 @@ setup(
                       'dill',
                       'flask',
                       'tqdm',
-                      'xlrd'],
+                      'xlrd',
+                      'imblearn'],
     url='https://github.com/microfossil/particle-classification',
     license='MIT',
     project_urls={  # Optional

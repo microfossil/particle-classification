@@ -8,6 +8,9 @@ from miso.layers.cyclic import *
 
 # Input range is [0,1], not [0,255] as expected by keras
 # So all prepro are adjusted to this.
+from miso.layers.msoftmax import MSoftMaxLayer
+
+
 def tf_prepro(input_shape):
     # (x / 127.5) - 1
     inputs = Input(shape=input_shape)
@@ -62,21 +65,27 @@ def head(cnn_type, input_shape):
     return model
 
 
-def tail(num_classes, input_shape):
+def tail(num_classes, input_shape, dropout=(0.5, 0.5), use_msoftmax=False):
     inp = Input(shape=input_shape)
-    outp = Dropout(0.05)(inp)
+    outp = Dropout(dropout[0])(inp)
     outp = Dense(512, activation='relu')(outp)
-    outp = Dropout(0.15)(outp)
-    outp = Dense(512, activation='relu')(outp)
-    outp = Dense(num_classes, activation='softmax')(outp)
-    return Model(inp, outp)
+    outp = Dropout(dropout[1])(outp)
+    if use_msoftmax:
+        cls_inp = Input(shape=(num_classes,))
+        outp = Dense(512, activation=None)(outp)
+        outp = MSoftMaxLayer(num_classes)([outp, cls_inp])
+        return Model([inp, cls_inp], outp)
+    else:
+        outp = Dense(512, activation='relu')(outp)
+        outp = Dense(num_classes, activation='softmax')(outp)
+        return Model(inp, outp)
 
 
-def tail_vector(num_classes, input_shape):
+def tail_vector(num_classes, input_shape, dropout=(0.5, 0.50)):
     inp = Input(shape=input_shape)
-    outp = Dropout(0.05)(inp)
+    outp = Dropout(dropout[0])(inp)
     outp = Dense(512, activation='relu')(outp)
-    outp = Dropout(0.15)(outp)
+    outp = Dropout(dropout[1])(outp)
     outp = Dense(512, activation='relu')(outp)
     return Model(inp, outp)
 

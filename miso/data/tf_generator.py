@@ -1,6 +1,8 @@
 import numpy as np
 import tensorflow as tf
 import tensorflow.keras.backend as K
+from imblearn.over_sampling import RandomOverSampler
+
 
 class TFGenerator(object):
     def __init__(self,
@@ -12,6 +14,7 @@ class TFGenerator(object):
                  prefetch=4,
                  map_fn=None,
                  one_shot=False,
+                 oversample=False,
                  data_dtype=tf.float32,
                  labels_dtype=tf.float32):
         """
@@ -37,6 +40,7 @@ class TFGenerator(object):
         self.prefetch = prefetch
         self.map_fn = map_fn
         self.one_shot = one_shot
+        self.oversample = oversample
         if idxs is None:
             self.idxs = np.arange(len(data))
         else:
@@ -52,6 +56,17 @@ class TFGenerator(object):
     def on_epoch_end(self):
         if self.shuffle:
             np.random.shuffle(self.idxs)
+        if self.oversample:
+            rus = RandomOverSampler()
+            x, y = rus.fit_sample(self.idxs.reshape(-1, 1), self.labels[self.idxs])
+            x = x.flatten()
+            y = y.flatten()
+            np.random.shuffle(x)
+            np.random.shuffle(y)
+            for i in range(100):
+                print(y[i], end="")
+            print()
+            self.idxs = x
 
     def generator(self):
         """
@@ -159,7 +174,7 @@ class TFGenerator(object):
     def create(self):
         if int(tf.__version__[0]) == 2:
             return self.to_tfdataset()
-        else
+        else:
             return self.tf1_compat_generator()
 
     @staticmethod

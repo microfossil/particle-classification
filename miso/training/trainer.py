@@ -5,11 +5,13 @@ import time
 import datetime
 from collections import OrderedDict
 import tensorflow.keras.backend as K
+from sklearn.manifold import TSNE
 
 import miso
 from miso.data.tf_generator import TFGenerator
 
 from miso.data.training_dataset import TrainingDataset
+from miso.stats.embedding import plot_embedding
 from miso.stats.mislabelling import plot_mislabelled
 from miso.training.adaptive_learning_rate import AdaptiveLearningRateScheduler
 from miso.training.parameters import MisoParameters
@@ -23,6 +25,7 @@ from miso.deploy.model_info import ModelInfo
 from miso.models.factory import *
 
 import matplotlib.pyplot as plt
+import pandas as pd
 
 
 def train_image_classification_model(tp: MisoParameters):
@@ -73,14 +76,14 @@ def train_image_classification_model(tp: MisoParameters):
     # ------------------------------------------------------------------------------
     if tp.cnn.id.endswith('tl'):
         print('-' * 80)
-        print("@ Transfer learning network training")
+        print("Transfer learning network training")
         start = time.time()
 
         # Generate head model and predict vectors
         model_head = generate_tl_head(tp.cnn.id, tp.cnn.img_shape)
 
         # Calculate vectors
-        print("@ Calculating vectors")
+        print("- calculating vectors")
         t = time.time()
         gen = ds.images.create_generator(32, shuffle=False, one_shot=True)
         if tf_version == 2:
@@ -93,7 +96,7 @@ def train_image_classification_model(tp: MisoParameters):
         K.clear_session()
 
         # Generate tail model and compile
-        model_tail = generate_tl_tail(tp.dataset.num_classes, [vectors.shape[-1], ])
+        model_tail = generate_tl_tail(tp.dataset.num_classes, [vectors.shape[-1], ], tp.cnn.use_msoftmax)
         model_tail.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
         # Learning rate scheduler
@@ -105,7 +108,10 @@ def train_image_classification_model(tp: MisoParameters):
 
         # Validation data
         if tp.dataset.test_split > 0:
-            validation_data = (vectors[ds.test_idx], ds.cls_onehot[ds.test_idx])
+            if tp.cnn.use_msoftmax:
+                validation_data = ((vectors[ds.test_idx], ds.cls_onehot[ds.test_idx]), ds.cls_onehot[ds.test_idx])
+            else:
+                validation_data = (vectors[ds.test_idx], ds.cls_onehot[ds.test_idx])
         else:
             validation_data = None
 
@@ -121,7 +127,7 @@ def train_image_classification_model(tp: MisoParameters):
         # tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1, profile_batch=3)
 
         # Train
-        history = model_tail.fit(x=vectors[ds.train_idx],
+        history = model_tail.fit(x=(vectors[ds.train_idx], ds.cls_onehot[ds.train_idx]),
                                  y=ds.cls_onehot[ds.train_idx],
                                  batch_size=tp.training.batch_size,
                                  epochs=tp.training.max_epochs,
@@ -161,7 +167,7 @@ def train_image_classification_model(tp: MisoParameters):
         else:
             rotation_range = None
         if tp.augmentation.use_augmentation is True:
-            print("@ - using augmentation")
+            print("- using augmentation")
             augment_fn = aug_all_fn(rotation=rotation_range,
                                     gain=tp.augmentation.gain,
                                     gamma=tp.augmentation.gamma,
@@ -171,7 +177,7 @@ def train_image_classification_model(tp: MisoParameters):
                                     random_crop=tp.augmentation.random_crop,
                                     divide=255)
         else:
-            print("@ - NOT using augmentation")
+            print("- NOT using augmentation")
             augment_fn = TFGenerator.map_fn_divide_255
 
         # Learning rate scheduler
@@ -327,25 +333,27 @@ def train_image_classification_model(tp: MisoParameters):
     # ------------------------------------------------------------------------------
     # Plot the graphs
     # plot_model(model, to_file=os.path.join(save_dir, "model_plot.pdf"), show_shapes=True)
+    print("-" * 80)
+    print("Plotting")
     if tp.dataset.test_split > 0:
-        print("@ Generating graphs")
+        print("- loss")
         plot_loss_vs_epochs(history)
         plt.savefig(os.path.join(save_dir, "loss_vs_epoch.pdf"))
+        print("- accuracy")
         plot_accuracy_vs_epochs(history)
         plt.savefig(os.path.join(save_dir, "accuracy_vs_epoch.pdf"))
+        print("- confusion matrix")
         plot_confusion_accuracy_matrix(y_true, y_pred, ds.cls_labels)
         plt.savefig(os.path.join(save_dir, "confusion_matrix.pdf"))
         plt.close('all')
     # Mislabeled
-    if tp.save_mislabeled is True:
-        print("@ Estimating mislabeled")
-        gen = ds.images.create_generator(1, shuffle=False, one_shot=True)
-        if tf_version == 2:
-            vectors = vector_model.predict(gen.to_tfdataset(), steps=len(gen))
-        else:
-            vectors = vector_model.predict_generator(gen.tf1_compat_generator(), steps=len(gen))
-        plt.matshow(vectors)
-        plt.show()
+    print("- mislabeled")
+    gen = ds.images.create_generator(1, shuffle=False, one_shot=True)
+    if tf_version == 2:
+        vectors = vector_model.predict(gen.create(), steps=len(gen))
+    else:
+        vectors = vector_model.predict_generator(gen.create(), steps=len(gen))
+    if tp.output.save_mislabeled is True:
         plot_mislabelled(ds.images.data,
                          vectors,
                          ds.cls,
@@ -353,10 +361,26 @@ def train_image_classification_model(tp: MisoParameters):
                          [os.path.basename(f) for f in ds.filenames.filenames],
                          save_dir,
                          11)
+    # t-SNE
+    print("- t-SNE")
+    idx = np.random.choice(range(len(vectors)), np.min((len(vectors), 1024)), replace=False)
+    vec_subset = vectors[idx]
+    X = TSNE(n_components=2).fit_transform(vec_subset)
+    counts = np.unique(ds.cls, return_counts=True)
+    print(counts)
+    counts = np.unique(ds.cls[idx], return_counts=True)
+    print(counts)
+    plot_embedding(X, ds.cls[idx], ds.num_classes)
+    plt.savefig(os.path.join(save_dir, "tsne.pdf"))
+    # Legend
+    info = pd.DataFrame({"index": range(ds.num_classes), "label": ds.cls_labels})
+    info.to_csv(os.path.join(save_dir, "legend.csv"), sep=';')
+
     # ------------------------------------------------------------------------------
     # Save model (has to be last thing it seems)
     # ------------------------------------------------------------------------------
-    print("@ Saving model")
+    print('-' * 80)
+    print("Saving model")
     # Convert if necessary to fix TF batch normalisation issues
     inference_model = convert_to_inference_mode(model, lambda: generate(tp))
     # Freeze and save graph
@@ -371,9 +395,9 @@ def train_image_classification_model(tp: MisoParameters):
     # ------------------------------------------------------------------------------
     # Clean up
     # ------------------------------------------------------------------------------
-    print("@ Cleaning up")
+    print("- cleaning up")
     ds.release()
-    print("@ Complete")
+    print("- complete")
     print('-' * 80)
     print()
     return model, vector_model, ds, result
@@ -397,9 +421,12 @@ if __name__ == "__main__":
     # tp.source = "/Users/chaos/OneDrive/Datasets/DeepWeeds/"
     tp.dataset.source = "https://1drv.ws/u/s!AiQM7sVIv7fak98qYjFt5GELIEqSMQ?e=EUiUIX"
     tp.dataset.source = "https://1drv.ws/u/s!AiQM7sVIv7falskYWoLgrbSD2RC-Fg?e=4yhC9b"
-    tp.output.output_dir = "/media/ross/DATA/tmp"
-    tp.cnn.id = "base_cyclic"
+    tp.dataset.source = "/media/mar76c/DATA/Datasets/Pollen/pollen_all"
+    tp.output.output_dir = "/media/mar76c/DATA/TrainedNetworks/"
+    tp.cnn.id = "efficientnetb0"
+    tp.training.batch_size = 32
     tp.cnn.img_shape = None
     tp.cnn.img_type = 'rgb'
+    tp.cnn.use_msoftmax = False
     tp.output.save_mislabeled = False
     train_image_classification_model(tp)

@@ -34,6 +34,7 @@ class CNNParameters(Parameters):
     use_batch_norm = True
     global_pooling = None
     activation = "relu"
+    use_msoftmax = False
 
 
 class TrainingParameters(Parameters):
@@ -81,6 +82,8 @@ class MisoParameters(Parameters):
     output = OutputParameters()
 
     def sanitise(self):
+        if self.name == "":
+            self.name = self.dataset.source.replace("http://","").replace("https://", "").replace("/","-").replace("\\","-") + "_" + self.cnn.id
         if self.cnn.img_shape is None:
             if self.cnn.id.endswith("_tl"):
                 shape = TRANSFER_LEARNING_PARAMS[self.cnn.id.split('_')[0]].default_input_shape
@@ -94,6 +97,8 @@ class MisoParameters(Parameters):
                 else:
                     shape[2] = 1
             self.cnn.img_shape = shape
+        if self.name == "":
+            self.name = self.dataset.source.replace("http://", "").replace("https://", "").replace("/", "-").replace("\\", "-") + "_" + self.cnn.id + "_" + self.cnn.img_shape + "_" + self.cnn.img_type
 
 
 if __name__ == "__main__":

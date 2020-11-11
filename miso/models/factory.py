@@ -62,7 +62,7 @@ def generate(tp: MisoParameters):
     # Uses the pre-trained ResNet50 network from tf.keras with full image input and augmentation
     # Has a lambda layer to rescale the normal image input (range 0-1) to that expected by the pre-trained network
     elif tp.cnn.id.endswith('tl'):
-        model_head, model_tail = generate_tl(tp.cnn.id, tp.dataset.num_classes, tp.cnn.img_shape)
+        model_head, model_tail = generate_tl(tp.cnn.id, tp.dataset.num_classes, tp.cnn.img_shape, tp.cnn.use_msoftmax)
         outputs = model_tail(model_head.outputs[0])
         model = Model(model_head.inputs[0], outputs)
         return model
@@ -84,14 +84,14 @@ def generate_tl_head(cnn_type, img_shape):
     return model_head
 
 
-def generate_tl_tail(num_classes, input_shape):
-    model_tail = tail(num_classes, input_shape)
+def generate_tl_tail(num_classes, input_shape, use_msoftmax):
+    model_tail = tail(num_classes, input_shape, use_msoftmax=use_msoftmax)
     return model_tail
 
 
-def generate_tl(cnn_type, num_classes, img_shape):
+def generate_tl(cnn_type, num_classes, img_shape, use_msoftmax):
     model_head = generate_tl_head(cnn_type, img_shape)
-    model_tail = tail(num_classes, [model_head.layers[-1].output.shape[-1], ])
+    model_tail = tail(num_classes, [model_head.layers[-1].output.shape[-1], ], use_msoftmax=use_msoftmax)
     return model_head, model_tail
 
 
@@ -112,5 +112,6 @@ def generate_vector(model, cnn_type):
         vector_layer = model.get_layer(index=-2)
         vector_model = Model(model.inputs, vector_layer.output)
     else:
-        raise ValueError("The network type, {}, is not valid".format(cnn_type))
+        vector_layer = model.get_layer(index=-2)
+        vector_model = Model(model.inputs, vector_layer.output)
     return vector_model
