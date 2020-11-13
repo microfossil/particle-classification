@@ -6,11 +6,13 @@ from tensorflow.keras.models import Model
 
 from miso.layers import cyclic
 
+import
+
 
 def base_cyclic(input_shape,
                 nb_classes,
                 filters=4,
-                blocks=4,
+                blocks=None,
                 dropout=0.5,
                 dense=512,
                 conv_padding='same',
@@ -26,7 +28,7 @@ def base_cyclic(input_shape,
     #     'center': True,
     #     'scale': True,
     # }
-
+    blocks = int(np.log2(input_shape[0]) - 2)
     inputs = Input(shape=input_shape)
     x = cyclic.CyclicSlice4()(inputs)
     for i in range(blocks):

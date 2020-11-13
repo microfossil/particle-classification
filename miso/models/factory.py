@@ -1,4 +1,6 @@
 import math
+from collections import namedtuple
+
 from miso.models.transfer_learning import *
 from miso.models.base_cyclic import *
 from miso.models.resnet_cyclic import *
@@ -11,11 +13,14 @@ except ImportError:
     pass
 
 
+ModelInfo = namedtuple("ModelInfo", "factory_fn default_size default_colour")
+
+
 def generate(tp: MisoParameters):
     # Base Cyclic
     # Create at CEREGE specifically for foraminifera by adding cyclic layers
     if tp.cnn.id.startswith("base_cyclic"):
-        blocks = int(math.log2(tp.cnn.img_shape[0]) - 2)
+
         model = base_cyclic(input_shape=tp.cnn.img_shape,
                             nb_classes=tp.dataset.num_classes,
                             filters=tp.cnn.filters,
