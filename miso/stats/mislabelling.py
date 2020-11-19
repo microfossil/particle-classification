@@ -107,7 +107,7 @@ def plot_mislabelled(images,
         # Tight layout looks nicer
         fig.tight_layout()
         plt.suptitle(image_names[im_idx])
-        print("@ Actual: {} Predicted: {} - {}".format(cls_labels[cls[im_idx]], cls_labels[pred_cls[im_idx]], image_names[im_idx]))
+        print("- actual: {} predicted: {} - {}".format(cls_labels[cls[im_idx]], cls_labels[pred_cls[im_idx]], image_names[im_idx]))
         os.makedirs(os.path.join(output_dir,
                                  "mislabeled",
                                  cls_labels[cls[im_idx]]).replace("\\", "/"),

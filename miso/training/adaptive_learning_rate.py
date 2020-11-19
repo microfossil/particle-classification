@@ -93,7 +93,7 @@ class AdaptiveLearningRateScheduler(Callback):
 
         if self.finished is True:
             self.model.stop_training = True
-            print("@Training finished".format(self.model.optimizer.lr))
+            print("Training finished".format(self.model.optimizer.lr))
 
     def on_batch_end(self, batch, logs=None):
         self.current_batch += 1
@@ -113,4 +113,4 @@ class AdaptiveLearningRateScheduler(Callback):
                     self.finished = True
                     return
                 if self.verbose == 1:
-                    print("@Learning rate dropped ({}/{})".format(self.drop_count, self.nb_drops))
+                    print("Learning rate dropped ({}/{})".format(self.drop_count, self.nb_drops))

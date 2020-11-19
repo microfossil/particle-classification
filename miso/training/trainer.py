@@ -145,7 +145,6 @@ def train_image_classification_model(tp: MisoParameters):
         model_head = generate_tl_head(tp.cnn.id, tp.cnn.img_shape)
         outputs = model_tail(model_head.output)
         model = Model(model_head.input, outputs)
-        model.summary()
 
         # Vector model
         vector_model = generate_vector(model, tp.cnn.id)
@@ -223,7 +222,8 @@ def train_image_classification_model(tp: MisoParameters):
         # Elapsed time
         end = time.time()
         training_time = end - start
-        print("@ Training time: {}s".format(training_time))
+        print()
+        print("Total training time: {}s".format(training_time))
         time.sleep(3)
 
         # Vector model
@@ -232,6 +232,7 @@ def train_image_classification_model(tp: MisoParameters):
     # ------------------------------------------------------------------------------
     # Results
     # ------------------------------------------------------------------------------
+    print('-' * 80)
     print("Evaluating model")
     now = datetime.datetime.now()
     save_dir = os.path.join(tp.output.output_dir, "{0}_{1:%Y%m%d-%H%M%S}".format(tp.name, now))
@@ -373,8 +374,8 @@ def train_image_classification_model(tp: MisoParameters):
     plot_embedding(X, ds.cls[idx], ds.num_classes)
     plt.savefig(os.path.join(save_dir, "tsne.pdf"))
     # Legend
-    info = pd.DataFrame({"index": range(ds.num_classes), "label": ds.cls_labels})
-    info.to_csv(os.path.join(save_dir, "legend.csv"), sep=';')
+    cls_info = pd.DataFrame({"index": range(ds.num_classes), "label": ds.cls_labels})
+    cls_info.to_csv(os.path.join(save_dir, "legend.csv"), sep=';')
 
     # ------------------------------------------------------------------------------
     # Save model (has to be last thing it seems)

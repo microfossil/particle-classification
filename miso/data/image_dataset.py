@@ -39,11 +39,12 @@ class ImageDataset(DatasetBase):
         self.hash_data = ["ImageDataset", self.filenames, str(self.dtype), self.unique_id]
 
         print('-' * 80)
-        print("@ Image dataset, id: {}".format(self.get_hash_id()))
+        print("Loading images")
+        print("- id: {}".format(self.get_hash_id()))
         if memmap_directory is None:
-            print("@ - stored in RAM")
+            print("- stored in RAM")
         else:
-            print("@ - will be saved at {}".format(self.memmap_file))
+            print("- stored on disk a {}".format(self.memmap_file))
 
         if img_size is None:
             # Read first image to see the size

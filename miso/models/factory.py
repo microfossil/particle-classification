@@ -13,7 +13,7 @@ except ImportError:
     pass
 
 
-ModelInfo = namedtuple("ModelInfo", "factory_fn default_size default_colour")
+FactoryModelParameters = namedtuple("FactoryModelParameters", "factory_fn default_size default_colour")
 
 
 def generate(tp: MisoParameters):
@@ -24,7 +24,7 @@ def generate(tp: MisoParameters):
         model = base_cyclic(input_shape=tp.cnn.img_shape,
                             nb_classes=tp.dataset.num_classes,
                             filters=tp.cnn.filters,
-                            blocks=blocks,
+                            blocks=tp.cnn.blocks,
                             dropout=0.5,
                             dense=512,
                             conv_activation=tp.cnn.activation,
@@ -80,7 +80,6 @@ def generate(tp: MisoParameters):
                            classes=tp.cnn.num_classes)
 
     model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
-    model.summary()
     return model
 
 

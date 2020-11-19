@@ -132,7 +132,8 @@ class FilenamesDataset(object):
 
     def load(self, min_count=0, map_others=False):
         print('-' * 80)
-        print("@ Parsing {}".format(self.source))
+        print("Parsing source {}".format(self.source))
+        print()
 
         # Load filenames
         if self.source.endswith(".xml"):
@@ -153,19 +154,20 @@ class FilenamesDataset(object):
             raise ValueError("! Did not find any images")
 
         # Display how many found
+        print("Classes:")
         for k, v in self.cls_filenames.items():
-            print("@ - {}: {} images".format(k, len(v)))
+            print("- {}: {} images".format(k, len(v)))
         print()
 
         # Apply min count
         if min_count > 0:
-            print("@ Removing classes with less than {} images".format(min_count))
+            print("Removing classes with less than {} images:".format(min_count))
             others = []
             filtered_cls_filenames = OrderedDict()
             for k, v in self.cls_filenames.items():
                 if len(v) < min_count:
                     others.extend(v)
-                    print("@ - {}: {} images".format(k, len(v)))
+                    print("- {}: {} images".format(k, len(v)))
                 else:
                     filtered_cls_filenames[k] = v
             # Put in others
@@ -174,7 +176,7 @@ class FilenamesDataset(object):
                     filtered_cls_filenames['others'].extend(others)
                 else:
                     filtered_cls_filenames['others'] = others
-                print("@ These images have been places in the 'others' class, {} total".format(len(others)))
+                print("- these images have been places in the 'others' class, {} total".format(len(others)))
             self.cls_filenames = filtered_cls_filenames
             print()
 
