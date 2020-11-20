@@ -21,6 +21,11 @@ from miso.training.model_factory import *
 
 def train_image_classification_model(params: dict, data_source: DataSource = None):
     K.clear_session()
+
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
+    session = tf.Session(config=config)
+
     intro()
 
     # Params -----------------------------------------------------------------------------------------------------------
@@ -116,6 +121,10 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
         print("! {}s elapsed".format(time.time() - t))
         # Clear
         K.clear_session()
+
+        config = tf.ConfigProto()
+        config.gpu_options.allow_growth = True
+        session = tf.Session(config=config)
 
         data_source.train_vectors = train_vector
         data_source.test_vectors = test_vector
