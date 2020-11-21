@@ -118,4 +118,5 @@ def find_and_save_mislabelled(images,
                                  "mislabeled",
                                  cls_labels[cls[im_idx]],
                                  image_names[im_idx]).replace("\\", "/"))
+        plt.clf()
         plt.close('all')
