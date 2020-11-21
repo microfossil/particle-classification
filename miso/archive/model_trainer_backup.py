@@ -5,7 +5,7 @@ import time
 import datetime
 from collections import OrderedDict
 
-from miso.stats.mislabelling import plot_mislabelled
+from miso.stats.mislabelling import find_and_save_mislabelled
 from miso.archive.datasource import DataSource
 from miso.archive.generators import *
 from miso.utils.wave import *
@@ -51,7 +51,7 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
     seed = params.get('seed')
 
     # Output
-    output_dir = params.get('output_dir')
+    output_dir = params.get('save_dir')
 
     # Data -------------------------------------------------------------------------------------------------------------
     # print("@Loading images...")
@@ -363,13 +363,13 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
     if params['save_mislabeled'] is True:
         print("@Estimating mislabeled")
         vectors = vector_model.predict(data_source.images)
-        plot_mislabelled(data_source.images,
-                         vectors,
-                         data_source.cls,
-                         data_source.cls_labels,
-                         data_source.get_short_filenames(),
-                         save_dir,
-                         11)
+        find_and_save_mislabelled(data_source.images,
+                                  vectors,
+                                  data_source.cls,
+                                  data_source.cls_labels,
+                                  data_source.get_short_filenames(),
+                                  save_dir,
+                                  11)
 
     # Save model -------------------------------------------------------------------------------------------------------
     print("@Saving model")

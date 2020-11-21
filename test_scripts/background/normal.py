@@ -29,7 +29,7 @@ params['data_min_count'] = 40
 params['use_class_weights'] = True
 params['data_split'] = 0.2
 
-params['output_dir'] = r'output/'
+params['save_dir'] = r'output/'
 params['save_model'] = 'frozen'
 params['save_mislabeled'] = False
 

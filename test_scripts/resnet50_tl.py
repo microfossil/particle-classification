@@ -56,7 +56,7 @@ params['use_class_weights'] = True
 params['data_split'] = 0.25
 
 # Output
-params['output_dir'] = r'output/'
+params['save_dir'] = r'output/'
 params['save_model'] = 'frozen'
 params['save_mislabeled'] = True
 

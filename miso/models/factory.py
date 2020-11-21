@@ -67,7 +67,7 @@ def generate(tp: MisoParameters):
     # Uses the pre-trained ResNet50 network from tf.keras with full image input and augmentation
     # Has a lambda layer to rescale the normal image input (range 0-1) to that expected by the pre-trained network
     elif tp.cnn.id.endswith('tl'):
-        model_head, model_tail = generate_tl(tp.cnn.id, tp.dataset.num_classes, tp.cnn.img_shape, tp.cnn.use_msoftmax)
+        model_head, model_tail = generate_tl(tp.cnn.id, tp.dataset.num_classes, tp.cnn.img_shape, tp.cnn.use_asoftmax)
         outputs = model_tail(model_head.outputs[0])
         model = Model(model_head.inputs[0], outputs)
         return model

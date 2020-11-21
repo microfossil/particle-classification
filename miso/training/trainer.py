@@ -7,18 +7,14 @@ from collections import OrderedDict
 import tensorflow.keras.backend as K
 from sklearn.manifold import TSNE
 
-import miso
 from miso.data.tf_generator import TFGenerator
-
 from miso.data.training_dataset import TrainingDataset
 from miso.stats.embedding import plot_embedding
-from miso.stats.mislabelling import plot_mislabelled
+from miso.stats.mislabelling import find_and_save_mislabelled
 from miso.training.adaptive_learning_rate import AdaptiveLearningRateScheduler
-from miso.training.parameters import MisoParameters
 from miso.training.training_result import TrainingResult
 from miso.stats.confusion_matrix import *
 from miso.stats.training import *
-from miso.training.augmentation import *
 from miso.training.tf_augmentation import aug_all_fn
 from miso.deploy.saving import freeze, convert_to_inference_mode, save_frozen_model_tf2
 from miso.deploy.model_info import ModelInfo
@@ -31,24 +27,29 @@ import pandas as pd
 def train_image_classification_model(tp: MisoParameters):
     tf_version = int(tf.__version__[0])
 
+    # Hack to make RTX cards work
     if tf_version == 2:
         physical_devices = tf.config.list_physical_devices('GPU')
         for device in physical_devices:
             tf.config.experimental.set_memory_growth(device, True)
+    else:
+        config = tf.ConfigProto()
+        config.gpu_options.allow_growth = True
+        session = tf.Session(config=config)
 
     K.clear_session()
 
     # Clean the training parameters
     tp.sanitise()
 
-    print("+------------------------------------------------------------------------------+")
-    print("| MISO Particle Classification Library                                         |")
-    print("+------------------------------------------------------------------------------+")
-    print("| Stable version:                                                              |")
-    print("| pip install -U miso2                                                         |")
-    print("| Development version:                                                         |")
-    print("| pip install -U git+http://www.github.com/microfossil/particle-classification |")
-    print("+------------------------------------------------------------------------------+")
+    print("+---------------------------------------------------------------------------+")
+    print("| MISO Particle Classification Library                                      |")
+    print("+---------------------------------------------------------------------------+")
+    print("| Stable version:                                                           |")
+    print("| pip install miso2                                                         |")
+    print("| Development version:                                                      |")
+    print("| pip install git+http://www.github.com/microfossil/particle-classification |")
+    print("+---------------------------------------------------------------------------+")
     print("Tensorflow version: {}".format(tf.__version__))
     print("-" * 80)
     print("Train information:")
@@ -65,7 +66,7 @@ def train_image_classification_model(tp: MisoParameters):
                          tp.cnn.img_type,
                          tp.dataset.min_count,
                          tp.dataset.map_others,
-                         tp.dataset.test_split,
+                         tp.dataset.val_split,
                          tp.dataset.random_seed,
                          tp.dataset.memmap_directory)
     ds.load()
@@ -96,7 +97,7 @@ def train_image_classification_model(tp: MisoParameters):
         K.clear_session()
 
         # Generate tail model and compile
-        model_tail = generate_tl_tail(tp.dataset.num_classes, [vectors.shape[-1], ], tp.cnn.use_msoftmax)
+        model_tail = generate_tl_tail(tp.dataset.num_classes, [vectors.shape[-1], ], tp.cnn.use_asoftmax)
         model_tail.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
         # Learning rate scheduler
@@ -106,35 +107,48 @@ def train_image_classification_model(tp: MisoParameters):
         print('-' * 80)
         print("Training")
 
-        # Validation data
-        if tp.dataset.test_split > 0:
-            if tp.cnn.use_msoftmax:
-                validation_data = ((vectors[ds.test_idx], ds.cls_onehot[ds.test_idx]), ds.cls_onehot[ds.test_idx])
-            else:
-                validation_data = (vectors[ds.test_idx], ds.cls_onehot[ds.test_idx])
-        else:
-            validation_data = None
+        # Training generator
+        train_gen = TFGenerator(vectors,
+                                ds.cls_onehot,
+                                ds.train_idx,
+                                tp.training.batch_size,
+                                shuffle=True,
+                                one_shot=False,
+                                oversample=tp.training.use_class_balancing)
 
-        # Class weights
-        if tp.training.use_class_weights is True:
+        # Validation generator
+        if tp.dataset.val_split > 0:
+            val_gen = TFGenerator(vectors,
+                                         ds.cls_onehot,
+                                         ds.test_idx,
+                                         tp.training.batch_size,
+                                         shuffle=False,
+                                         one_shot=True)
+        else:
+            val_gen = None
+
+        # Class weights (only if over sampling is not used)
+        if tp.training.use_class_weights is True and tp.training.use_class_balancing is False:
             class_weights = ds.class_weights
             print("- class weights: {}".format(class_weights))
             if tf_version == 2:
                 class_weights = dict(enumerate(class_weights))
         else:
             class_weights = None
-        # log_dir = "C:\\logs\\profile\\" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-        # tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1, profile_batch=3)
+        if tp.training.use_class_balancing:
+            print("- class balancing using random over sampling")
 
         # Train
-        history = model_tail.fit(x=(vectors[ds.train_idx], ds.cls_onehot[ds.train_idx]),
-                                 y=ds.cls_onehot[ds.train_idx],
-                                 batch_size=tp.training.batch_size,
-                                 epochs=tp.training.max_epochs,
-                                 verbose=0,
-                                 callbacks=[alr_cb],
-                                 validation_data=validation_data,
-                                 class_weight=class_weights)
+        history = model_tail.fit_generator(train_gen.create(),
+                                           steps_per_epoch=len(train_gen),
+                                           validation_data=val_gen.create(),
+                                           validation_steps=len(val_gen),
+                                           epochs=tp.training.max_epochs,
+                                           verbose=0,
+                                           shuffle=False,
+                                           max_queue_size=1,
+                                           class_weight=class_weights,
+                                           callbacks=[alr_cb])
         # Elapsed time
         end = time.time()
         training_time = end - start
@@ -188,16 +202,13 @@ def train_image_classification_model(tp: MisoParameters):
         train_gen = ds.images.create_generator(tp.training.batch_size, map_fn=augment_fn)
 
         # Validation generator
-        if tp.dataset.test_split > 0:
-            if tf_version == 2:
-                validation_gen = ds.test_generator(tp.training.batch_size, shuffle=False, one_shot=True)
-            else:
-                validation_gen = ds.test_generator(tp.training.batch_size, shuffle=False, one_shot=True)
+        if tp.dataset.val_split > 0:
+            val_gen = ds.test_generator(tp.training.batch_size, shuffle=False, one_shot=True)
         else:
-            validation_gen = None
+            val_gen = None
 
         # Class weights
-        if tp.training.use_class_weights is True:
+        if tp.training.use_class_weights is True and tp.training.use_class_balancing is False:
             class_weights = ds.class_weights
             print("- class weights: {}".format(class_weights))
             if tf_version == 2:
@@ -205,13 +216,11 @@ def train_image_classification_model(tp: MisoParameters):
         else:
             class_weights = None
 
-
-
         # Train the model
         history = model.fit_generator(train_gen.create(),
                                       steps_per_epoch=len(train_gen),
-                                      validation_data=validation_gen.create(),
-                                      validation_steps=len(validation_gen),
+                                      validation_data=val_gen.create(),
+                                      validation_steps=len(val_gen),
                                       epochs=tp.training.max_epochs,
                                       verbose=0,
                                       shuffle=False,
@@ -235,10 +244,10 @@ def train_image_classification_model(tp: MisoParameters):
     print('-' * 80)
     print("Evaluating model")
     now = datetime.datetime.now()
-    save_dir = os.path.join(tp.output.output_dir, "{0}_{1:%Y%m%d-%H%M%S}".format(tp.name, now))
+    save_dir = os.path.join(tp.output.save_dir, "{0}_{1:%Y%m%d-%H%M%S}".format(tp.name, now))
     os.makedirs(save_dir, exist_ok=True)
     # Accuracy
-    if tp.dataset.test_split > 0:
+    if tp.dataset.val_split > 0:
         y_true = ds.cls[ds.test_idx]
         gen = ds.test_generator(1, shuffle=False, one_shot=True)
         if tf_version == 2:
@@ -301,6 +310,7 @@ def train_image_classification_model(tp: MisoParameters):
             result.mean_precision() * 100,
             result.mean_recall() * 100,
             result.mean_f1_score() * 100)
+
     # Create model info with all the parameters
     inputs = OrderedDict()
     inputs["image"] = model.inputs[0]
@@ -327,7 +337,7 @@ def train_image_classification_model(tp: MisoParameters):
                      result.support,
                      result.epochs[-1],
                      training_time,
-                     tp.dataset.test_split,
+                     tp.dataset.val_split,
                      inference_time)
     # ------------------------------------------------------------------------------
     # Plots
@@ -336,7 +346,7 @@ def train_image_classification_model(tp: MisoParameters):
     # plot_model(model, to_file=os.path.join(save_dir, "model_plot.pdf"), show_shapes=True)
     print("-" * 80)
     print("Plotting")
-    if tp.dataset.test_split > 0:
+    if tp.dataset.val_split > 0:
         print("- loss")
         plot_loss_vs_epochs(history)
         plt.savefig(os.path.join(save_dir, "loss_vs_epoch.pdf"))
@@ -347,6 +357,7 @@ def train_image_classification_model(tp: MisoParameters):
         plot_confusion_accuracy_matrix(y_true, y_pred, ds.cls_labels)
         plt.savefig(os.path.join(save_dir, "confusion_matrix.pdf"))
         plt.close('all')
+
     # Mislabeled
     print("- mislabeled")
     gen = ds.images.create_generator(1, shuffle=False, one_shot=True)
@@ -355,13 +366,14 @@ def train_image_classification_model(tp: MisoParameters):
     else:
         vectors = vector_model.predict_generator(gen.create(), steps=len(gen))
     if tp.output.save_mislabeled is True:
-        plot_mislabelled(ds.images.data,
-                         vectors,
-                         ds.cls,
-                         ds.cls_labels,
-                         [os.path.basename(f) for f in ds.filenames.filenames],
-                         save_dir,
-                         11)
+        find_and_save_mislabelled(ds.images.data,
+                                  vectors,
+                                  ds.cls,
+                                  ds.cls_labels,
+                                  [os.path.basename(f) for f in ds.filenames.filenames],
+                                  save_dir,
+                                  11)
+
     # t-SNE
     print("- t-SNE")
     idx = np.random.choice(range(len(vectors)), np.min((len(vectors), 1024)), replace=False)
@@ -392,7 +404,10 @@ def train_image_classification_model(tp: MisoParameters):
         else:
             tf.saved_model.save(inference_model, os.path.join(os.path.join(save_dir, "model_keras")))
             freeze(inference_model, os.path.join(save_dir, "model"))
+
+    # Save model info
     info.save(os.path.join(save_dir, "model", "network_info.xml"))
+
     # ------------------------------------------------------------------------------
     # Clean up
     # ------------------------------------------------------------------------------
@@ -402,32 +417,3 @@ def train_image_classification_model(tp: MisoParameters):
     print('-' * 80)
     print()
     return model, vector_model, ds, result
-
-
-# tensorboard_cb = TensorBoard(log_dir='./tensorboard',
-#                              histogram_freq=0,
-#                              batch_size=32,
-#                              write_graph=True,
-#                              write_grads=False,
-#                              write_images=False,
-#                              embeddings_freq=0,
-#                              embeddings_layer_names=None,
-#                              embeddings_metadata=None,
-#                              embeddings_data=None,
-#                              update_freq='epoch')
-
-if __name__ == "__main__":
-    tp = MisoParameters()
-    # tp.dataset.source = "https://1drv.ws/u/s!AiQM7sVIv7fah4MNU5lCmgcx4Ud_dQ?e=nPpUmT"
-    # tp.source = "/Users/chaos/OneDrive/Datasets/DeepWeeds/"
-    tp.dataset.source = "https://1drv.ws/u/s!AiQM7sVIv7fak98qYjFt5GELIEqSMQ?e=EUiUIX"
-    tp.dataset.source = "https://1drv.ws/u/s!AiQM7sVIv7falskYWoLgrbSD2RC-Fg?e=4yhC9b"
-    tp.dataset.source = "/media/mar76c/DATA/Datasets/Pollen/pollen_all"
-    tp.output.output_dir = "/media/mar76c/DATA/TrainedNetworks/"
-    tp.cnn.id = "efficientnetb0"
-    tp.training.batch_size = 32
-    tp.cnn.img_shape = None
-    tp.cnn.img_type = 'rgb'
-    tp.cnn.use_msoftmax = False
-    tp.output.save_mislabeled = False
-    train_image_classification_model(tp)

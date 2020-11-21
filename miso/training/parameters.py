@@ -34,7 +34,7 @@ class CNNParameters(Parameters):
     use_batch_norm = True
     global_pooling = None
     activation = "relu"
-    use_msoftmax = False
+    use_asoftmax = False
 
 
 class TrainingParameters(Parameters):
@@ -42,21 +42,23 @@ class TrainingParameters(Parameters):
     max_epochs = 10000
     alr_epochs = 10
     alr_drops = 4
+    monitor_val_loss = False
     use_class_weights = True
+    use_class_balancing = False
+    use_augmentation = True
 
 
 class DatasetParameters(Parameters):
     num_classes = None
     source = None
     min_count = 10
-    test_split = 0.2
+    val_split = 0.2
     map_others = False
     random_seed = 0
     memmap_directory = None
 
 
 class AugmentationParameters(Parameters):
-    use_augmentation = True
     rotation = [0, 360]
     gain = [0.8, 1, 1.2]
     gamma = [0.5, 1, 2]
@@ -64,6 +66,7 @@ class AugmentationParameters(Parameters):
     zoom = [0.9, 1, 1.1]
     gaussian_noise = None
     random_crop = None
+    orig_img_shape = [256, 256, 3]
 
 
 class OutputParameters(Parameters):
@@ -94,26 +97,13 @@ class MisoParameters(Parameters):
                     shape = [224, 224, 3]
                 if self.cnn.img_type == 'rgb':
                     shape[2] = 3
+                    self.augmentation.orig_img_shape[2] = 3
                 else:
                     shape[2] = 1
+                    self.augmentation.orig_img_shape[2] = 3
             self.cnn.img_shape = shape
         if self.name == "":
             self.name = self.dataset.source.replace("http://", "").replace("https://", "").replace("/", "-").replace("\\", "-") + "_" + self.cnn.id + "_" + self.cnn.img_shape + "_" + self.cnn.img_type
-
-
-if __name__ == "__main__":
-    m = MisoParameters()
-    print(m.asdict())
-    print(m.to_json())
-
-    # def sanitise(self):
-    #
-    #     # Make sure image shape is 3 for transfer learning
-    #     if self.cnn_type.endswith("tl"):
-    #         self.img_shape[2] = 3
-    #     # Make sure name is somewhat descriptive
-    #     if self.name == "":
-    #         self.name = self.cnn_type
 
 
 def get_default_shape(cnn_type):
@@ -123,70 +113,14 @@ def get_default_shape(cnn_type):
         return [224, 224, None]
 
 
-# def default_params():
-#     params = dict()
+if __name__ == "__main__":
+    m = MisoParameters()
+    print(m.asdict())
+    print(m.to_json())
 
-    # # Network description
-    # params['name'] = 'default'
-    # params['description'] = None
-    #
-    # # Type of network
-    # params['type'] = 'base_cyclic'
-    #
-    # # Custom parameters for the base_cyclic network
-    # # - number of filters in first block
-    # params['filters'] = 4
-    # # - use batch normalisation?
-    # params['use_batch_norm'] = True
-    # # - global pooling: None, 'avg', 'max'
-    # params['global_pooling'] = None
-    # # - activation: 'relu', 'elu', 'selu'
-    # params['activation'] = 'relu'
 
-    # Input
-    # params['img_size'] = None
-    # params['img_height'] = 128
-    # params['img_width'] = 128
-    # params['img_channels'] = 1
 
-    # # Training
-    # params['batch_size'] = 64
-    # params['max_epochs'] = 5000
-    # params['alr_epochs'] = 40
-    # params['alr_drops'] = 4
-    #
-    # # Data
-    # params['input_source'] = None
-    # params['output_dir'] = None
-    # params['data_min_count'] = 40
-    # params['data_split'] = 0.25
-    # params['data_split_offset'] = 0
-    # params['data_map_others'] = False
-    # params['seed'] = None
-    # params['use_class_weights'] = True
-    # params['class_mapping'] = None
-    # params['delete_mmap_files'] = True
-    # params['mmap_directory'] = None
-    # params['use_mmap'] = False
-    #
-    # # What to save
-    # # save_model:
-    # # - None:          Don't save
-    # # - 'saved_model': Tensorflow saved model format (model and weights separately)
-    # # - 'frozen':      Frozen model
-    # params['save_model'] = 'frozen'
-    # params['save_mislabeled'] = False
-    #
-    # # Augmentation
-    # params['use_augmentation'] = True
-    # params['aug_rotation'] = True
-    # params['aug_gain'] = [0.8, 1, 1.2]
-    # params['aug_gamma'] = [0.5, 1, 2]
-    # params['aug_bias'] = None
-    # params['aug_zoom'] = [0.9, 1, 1.1]
-    # params['aug_gaussian_noise'] = None
-    #
-    # return params
+
 
 
 
