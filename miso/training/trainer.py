@@ -182,6 +182,10 @@ def train_image_classification_model(tp: MisoParameters):
         v = vector_model.predict(vectors[0:1])
         print(v[0, :10])
 
+        vectors = model_head.predict(next(iter(gen.create())))
+        v = vector_model.predict(vectors[0:1])
+        print(v[0, :10])
+
     # ------------------------------------------------------------------------------
     # Full network train
     # ------------------------------------------------------------------------------
