@@ -138,6 +138,9 @@ def train_image_classification_model(tp: MisoParameters):
         if tp.training.use_class_balancing:
             print("- class balancing using random over sampling")
 
+        v = model_tail.predict(vectors[0:1])
+            print(v[0, :10])
+
         # Train
         history = model_tail.fit_generator(train_gen.create(),
                                            steps_per_epoch=len(train_gen),
@@ -163,6 +166,8 @@ def train_image_classification_model(tp: MisoParameters):
         # Vector model
         vector_model = generate_vector(model, tp.cnn.id)
         v = vector_model.predict(ds.images.data[0:1] / 255)
+        print(v[0, :10])
+        v = model_tail.predict(vectors[0:1])
         print(v[0, :10])
 
     # ------------------------------------------------------------------------------
