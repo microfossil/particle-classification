@@ -164,7 +164,7 @@ def train_image_classification_model(tp: MisoParameters):
         # Now we join the trained dense layers to the resnet model to create a model that accepts images as input
         # model_head = generate_tl_head(tp.cnn.id, tp.cnn.img_shape)
         print(model_head.output)
-        outputs = model_tail.call(model_head.output)
+        outputs = model_tail(model_head.output)
         print(outputs)
         print(model_head.input)
         model = Model(model_head.input, outputs)
