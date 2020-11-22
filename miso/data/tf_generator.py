@@ -66,7 +66,7 @@ class TFGenerator(object):
             # y = y.flatten()
             np.random.shuffle(x)
             print(len(x))
-            print(np.unique(x, return_counts=True))
+            print(np.unique(y, return_counts=True))
             np.random.shuffle(y)
             for i in range(100):
                 print(y[i], end="")
