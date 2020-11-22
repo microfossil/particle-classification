@@ -144,6 +144,13 @@ def train_image_classification_model(tp: MisoParameters):
         v = model_tail.predict(vectors[0:1])
         print(v[0, :10])
 
+        model = Model(inputs=model_head.input, outputs=model_tail(model_head.output))
+        vector_model = Model(model.inputs, model.get_layer(index=-2).get_output_at(0))
+        v = vector_model.predict(ds.images.data[0:1] / 255)
+        print(v[0, :10])
+        v = vector_model.predict(ds.images.data[0:1])
+        print(v[0, :10])
+
         # Train
         history = model_tail.fit_generator(train_gen.create(),
                                            steps_per_epoch=len(train_gen),
@@ -163,16 +170,11 @@ def train_image_classification_model(tp: MisoParameters):
 
         # Now we join the trained dense layers to the resnet model to create a model that accepts images as input
         # model_head = generate_tl_head(tp.cnn.id, tp.cnn.img_shape)
-        print(model_head.output)
-        outputs = model_tail(model_head.output)
-        print(outputs)
-        print(model_head.input)
-        model = Model(model_head.input, outputs)
-
-        # Vector model
-        vector_tensor = model.get_layer(index=-2).get_output_at(0)
-        vector_model = Model(model.inputs, vector_tensor)
+        model = Model(inputs=model_head.input, outputs=model_tail(model_head.output))
+        vector_model = Model(model.inputs, model.get_layer(index=-2).get_output_at(0))
         v = vector_model.predict(ds.images.data[0:1] / 255)
+        print(v[0, :10])
+        v = vector_model.predict(ds.images.data[0:1])
         print(v[0, :10])
 
         vector_tensor = model_tail.get_layer(index=-2).get_output_at(0)
