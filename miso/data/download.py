@@ -5,6 +5,11 @@ import hashlib
 
 
 def download_images(origin, directory):
+    # Fix URLs
+    # - OneDrive
+    if origin.startswith("https://1drv.ms/"):
+        origin = origin.replace("https://1drv.ms/", "https://1drv.ws/")
+
     hash = hashlib.md5(origin.encode()).hexdigest()[:10]
     directory = os.path.join(directory, hash)
     zip_path = os.path.join(directory, "download.zip")

@@ -13,7 +13,7 @@ from miso.training.adaptive_learning_rate import AdaptiveLearningRateScheduler
 from miso.training.training_result import TrainingResult
 from miso.stats.confusion_matrix import *
 from miso.stats.training import *
-from miso.training.augmentation import *
+from archive.augmentation import *
 from miso.deploy.saving import freeze, convert_to_inference_mode
 from miso.deploy.model_info import ModelInfo
 from miso.models.model_factory import *

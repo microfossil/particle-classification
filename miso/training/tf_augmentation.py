@@ -27,7 +27,6 @@ def aug_all_fn(rotation=(0, 360),
         im_x = aug_bias(im_x, bias)
         im_x = aug_random_crop(im_x, random_crop)
         return im_x
-
     return wrapper
 
 

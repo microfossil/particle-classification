@@ -5,7 +5,6 @@ from tensorflow.keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPooling2
 from tensorflow.keras.models import Model, Sequential
 from miso.layers.cyclic import *
 
-
 # Input range is [0,1], not [0,255] as expected by keras
 # So all prepro are adjusted to this.
 from miso.layers.msoftmax import MSoftMaxLayer
@@ -30,7 +29,8 @@ def default_prepro(input_shape):
     # Convert to BGR then x - mean
     inputs = Input(shape=input_shape)
     x = Lambda(lambda y: tf.reverse(y, axis=[-1]))(inputs)
-    x = Lambda(lambda y: tf.subtract(tf.multiply(y, 255.0), tf.reshape(tf.constant([103.939, 116.779, 128.68]), [1, 1, 1, 3])))(x)
+    x = Lambda(lambda y: tf.subtract(tf.multiply(y, 255.0),
+                                     tf.reshape(tf.constant([103.939, 116.779, 128.68]), [1, 1, 1, 3])))(x)
     return inputs, x
 
 
@@ -64,24 +64,18 @@ def head(cnn_type, input_shape):
         layer.trainable = False
     return model
 
-
-def tail(num_classes, input_shape, dropout=(0.5, 0.5), use_msoftmax=False):
+# TODO make adjustable
+def tail(num_classes, input_shape, dropout=(0.05, 0.15)):
     inp = Input(shape=input_shape)
     outp = Dropout(dropout[0])(inp)
     outp = Dense(512, activation='relu')(outp)
     outp = Dropout(dropout[1])(outp)
-    if use_msoftmax:
-        cls_inp = Input(shape=(num_classes,))
-        outp = Dense(512, activation=None)(outp)
-        outp = MSoftMaxLayer(num_classes)([outp, cls_inp])
-        return Model([inp, cls_inp], outp)
-    else:
-        outp = Dense(512, activation='relu')(outp)
-        outp = Dense(num_classes, activation='softmax')(outp)
-        return Model(inp, outp)
+    outp = Dense(512, activation='relu')(outp)
+    outp = Dense(num_classes, activation='softmax')(outp)
+    return Model(inp, outp)
 
 
-def tail_vector(num_classes, input_shape, dropout=(0.5, 0.50)):
+def tail_vector(num_classes, input_shape, dropout=(0.05, 0.15)):
     inp = Input(shape=input_shape)
     outp = Dropout(dropout[0])(inp)
     outp = Dense(512, activation='relu')(outp)
@@ -92,27 +86,27 @@ def tail_vector(num_classes, input_shape, dropout=(0.5, 0.50)):
 
 TransferLearningParams = collections.namedtuple(
     'TransferLearningParams',
-    ['model_func','prepro_func','default_input_shape']
+    ['model_func', 'prepro_func', 'default_input_shape']
 )
 
-
+# TODO Update for tensorflow 2
 TRANSFER_LEARNING_PARAMS = {
-        'xception': TransferLearningParams(ka.xception.Xception, tf_prepro, [299,299,3]),
-        'vgg16': TransferLearningParams(ka.vgg16.VGG16, default_prepro, [224,224,3]),
-        'vgg19': TransferLearningParams(ka.vgg19.VGG19, default_prepro, [224,224,3]),
-        'resnet50': TransferLearningParams(ka.resnet50.ResNet50, default_prepro, [224,224,3]),
-        #'resnet101': TransferLearningParams(ka.xception.Xception, default_prepro, [224,224,3]),
-        #'resnet152': TransferLearningParams(ka.xception.Xception, default_prepro, [224,224,3]),
-        #'resnet50V2': TransferLearningParams(ka.xception.Xception, default_prepro, [224,224,3]),
-        #'resnet101V2': TransferLearningParams(ka.xception.Xception, default_prepro, [224,224,3]),
-        #'resnet152V2': TransferLearningParams(ka.xception.Xception, default_prepro, [224,224,3]),
-        'inceptionV3': TransferLearningParams(ka.inception_v3.InceptionV3, tf_prepro, [299,299,3]),
-        'inceptionresnetV2': TransferLearningParams(ka.inception_resnet_v2.InceptionResNetV2, tf_prepro, [299,299,3]),
-        'mobilenet': TransferLearningParams(ka.mobilenet.MobileNet, tf_prepro, [224,224,3]),
-        'mobilenetV2': TransferLearningParams(ka.mobilenet_v2.MobileNetV2, tf_prepro, [224,224,3]),
-        'densenet121': TransferLearningParams(ka.densenet.DenseNet121, torch_prepro, [224,224,3]),
-        'densenet169': TransferLearningParams(ka.densenet.DenseNet169, torch_prepro, [224,224,3]),
-        'densenet201': TransferLearningParams(ka.densenet.DenseNet201, torch_prepro, [224,224,3]),
-        'nasnetmobile': TransferLearningParams(ka.nasnet.NASNetMobile, tf_prepro, [224,224,3]),
-        'nasnetlarge': TransferLearningParams(ka.nasnet.NASNetLarge, tf_prepro, [331,331,3])
-    }
+    'xception': TransferLearningParams(ka.xception.Xception, tf_prepro, [299, 299, 3]),
+    'vgg16': TransferLearningParams(ka.vgg16.VGG16, default_prepro, [224, 224, 3]),
+    'vgg19': TransferLearningParams(ka.vgg19.VGG19, default_prepro, [224, 224, 3]),
+    'resnet50': TransferLearningParams(ka.resnet50.ResNet50, default_prepro, [224, 224, 3]),
+    # 'resnet101': TransferLearningParams(ka.xception.Xception, default_prepro, [224,224,3]),
+    # 'resnet152': TransferLearningParams(ka.xception.Xception, default_prepro, [224,224,3]),
+    # 'resnet50V2': TransferLearningParams(ka.xception.Xception, default_prepro, [224,224,3]),
+    # 'resnet101V2': TransferLearningParams(ka.xception.Xception, default_prepro, [224,224,3]),
+    # 'resnet152V2': TransferLearningParams(ka.xception.Xception, default_prepro, [224,224,3]),
+    'inceptionV3': TransferLearningParams(ka.inception_v3.InceptionV3, tf_prepro, [299, 299, 3]),
+    'inceptionresnetV2': TransferLearningParams(ka.inception_resnet_v2.InceptionResNetV2, tf_prepro, [299, 299, 3]),
+    'mobilenet': TransferLearningParams(ka.mobilenet.MobileNet, tf_prepro, [224, 224, 3]),
+    'mobilenetV2': TransferLearningParams(ka.mobilenet_v2.MobileNetV2, tf_prepro, [224, 224, 3]),
+    'densenet121': TransferLearningParams(ka.densenet.DenseNet121, torch_prepro, [224, 224, 3]),
+    'densenet169': TransferLearningParams(ka.densenet.DenseNet169, torch_prepro, [224, 224, 3]),
+    'densenet201': TransferLearningParams(ka.densenet.DenseNet201, torch_prepro, [224, 224, 3]),
+    'nasnetmobile': TransferLearningParams(ka.nasnet.NASNetMobile, tf_prepro, [224, 224, 3]),
+    'nasnetlarge': TransferLearningParams(ka.nasnet.NASNetLarge, tf_prepro, [331, 331, 3])
+}

@@ -1,7 +1,6 @@
 from typing import NamedTuple
 
 import numpy as np
-from sklearn.model_selection import train_test_split
 from glob import glob
 import os
 from collections import OrderedDict

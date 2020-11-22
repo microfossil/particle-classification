@@ -2,6 +2,7 @@
 Training parameters
 """
 import json
+import re
 from collections import OrderedDict
 
 from miso.models.transfer_learning import TRANSFER_LEARNING_PARAMS
@@ -86,7 +87,8 @@ class MisoParameters(Parameters):
 
     def sanitise(self):
         if self.name == "":
-            self.name = self.dataset.source.replace("http://","").replace("https://", "").replace("/","-").replace("\\","-") + "_" + self.cnn.id
+            self.name = self.dataset.source + "_" + self.cnn.id
+            self.name = re.sub('[^A-Za-z0-9]+', '-', self.name)
         if self.cnn.img_shape is None:
             if self.cnn.id.endswith("_tl"):
                 shape = TRANSFER_LEARNING_PARAMS[self.cnn.id.split('_')[0]].default_input_shape

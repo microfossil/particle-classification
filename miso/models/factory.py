@@ -4,7 +4,7 @@ from collections import namedtuple
 from miso.models.transfer_learning import *
 from miso.models.base_cyclic import *
 from miso.models.resnet_cyclic import *
-from classification_models.tfkeras import Classifiers
+from classification_models.tfkeras import Classifiers, ModelsFactory
 from miso.training.parameters import MisoParameters
 
 try:
@@ -13,14 +13,26 @@ except ImportError:
     pass
 
 
-FactoryModelParameters = namedtuple("FactoryModelParameters", "factory_fn default_size default_colour")
-
-
 def generate(tp: MisoParameters):
-    # Base Cyclic
-    # Create at CEREGE specifically for foraminifera by adding cyclic layers
-    if tp.cnn.id.startswith("base_cyclic"):
+    #
+    # Transfer learning
+    #
+    # Uses any of the available models in keras applications
+    if tp.cnn.id.endswith('tl'):
+        parts = tp.cnn.id.split("_")
+        if parts[0] in TRANSFER_LEARNING_PARAMS.keys():
+            model_head, model_tail = generate_tl(tp.cnn.id, tp.dataset.num_classes, tp.cnn.img_shape)
+            outputs = model_tail(model_head.outputs[0])
+            model = Model(model_head.inputs[0], outputs)
+            return model
+        else:
+            raise ValueError("The CNN type {} is not supported, valid CNNs are {}".format(parts[0], TRANSFER_LEARNING_PARAMS.keys()))
 
+    #
+    # Full network training
+    #
+    # Base Cyclic - custom network created at CEREGE specifically for foraminifera by adding cyclic layers
+    if tp.cnn.id.startswith("base_cyclic"):
         model = base_cyclic(input_shape=tp.cnn.img_shape,
                             nb_classes=tp.dataset.num_classes,
                             filters=tp.cnn.filters,
@@ -30,7 +42,7 @@ def generate(tp: MisoParameters):
                             conv_activation=tp.cnn.activation,
                             use_batch_norm=tp.cnn.use_batch_norm,
                             global_pooling=tp.cnn.global_pooling)
-    # ResNet Cyclic
+    # ResNet Cyclic - custom network created at CEREGE specifically for foraminifera by adding cyclic layers
     elif tp.cnn.id.startswith("resnet_cyclic"):
         blocks = int(math.log2(tp.cnn.img_shape[0]) - 2)
         blocks -= 1  # Resnet has one block to start with already
@@ -63,22 +75,15 @@ def generate(tp: MisoParameters):
         model = model_fn(weights=None,
                          input_shape=tp.cnn.img_shape,
                          classes=tp.dataset.num_classes)
-    # ResNet50 Transfer Learning
-    # Uses the pre-trained ResNet50 network from tf.keras with full image input and augmentation
-    # Has a lambda layer to rescale the normal image input (range 0-1) to that expected by the pre-trained network
-    elif tp.cnn.id.endswith('tl'):
-        model_head, model_tail = generate_tl(tp.cnn.id, tp.dataset.num_classes, tp.cnn.img_shape, tp.cnn.use_asoftmax)
-        outputs = model_tail(model_head.outputs[0])
-        model = Model(model_head.inputs[0], outputs)
-        return model
-    # ResNet, SEResNet and DenseNet from the image-classifiers python package
-    # Uses normal keras
-    else:
+    # ResNet, SEResNet, DenseNet and others from qubvel's image-classifiers python package
+    elif tp.cnn.id in ModelsFactory().models.keys():
         classifier, preprocess_input = Classifiers.get(tp.cnn.id)
         model = classifier(input_shape=tp.cnn.img_shape,
                            weights=None,
                            classes=tp.cnn.num_classes)
-
+    else:
+        raise ValueError(
+            "The CNN type {} is not supported, valid CNNs are base_cyclic, resnet_cyclic, efficientnetb[0-7] and {}".format(tp.cnn.id, ModelsFactory().models.keys()))
     model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
     return model
 
