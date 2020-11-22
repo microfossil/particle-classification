@@ -149,6 +149,8 @@ def wrap_frozen_graph_tf2(graph_def, inputs, outputs, print_graph=False):
 
 
 def save_frozen_model_tf2(model, out_dir, filename):
+    print("-" * 80)
+    print("Freezing model")
     # Convert Keras model to ConcreteFunction
     full_model = tf.function(lambda x: model(x))
     full_model = full_model.get_concrete_function(
@@ -158,20 +160,17 @@ def save_frozen_model_tf2(model, out_dir, filename):
     frozen_func = convert_variables_to_constants_v2(full_model)
     frozen_func.graph.as_graph_def()
 
-    layers = [op.name for op in frozen_func.graph.get_operations()]
-    print("-" * 50)
-    print("Frozen model layers: ")
-    for layer in layers:
-        print(layer)
+    # layers = [op.name for op in frozen_func.graph.get_operations()]
+    # for layer in layers:
+    #     print(layer)
 
-    print("-" * 50)
-    print("Frozen model inputs: ")
-    print(frozen_func.inputs)
-    print("Frozen model outputs: ")
-    print(frozen_func.outputs)
+    print("- model inputs: {}".format(frozen_func.inputs))
+    print("- model outputs: {}".format(frozen_func.outputs))
 
     # Save frozen graph from frozen ConcreteFunction to hard drive
     # logdir="./frozen_models",
+    print(out_dir)
+    print(filename)
     tf.io.write_graph(graph_or_graph_def=frozen_func.graph,
                       logdir=os.path.join(out_dir, "frozen_logs"),
                       name=os.path.join(out_dir, filename),
