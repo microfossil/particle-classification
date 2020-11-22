@@ -94,7 +94,7 @@ def train_image_classification_model(tp: MisoParameters):
         print("! {}s elapsed, ({}/{} vectors)".format(time.time() - t, len(vectors), len(ds.images.data)))
 
         # Clear session
-        K.clear_session()
+        # K.clear_session()
 
         # Generate tail model and compile
         model_tail = generate_tl_tail(tp.dataset.num_classes, [vectors.shape[-1], ])
@@ -156,7 +156,7 @@ def train_image_classification_model(tp: MisoParameters):
         time.sleep(3)
 
         # Now we join the trained dense layers to the resnet model to create a model that accepts images as input
-        model_head = generate_tl_head(tp.cnn.id, tp.cnn.img_shape)
+        # model_head = generate_tl_head(tp.cnn.id, tp.cnn.img_shape)
         outputs = model_tail(model_head.output)
         model = Model(model_head.input, outputs)
 
@@ -237,6 +237,8 @@ def train_image_classification_model(tp: MisoParameters):
 
         # Vector model
         vector_model = generate_vector(model, tp.cnn.id)
+        v = vector_model.predict(ds.images.data[0:1])
+        print(v[0, :10])
 
     # ------------------------------------------------------------------------------
     # Results
