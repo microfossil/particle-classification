@@ -144,12 +144,14 @@ def train_image_classification_model(tp: MisoParameters):
         v = model_tail.predict(vectors[0:1])
         print(v[0, :10])
 
-        model = Model(inputs=model_head.input, outputs=model_tail(model_head.output))
-        vector_model = Model(model.inputs, model.get_layer(index=-2).get_output_at(0))
-        v = vector_model.predict(ds.images.data[0:1] / 255)
-        print(v[0, :10])
-        v = vector_model.predict(ds.images.data[0:1])
-        print(v[0, :10])
+        model_head.summary()
+
+        # model = Model(inputs=model_head.input, outputs=model_tail(model_head.output))
+        # vector_model = Model(model.inputs, model.get_layer(index=-2).get_output_at(0))
+        # v = vector_model.predict(ds.images.data[0:1] / 255)
+        # print(v[0, :10])
+        # v = vector_model.predict(ds.images.data[0:1])
+        # print(v[0, :10])
 
         # Train
         history = model_tail.fit_generator(train_gen.create(),
