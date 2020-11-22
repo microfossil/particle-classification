@@ -139,7 +139,7 @@ def train_image_classification_model(tp: MisoParameters):
             print("- class balancing using random over sampling")
 
         v = model_tail.predict(vectors[0:1])
-            print(v[0, :10])
+        print(v[0, :10])
 
         # Train
         history = model_tail.fit_generator(train_gen.create(),
