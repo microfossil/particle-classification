@@ -175,7 +175,10 @@ def train_image_classification_model(tp: MisoParameters):
         model = Model(inputs=model_head.input, outputs=model_tail.call(model_head.output))
         model.summary()
 
-        vector_model = Model(inputs=model.inputs, outputs=model.layers[-2].output)
+        print(vector_model.layers[-1])
+        print(vector_model.layers[-2])
+
+        vector_model = Model(inputs=model.inputs, outputs=model.layers[-2].get_output_at(1))
         print(vector_model.layers[-1])
         print(vector_model.layers[-2])
         v = vector_model.predict(ds.images.data[0:1] / 255)
