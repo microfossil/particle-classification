@@ -65,7 +65,7 @@ def head(cnn_type, input_shape):
     return model
 
 # TODO make adjustable
-def tail(num_classes, input_shape, dropout=(0.05, 0.15)):
+def tail(num_classes, input_shape, dropout=(0.95, 0.85)):
     inp = Input(shape=input_shape)
     outp = Dropout(dropout[0])(inp)
     outp = Dense(512, activation='relu')(outp)
@@ -75,7 +75,7 @@ def tail(num_classes, input_shape, dropout=(0.05, 0.15)):
     return Model(inp, outp)
 
 
-def tail_vector(num_classes, input_shape, dropout=(0.05, 0.15)):
+def tail_vector(num_classes, input_shape, dropout=(0.95, 0.85)):
     inp = Input(shape=input_shape)
     outp = Dropout(dropout[0])(inp)
     outp = Dense(512, activation='relu')(outp)
