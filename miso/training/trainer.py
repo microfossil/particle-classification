@@ -171,7 +171,7 @@ def train_image_classification_model(tp: MisoParameters):
         v = vector_model.predict(ds.images.data[0:1] / 255)
         print(v[0, :10])
         vv = next(iter(gen.create()))
-        v = model_head.predict(vv[0:1])
+        vv = model_head.predict(vv[0:1])
         vv = model_tail.predict(vv[0:1])
         print(v[0, :10])
         v = model_tail.predict(vectors[0:1])
