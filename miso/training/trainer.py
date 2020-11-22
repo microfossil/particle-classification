@@ -177,6 +177,11 @@ def train_image_classification_model(tp: MisoParameters):
         v = vector_model.predict(ds.images.data[0:1])
         print(v[0, :10])
 
+        vector_model.summary()
+        print(vector_model.get_layer(index=-1).get_weights())
+        model_tail.summary()
+        print(model_tail.get_layer(index=-2).get_weights())
+
         vector_tensor = model_tail.get_layer(index=-2).get_output_at(0)
         vector_model = Model(model_tail.inputs, vector_tensor)
         v = vector_model.predict(vectors[0:1])
@@ -185,6 +190,7 @@ def train_image_classification_model(tp: MisoParameters):
         vectors = model_head.predict(next(iter(gen.create())))
         v = vector_model.predict(vectors[0:1])
         print(v[0, :10])
+
 
     # ------------------------------------------------------------------------------
     # Full network train
