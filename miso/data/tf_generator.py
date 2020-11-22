@@ -2,6 +2,7 @@ import numpy as np
 import tensorflow as tf
 import tensorflow.keras.backend as K
 from imblearn.over_sampling import RandomOverSampler
+from imblearn.under_sampling import RandomUnderSampler
 
 
 class TFGenerator(object):
@@ -55,16 +56,17 @@ class TFGenerator(object):
 
     def on_epoch_end(self):
         if self.oversample:
-            rus = RandomOverSampler()
+            rus = RandomUnderSampler()
             x, y = rus.fit_sample(self.idxs.reshape(-1, 1), self.labels[self.idxs])
             x = x.flatten()
             # y = y.flatten()
             np.random.shuffle(x)
+            print(len(x))
             print(np.unique(x, return_counts=True))
-            # np.random.shuffle(y)
-            # for i in range(100):
-            #     print(y[i], end="")
-            # print()
+            np.random.shuffle(y)
+            for i in range(100):
+                print(y[i], end="")
+            print()
             self.idxs = x
         elif self.shuffle:
             np.random.shuffle(self.idxs)
