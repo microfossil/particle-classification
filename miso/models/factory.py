@@ -93,14 +93,14 @@ def generate_tl_head(cnn_type, img_shape):
     return model_head
 
 
-def generate_tl_tail(num_classes, input_shape, use_msoftmax):
-    model_tail = tail(num_classes, input_shape, use_msoftmax=use_msoftmax)
+def generate_tl_tail(num_classes, input_shape):
+    model_tail = tail(num_classes, input_shape)
     return model_tail
 
 
-def generate_tl(cnn_type, num_classes, img_shape, use_msoftmax):
+def generate_tl(cnn_type, num_classes, img_shape):
     model_head = generate_tl_head(cnn_type, img_shape)
-    model_tail = tail(num_classes, [model_head.layers[-1].output.shape[-1], ], use_msoftmax=use_msoftmax)
+    model_tail = tail(num_classes, [model_head.layers[-1].output.shape[-1], ])
     return model_head, model_tail
 
 
