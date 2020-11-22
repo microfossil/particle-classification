@@ -173,7 +173,7 @@ def save_frozen_model_tf2(model, out_dir, filename):
     print(filename)
     tf.io.write_graph(graph_or_graph_def=frozen_func.graph,
                       logdir=os.path.join(out_dir, "frozen_logs"),
-                      name=os.path.join(out_dir, filename),
+                      name=filename,
                       as_text=False)
 
 

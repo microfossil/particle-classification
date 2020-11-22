@@ -54,19 +54,20 @@ class TFGenerator(object):
             return int(np.floor(len(self.idxs) / self.batch_size))
 
     def on_epoch_end(self):
-        if self.shuffle:
-            np.random.shuffle(self.idxs)
         if self.oversample:
             rus = RandomOverSampler()
             x, y = rus.fit_sample(self.idxs.reshape(-1, 1), self.labels[self.idxs])
             x = x.flatten()
-            y = y.flatten()
+            # y = y.flatten()
             np.random.shuffle(x)
-            np.random.shuffle(y)
-            for i in range(100):
-                print(y[i], end="")
-            print()
+            print(np.unique(x, return_counts=True))
+            # np.random.shuffle(y)
+            # for i in range(100):
+            #     print(y[i], end="")
+            # print()
             self.idxs = x
+        elif self.shuffle:
+            np.random.shuffle(self.idxs)
 
     def generator(self):
         """
