@@ -97,7 +97,7 @@ def train_image_classification_model(tp: MisoParameters):
         K.clear_session()
 
         # Generate tail model and compile
-        model_tail = generate_tl_tail(tp.dataset.num_classes, [vectors.shape[-1], ], tp.cnn.use_asoftmax)
+        model_tail = generate_tl_tail(tp.dataset.num_classes, [vectors.shape[-1], ])
         model_tail.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
         # Learning rate scheduler
