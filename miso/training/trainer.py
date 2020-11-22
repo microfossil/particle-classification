@@ -1,6 +1,9 @@
 """
 Creates and trains a generic network
 """
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
+
 import time
 import datetime
 from collections import OrderedDict
@@ -160,7 +163,7 @@ def train_image_classification_model(tp: MisoParameters):
 
         # Now we join the trained dense layers to the resnet model to create a model that accepts images as input
         # model_head = generate_tl_head(tp.cnn.id, tp.cnn.img_shape)
-        outputs = model_tail(model_head.output)
+        outputs = model_tail(model_head.layers[-1].get_output_at(1))
         model = Model(model_head.input, outputs)
 
         # Vector model
