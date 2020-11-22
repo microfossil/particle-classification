@@ -53,7 +53,7 @@ def head(cnn_type, input_shape):
             x = CyclicGainSlice12()(x)
         else:
             x = CyclicSlice4()(x)
-    x = params.model_func(include_top=False, weights='imagenet', pooling='avg', input_shape=input_shape)(x)
+    x = params.model_func(include_top=False, weights='imagenet', pooling='avg', input_shape=input_shape).call(x)
     if use_cyclic:
         if use_gain:
             x = CyclicDensePoolN(pool_op=tf.reduce_mean)(x)

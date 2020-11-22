@@ -185,8 +185,8 @@ def train_image_classification_model(tp: MisoParameters):
         model_tail.summary()
         print(model_tail.get_layer(index=-2))
 
-        model = Model(inputs=model_head.input, outputs=model_tail(model_head.layers[-1].layers[-1].output))
-        model.summary()
+        # model = Model(inputs=model_head.input, outputs=model_tail(model_head.layers[-1].layers[-1].output))
+        # model.summary()
 
         # print(model_tail.get_layer(index=-2).get_weights())
 
