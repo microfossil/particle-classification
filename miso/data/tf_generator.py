@@ -57,7 +57,11 @@ class TFGenerator(object):
     def on_epoch_end(self):
         if self.oversample:
             rus = RandomUnderSampler()
-            x, y = rus.fit_sample(self.idxs.reshape(-1, 1), self.labels[self.idxs])
+            if isinstance(self.labels[0], np.ndarray):
+                c = np.argmax(self.labels, axis=-1)
+            else:
+                c = self.labels
+            x, y = rus.fit_sample(self.idxs.reshape(-1, 1), c[self.idxs])
             x = x.flatten()
             # y = y.flatten()
             np.random.shuffle(x)
