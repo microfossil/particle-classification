@@ -167,20 +167,14 @@ def train_image_classification_model(tp: MisoParameters):
         model = Model(model_head.input, outputs)
 
         # Vector model
-        v = model_tail.predict(vectors[0:1])
-        print(v[0, :10])
-        vv = next(iter(gen.create()))
-        vv = model_head.predict(vv[0:1])
-        v = model_tail.predict(vv[0:1])
-        print(v[0, :10])
-        vector_model = generate_vector(model, tp.cnn.id)
+        vector_tensor = model.get_layer(index=-2).get_output_at(0)
+        vector_model = Model(model.inputs, vector_tensor)
         v = vector_model.predict(ds.images.data[0:1] / 255)
         print(v[0, :10])
-        vv = next(iter(gen.create()))
-        vv = model_head.predict(vv[0:1])
-        v = model_tail.predict(vv[0:1])
-        print(v[0, :10])
-        v = model_tail.predict(vectors[0:1])
+
+        vector_tensor = model_tail.get_layer(index=-2).get_output_at(0)
+        vector_model = Model(model_tail.inputs, vector_tensor)
+        v = vector_model.predict(vectors[0:1])
         print(v[0, :10])
 
     # ------------------------------------------------------------------------------
