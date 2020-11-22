@@ -162,7 +162,7 @@ def train_image_classification_model(tp: MisoParameters):
 
         # Vector model
         vector_model = generate_vector(model, tp.cnn.id)
-        v = vector_model.predict(ds.images.data[0:1])
+        v = vector_model.predict(ds.images.data[0:1] / 255)
         print(v[0, :10])
 
     # ------------------------------------------------------------------------------
@@ -366,6 +366,8 @@ def train_image_classification_model(tp: MisoParameters):
         vectors = vector_model.predict_generator(gen.create(), steps=len(gen))
     print("vector length {}", len(vectors))
     print(vectors[0,:10])
+    v = vector_model.predict(ds.images.data[0:1] / 255)
+    print(v[0, :10])
     if tp.output.save_mislabeled is True:
         find_and_save_mislabelled(ds.images.data,
                                   vectors,
