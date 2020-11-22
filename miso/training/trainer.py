@@ -178,9 +178,11 @@ def train_image_classification_model(tp: MisoParameters):
         print(v[0, :10])
 
         vector_model.summary()
-        print(vector_model.get_layer(index=-1).get_weights())
+        print(vector_model.get_layer(index=-1))
+        # print(vector_model.get_layer(index=-1).get_weights())
         model_tail.summary()
-        print(model_tail.get_layer(index=-2).get_weights())
+        print(model_tail.get_layer(index=-2))
+        # print(model_tail.get_layer(index=-2).get_weights())
 
         vector_tensor = model_tail.get_layer(index=-2).get_output_at(0)
         vector_model = Model(model_tail.inputs, vector_tensor)
