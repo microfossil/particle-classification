@@ -16,8 +16,8 @@ def remove(path):
         os.remove(path)  # remove the file
     elif os.path.isdir(path):
         shutil.rmtree(path)  # remove dir and all contains
-    else:
-        raise ValueError("file {} is not a file or dir.".format(path))
+    # else:
+    #     raise ValueError("file {} is not a file or dir.".format(path))
 
 
 def convert_to_inference_mode(model, model_factory):
@@ -25,6 +25,20 @@ def convert_to_inference_mode(model, model_factory):
     # https://github.com/tensorflow/tensorflow/issues/31331#issuecomment-518655879
     with tempfile.TemporaryDirectory() as dirpath:
         weights_filename = os.path.join(dirpath, "weights.h5")
+        model.save_weights(weights_filename)
+        K.clear_session()
+        K.set_learning_phase(0)
+        model = model_factory()
+        model.load_weights(weights_filename)
+        remove(weights_filename)
+    return model
+
+
+def convert_to_inference_mode_tf2(model, model_factory):
+    # Trick to get around bugs in tensorflow 1.14.0
+    # https://github.com/tensorflow/tensorflow/issues/31331#issuecomment-518655879
+    with tempfile.TemporaryDirectory() as dirpath:
+        weights_filename = os.path.join(dirpath, "weights.tf")
         model.save_weights(weights_filename)
         K.clear_session()
         K.set_learning_phase(0)
@@ -172,7 +186,7 @@ def save_frozen_model_tf2(model, out_dir, filename):
     print(out_dir)
     print(filename)
     tf.io.write_graph(graph_or_graph_def=frozen_func.graph,
-                      logdir=os.path.join(out_dir, "frozen_logs"),
+                      logdir=os.path.join(out_dir),
                       name=filename,
                       as_text=False)
 

@@ -19,7 +19,7 @@ from miso.training.training_result import TrainingResult
 from miso.stats.confusion_matrix import *
 from miso.stats.training import *
 from miso.training.tf_augmentation import aug_all_fn
-from miso.deploy.saving import freeze, convert_to_inference_mode, save_frozen_model_tf2
+from miso.deploy.saving import freeze, convert_to_inference_mode, save_frozen_model_tf2, convert_to_inference_mode_tf2
 from miso.deploy.model_info import ModelInfo
 from miso.models.factory import *
 
@@ -175,8 +175,8 @@ def train_image_classification_model(tp: MisoParameters):
         model = Model(inputs=model_head.input, outputs=model_tail.call(model_head.output))
         model.summary()
 
-        print(vector_model.layers[-1])
-        print(vector_model.layers[-2])
+        print(model.layers[-1])
+        print(model.layers[-2])
 
         vector_model = Model(inputs=model.inputs, outputs=model.layers[-2].get_output_at(1))
         print(vector_model.layers[-1])
@@ -435,13 +435,15 @@ def train_image_classification_model(tp: MisoParameters):
     print('-' * 80)
     print("Saving model")
     # Convert if necessary to fix TF batch normalisation issues
-    inference_model = convert_to_inference_mode(model, lambda: generate(tp))
+
     # Freeze and save graph
     if tp.output.save_model is not None:
         if tf_version == 2:
+            inference_model = convert_to_inference_mode_tf2(model, lambda: generate(tp))
             tf.saved_model.save(inference_model, os.path.join(os.path.join(save_dir, "model_keras")))
             save_frozen_model_tf2(inference_model, os.path.join(save_dir, "model"), "frozen_model.pb")
         else:
+            inference_model = convert_to_inference_mode(model, lambda: generate(tp))
             tf.saved_model.save(inference_model, os.path.join(os.path.join(save_dir, "model_keras")))
             freeze(inference_model, os.path.join(save_dir, "model"))
 
