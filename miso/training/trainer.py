@@ -19,7 +19,7 @@ from miso.training.training_result import TrainingResult
 from miso.stats.confusion_matrix import *
 from miso.stats.training import *
 from miso.training.tf_augmentation import aug_all_fn
-from miso.deploy.saving import freeze, convert_to_inference_mode, save_frozen_model_tf2, convert_to_inference_mode_tf2
+from miso.deploy.saving import freeze, convert_to_inference_mode, save_frozen_model_tf2, convert_to_inference_mode_tf2, load_from_xml
 from miso.deploy.model_info import ModelInfo
 from miso.models.factory import *
 
@@ -441,7 +441,9 @@ def train_image_classification_model(tp: MisoParameters):
         if tf_version == 2:
             inference_model = convert_to_inference_mode_tf2(model, lambda: generate(tp))
             tf.saved_model.save(inference_model, os.path.join(os.path.join(save_dir, "model_keras")))
-            save_frozen_model_tf2(inference_model, os.path.join(save_dir, "model"), "frozen_model.pb")
+            frozen_func = save_frozen_model_tf2(inference_model, os.path.join(save_dir, "model"), "frozen_model.pb")
+            info.inputs["image"] = frozen_func.inputs[0]
+            info.outputs["pred"] = frozen_func.outputs[0]
         else:
             inference_model = convert_to_inference_mode(model, lambda: generate(tp))
             tf.saved_model.save(inference_model, os.path.join(os.path.join(save_dir, "model_keras")))
@@ -449,6 +451,27 @@ def train_image_classification_model(tp: MisoParameters):
 
     # Save model info
     info.save(os.path.join(save_dir, "model", "network_info.xml"))
+
+    # ------------------------------------------------------------------------------
+    # Confirm model save
+    # ------------------------------------------------------------------------------
+    if tp.output.save_model is not None:
+        print("-" * 80)
+        print("Validate saved model")
+        if tf_version == 2:
+            model, img_size, cls_labels = load_from_xml(os.path.join(save_dir, "model", "network_info.xml"))
+            y_true = ds.cls[ds.test_idx]
+            gen = ds.test_generator(32, shuffle=False, one_shot=True)
+            y_prob = []
+            for b in iter(gen.to_tfdataset()):
+                y_prob.append(model(b[0]).numpy())
+            y_prob = np.concatenate(y_prob, axis=0)
+            y_pred = y_prob.argmax(axis=1)
+            acc = accuracy_score(y_true, y_pred)
+            p, r, f1, _ = precision_recall_fscore_support(y_true, y_pred)
+            print("Test set: acc {:.2f}, prec {:.2f}, rec {:.2f}, f1 {:.2f}".format(acc, np.mean(p), np.mean(r), np.mean(f1)))
+        else:
+            session, input, output, img_size, cls_labels = load_from_xml(os.path.join(save_dir, "model", "network_info.xml"))
 
     # ------------------------------------------------------------------------------
     # Clean up

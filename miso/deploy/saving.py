@@ -133,8 +133,12 @@ def load_from_xml(filename, session=None):
             output_name = entry_xml.find('operation').text + ":0"
 
     full_protobuf_path = os.path.join(os.path.dirname(filename), protobuf)
-    session, input, output = load_frozen_model(full_protobuf_path, input_name, output_name)
-    return session, input, output, img_size, cls_labels
+    if int(tf.__version__[0]) == 2:
+        model = load_frozen_model_tf2(full_protobuf_path, input_name, output_name)
+        return model, img_size, cls_labels
+    else:
+        session, input, output = load_frozen_model(full_protobuf_path, input_name, output_name)
+        return session, input, output, img_size, cls_labels
 
 
 
@@ -189,6 +193,7 @@ def save_frozen_model_tf2(model, out_dir, filename):
                       logdir=os.path.join(out_dir),
                       name=filename,
                       as_text=False)
+    return frozen_func
 
 
 def load_frozen_model_tf2(filepath, inputs, outputs):
@@ -200,7 +205,7 @@ def load_frozen_model_tf2(filepath, inputs, outputs):
                                         inputs=inputs,
                                         outputs=outputs,
                                         print_graph=True)
-    print("-" * 50)
+    print("-" * 80)
     print("Frozen model inputs: ")
     print(frozen_func.inputs)
     print("Frozen model outputs: ")

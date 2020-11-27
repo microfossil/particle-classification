@@ -37,7 +37,7 @@ def download_images(origin, directory):
     else:
         paths = [path for path in os.listdir(directory) if not path.startswith("_")]
         folder_path = os.path.join(directory, paths[0])
-        print("@ Already downloaded at: {}".format(folder_path))
+        print("Already downloaded at: {}".format(folder_path))
     return folder_path
 
 
