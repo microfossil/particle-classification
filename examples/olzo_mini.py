@@ -39,7 +39,7 @@ tp.dataset.memmap_directory = None
 # - resnet[18,34,50]
 # - vgg[16,19]
 # - efficientnetB[0-7]
-tp.cnn.id = "resnet50_tl"
+tp.cnn.id = "base_cyclic"
 # Input image shape, set to None to use default size ([128, 128, 1] for custom, [224, 224, 3] for others)
 tp.cnn.img_shape = [224, 224, 3]
 # Input image colour space [greyscale/rgb]
@@ -53,7 +53,7 @@ tp.cnn.dense = None
 # Whether to use batch normalisation
 tp.cnn.use_batch_norm = True
 # Type of pooling [avg, max, none]
-tp.cnn.global_pooling = None
+tp.cnn.global_pooling = 'avg'
 # Type of activation
 tp.cnn.activation = "relu"
 # Use A-Softmax
@@ -65,7 +65,7 @@ tp.cnn.use_asoftmax = False
 # Number of images for each training step
 tp.training.batch_size = 64
 # Number of epochs after which training is stopped regardless
-tp.training.max_epochs = 10000
+tp.training.max_epochs = 10
 # Number of epochs to monitor for no improvement by the adaptive learning rate scheduler.
 # After no improvement for this many epochs, the learning rate is dropped by half
 tp.training.alr_epochs = 10
@@ -118,4 +118,6 @@ tp.output.save_mislabeled = False
 
 
 # Train the model!!!
-train_image_classification_model(tp)
+# Guard for windows
+if __name__ == "__main__":
+    train_image_classification_model(tp)

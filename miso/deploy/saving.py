@@ -89,7 +89,7 @@ def load_frozen_model(source: str,
     if session is None:
         session = K.get_session()
     with gfile.Open(source, 'rb') as f:
-        graph_def = tf.GraphDef()
+        graph_def = tf.compat.v1.GraphDef()
         graph_def.ParseFromString(f.read())
         session.graph.as_default()
         tf.import_graph_def(graph_def, name='')

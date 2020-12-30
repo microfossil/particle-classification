@@ -23,7 +23,7 @@ def plot_embedding(X, y, num_classes, labels=None, title=None, indices=None, alp
     """
     if labels is None:
         labels = ["{}".format(i) for i in range(num_classes)]
-    print(labels)
+    # print(labels)
     # TODO: This can be simplified
     target_values = np.array(range(num_classes))
     colors = target_values / num_classes

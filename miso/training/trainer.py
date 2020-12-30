@@ -2,6 +2,7 @@
 Creates and trains a generic network
 """
 import warnings
+
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 import time
@@ -120,13 +121,18 @@ def train_image_classification_model(tp: MisoParameters):
                                 oversample=tp.training.use_class_balancing)
 
         # Validation generator
+        if tf_version == 2:
+            val_one_shot = True
+        else:
+            # One repeat for validation for TF1 otherwise we get end of dataset errors
+            val_one_shot = False
         if tp.dataset.val_split > 0:
             val_gen = TFGenerator(vectors,
-                                         ds.cls_onehot,
-                                         ds.test_idx,
-                                         tp.training.batch_size,
-                                         shuffle=False,
-                                         one_shot=True)
+                                  ds.cls_onehot,
+                                  ds.test_idx,
+                                  tp.training.batch_size,
+                                  shuffle=False,
+                                  one_shot=val_one_shot)
         else:
             val_gen = None
 
@@ -144,7 +150,7 @@ def train_image_classification_model(tp: MisoParameters):
         v = model_tail.predict(vectors[0:1])
         print(v[0, :10])
 
-        model_head.summary()
+        # model_head.summary()
 
         # model = Model(inputs=model_head.input, outputs=model_tail(model_head.output))
         # vector_model = Model(model.inputs, model.get_layer(index=-2).get_output_at(0))
@@ -172,20 +178,19 @@ def train_image_classification_model(tp: MisoParameters):
 
         # Now we join the trained dense layers to the resnet model to create a model that accepts images as input
         # model_head = generate_tl_head(tp.cnn.id, tp.cnn.img_shape)
-        model = Model(inputs=model_head.input, outputs=model_tail.call(model_head.output))
+        model = combine_tl(model_head, model_tail)
         model.summary()
 
-        print(model.layers[-1])
-        print(model.layers[-2])
-
-        vector_model = Model(inputs=model.inputs, outputs=model.layers[-2].get_output_at(1))
-        print(vector_model.layers[-1])
-        print(vector_model.layers[-2])
-        v = vector_model.predict(ds.images.data[0:1] / 255)
-        print(v[0, :10])
-        v = vector_model.predict(ds.images.data[0:1])
-        print(v[0, :10])
-
+        # print(model.layers[-1])
+        # print(model.layers[-2])
+        #
+        # vector_model = Model(inputs=model.inputs, outputs=model.layers[-2].get_output_at(1))
+        # print(vector_model.layers[-1])
+        # print(vector_model.layers[-2])
+        # v = vector_model.predict(ds.images.data[0:1] / 255)
+        # print(v[0, :10])
+        # v = vector_model.predict(ds.images.data[0:1])
+        # print(v[0, :10])
 
         # model = Model(inputs=model_head.input, outputs=model_tail(model_head.layers[-1].layers[-1].output))
         # model.summary()
@@ -194,6 +199,7 @@ def train_image_classification_model(tp: MisoParameters):
         #
         # vector_tensor = model_tail.get_layer(index=-2).get_output_at(0)
         # vector_model = Model(model_tail.inputs, vector_tensor)
+        vector_model = generate_vector(model, tp.cnn.id)
         # v = vector_model.predict(vectors[0:1])
         # print(v[0, :10])
         #
@@ -218,7 +224,7 @@ def train_image_classification_model(tp: MisoParameters):
             rotation_range = [0, 360]
         else:
             rotation_range = None
-        if tp.augmentation.use_augmentation is True:
+        if tp.training.use_augmentation is True:
             print("- using augmentation")
             augment_fn = aug_all_fn(rotation=rotation_range,
                                     gain=tp.augmentation.gain,
@@ -241,8 +247,13 @@ def train_image_classification_model(tp: MisoParameters):
         train_gen = ds.images.create_generator(tp.training.batch_size, map_fn=augment_fn)
 
         # Validation generator
+        if tf_version == 2:
+            val_one_shot = True
+        else:
+            # One repeat for validation for TF1 otherwise we get end of dataset errors
+            val_one_shot = False
         if tp.dataset.val_split > 0:
-            val_gen = ds.test_generator(tp.training.batch_size, shuffle=False, one_shot=True)
+            val_gen = ds.test_generator(tp.training.batch_size, shuffle=False, one_shot=val_one_shot)
         else:
             val_gen = None
 
@@ -394,18 +405,19 @@ def train_image_classification_model(tp: MisoParameters):
         plt.savefig(os.path.join(save_dir, "confusion_matrix.pdf"))
         plt.close('all')
 
-    # Mislabeled
-    print("- mislabeled")
+    # Vectors for mislabeled and t-SNE
+    print("- calculating vectors... ", end='')
     gen = ds.images.create_generator(1, shuffle=False, one_shot=True)
     if tf_version == 2:
         vectors = vector_model.predict(gen.create(), steps=len(gen))
     else:
         vectors = vector_model.predict_generator(gen.create(), steps=len(gen))
-    print("vector length {}", len(vectors))
-    print(vectors[0,:10])
+    print("{} total".format(len(vectors)))
+    # print(vectors[0, :10])
     v = vector_model.predict(ds.images.data[0:1] / 255)
-    print(v[0, :10])
+    # print(v[0, :10])
     if tp.output.save_mislabeled is True:
+        print("- mislabeled")
         find_and_save_mislabelled(ds.images.data,
                                   vectors,
                                   ds.cls,
@@ -415,14 +427,14 @@ def train_image_classification_model(tp: MisoParameters):
                                   11)
 
     # t-SNE
-    print("- t-SNE")
+    print("- t-SNE (1024 vectors max)")
     idx = np.random.choice(range(len(vectors)), np.min((len(vectors), 1024)), replace=False)
     vec_subset = vectors[idx]
     X = TSNE(n_components=2).fit_transform(vec_subset)
-    counts = np.unique(ds.cls, return_counts=True)
-    print(counts)
-    counts = np.unique(ds.cls[idx], return_counts=True)
-    print(counts)
+    # counts = np.unique(ds.cls, return_counts=True)
+    # print(counts)
+    # counts = np.unique(ds.cls[idx], return_counts=True)
+    # print(counts)
     plot_embedding(X, ds.cls[idx], ds.num_classes)
     plt.savefig(os.path.join(save_dir, "tsne.pdf"))
     # Legend
@@ -455,23 +467,34 @@ def train_image_classification_model(tp: MisoParameters):
     # ------------------------------------------------------------------------------
     # Confirm model save
     # ------------------------------------------------------------------------------
-    if tp.output.save_model is not None:
+    if tp.output.save_model is not None and tp.dataset.val_split > 0:
         print("-" * 80)
         print("Validate saved model")
+        y_pred_old = y_pred
+        y_true = ds.cls[ds.test_idx]
+        gen = ds.test_generator(32, shuffle=False, one_shot=True)
+        y_prob = []
         if tf_version == 2:
             model, img_size, cls_labels = load_from_xml(os.path.join(save_dir, "model", "network_info.xml"))
-            y_true = ds.cls[ds.test_idx]
-            gen = ds.test_generator(32, shuffle=False, one_shot=True)
-            y_prob = []
             for b in iter(gen.to_tfdataset()):
                 y_prob.append(model(b[0]).numpy())
-            y_prob = np.concatenate(y_prob, axis=0)
-            y_pred = y_prob.argmax(axis=1)
-            acc = accuracy_score(y_true, y_pred)
-            p, r, f1, _ = precision_recall_fscore_support(y_true, y_pred)
-            print("Test set: acc {:.2f}, prec {:.2f}, rec {:.2f}, f1 {:.2f}".format(acc, np.mean(p), np.mean(r), np.mean(f1)))
         else:
             session, input, output, img_size, cls_labels = load_from_xml(os.path.join(save_dir, "model", "network_info.xml"))
+            iterator = iter(gen.tf1_compat_generator())
+            for bi in range(len(gen)):
+                b = next(iterator)
+                y_p = session.run(output, feed_dict={input: b[0]})
+                y_prob.append(y_p)
+        y_prob = np.concatenate(y_prob, axis=0)
+        y_pred = y_prob.argmax(axis=1)
+        acc = accuracy_score(y_true, y_pred)
+        p, r, f1, _ = precision_recall_fscore_support(y_true, y_pred)
+        print("Saved model on test set: acc {:.2f}, prec {:.2f}, rec {:.2f}, f1 {:.2f}".format(acc, np.mean(p), np.mean(r), np.mean(f1)))
+        acc = accuracy_score(y_pred_old, y_pred)
+        if acc == 1.0:
+            print("Overlap: {:.2f}% - PASSED".format(acc * 100))
+        else:
+            print("Overlap: {:.2f}% - FAILED".format(acc * 100))
 
     # ------------------------------------------------------------------------------
     # Clean up

@@ -22,9 +22,7 @@ def generate(tp: MisoParameters):
         parts = tp.cnn.id.split("_")
         if parts[0] in TRANSFER_LEARNING_PARAMS.keys():
             model_head, model_tail = generate_tl(tp.cnn.id, tp.dataset.num_classes, tp.cnn.img_shape)
-            outputs = model_tail(model_head.outputs[0])
-            model = Model(model_head.inputs[0], outputs)
-            return model
+            return combine_tl(model_head, model_tail)
         else:
             raise ValueError("The CNN type {} is not supported, valid CNNs are {}".format(parts[0], TRANSFER_LEARNING_PARAMS.keys()))
 
@@ -103,10 +101,13 @@ def generate_tl(cnn_type, num_classes, img_shape):
     model_tail = tail(num_classes, [model_head.layers[-1].output.shape[-1], ])
     return model_head, model_tail
 
+def combine_tl(model_head, model_tail):
+    return Model(inputs=model_head.input, outputs=model_tail.call(model_head.output))
+
 
 def generate_vector(model, cnn_type):
     if cnn_type.endswith("tl"):
-        vector_tensor = model.get_layer(index=-2).get_output_at(0)
+        vector_tensor = model.get_layer(index=-2).get_output_at(1)
         vector_model = Model(model.inputs, vector_tensor)
     elif cnn_type.startswith("base_cyclic"):
         vector_layer = model.get_layer(index=-2)

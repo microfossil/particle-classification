@@ -24,8 +24,10 @@ def graph_to_console(epoch, batch, acc, loss, val_acc, val_loss, lr_prob, lr_pro
             print('|', end="")
         else:
             print(' ', end="")
-    msg = " {} #T {:.1f}%/{:.4f}, *V {:.1f}%/{:.4f} ({:.2f}s)"
-    print(msg.format(epoch, acc * 100, loss, val_acc * 100, val_loss, time_difference))
+    # msg = " {} #T {:.1f}%/{:.4f}, *V {:.1f}%/{:.4f} ({:.2f}s)"
+    # print(msg.format(epoch, acc * 100, loss, val_acc * 100, val_loss, time_difference))
+    msg = " {} #T{:.1f}%/*V{:.1f}% ({:.2f}s)"
+    print(msg.format(epoch, acc * 100, val_acc * 100, time_difference))
 
 
 class AdaptiveLearningRateScheduler(Callback):
