@@ -118,7 +118,7 @@ def train_image_classification_model(tp: MisoParameters):
                                 tp.training.batch_size,
                                 shuffle=True,
                                 one_shot=False,
-                                oversample=tp.training.use_class_balancing)
+                                oversample=tp.training.use_class_undersampling)
 
         # Validation generator
         if tf_version == 2:
@@ -137,14 +137,14 @@ def train_image_classification_model(tp: MisoParameters):
             val_gen = None
 
         # Class weights (only if over sampling is not used)
-        if tp.training.use_class_weights is True and tp.training.use_class_balancing is False:
+        if tp.training.use_class_weights is True and tp.training.use_class_undersampling is False:
             class_weights = ds.class_weights
             print("- class weights: {}".format(class_weights))
             if tf_version == 2:
                 class_weights = dict(enumerate(class_weights))
         else:
             class_weights = None
-        if tp.training.use_class_balancing:
+        if tp.training.use_class_undersampling:
             print("- class balancing using random over sampling")
 
         v = model_tail.predict(vectors[0:1])
@@ -258,7 +258,7 @@ def train_image_classification_model(tp: MisoParameters):
             val_gen = None
 
         # Class weights
-        if tp.training.use_class_weights is True and tp.training.use_class_balancing is False:
+        if tp.training.use_class_weights is True and tp.training.use_class_undersampling is False:
             class_weights = ds.class_weights
             print("- class weights: {}".format(class_weights))
             if tf_version == 2:
@@ -354,9 +354,9 @@ def train_image_classification_model(tp: MisoParameters):
             len(ds.filenames.filenames),
             len(ds.cls_labels),
             result.accuracy * 100,
-            result.mean_precision() * 100,
-            result.mean_recall() * 100,
-            result.mean_f1_score() * 100)
+            result.mean_precision * 100,
+            result.mean_recall * 100,
+            result.mean_f1_score * 100)
 
     # Create model info with all the parameters
     inputs = OrderedDict()

@@ -15,3 +15,5 @@ test_scripts/background/output/
 test/
 
 examples/output/
+build/
+dist/

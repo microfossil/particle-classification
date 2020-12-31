@@ -12,3 +12,4 @@ dill
 flask
 tqdm
 xlrd
+imblearn

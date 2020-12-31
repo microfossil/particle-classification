@@ -76,7 +76,7 @@ tp.training.monitor_val_loss = False
 # Use class weighting?
 tp.training.use_class_weights = True
 # Use class balancing via random over sampling? (Overrides class weights)
-tp.training.use_class_balancing = False
+tp.training.use_class_undersampling = False
 # Use train time augmentation?
 tp.training.use_augmentation = True
 
