@@ -53,4 +53,5 @@ miso/utils/__init__.py
 miso/utils/flowcam.py
 miso/utils/misc.py
 miso/utils/rolling_buffer.py
+miso/utils/singleton.py
 miso/utils/wave.py

@@ -3,6 +3,7 @@ from miso.training.parameters import MisoParameters
 from miso.training.trainer import train_image_classification_model
 
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.WARN)
+
 tp = MisoParameters()
 
 # -----------------------------------------------------------------------------

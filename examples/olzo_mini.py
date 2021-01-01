@@ -1,6 +1,11 @@
 """
 Train an image classifier on the mini olzo dataset
 """
+import os
+
+from miso.utils import singleton
+
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 from miso.training.parameters import MisoParameters
 from miso.training.trainer import train_image_classification_model
@@ -39,7 +44,7 @@ tp.dataset.memmap_directory = None
 # - resnet[18,34,50]
 # - vgg[16,19]
 # - efficientnetB[0-7]
-tp.cnn.id = "base_cyclic"
+tp.cnn.id = "resnet50_tl"
 # Input image shape, set to None to use default size ([128, 128, 1] for custom, [224, 224, 3] for others)
 tp.cnn.img_shape = [224, 224, 3]
 # Input image colour space [greyscale/rgb]
@@ -119,5 +124,19 @@ tp.output.save_mislabeled = False
 
 # Train the model!!!
 # Guard for windows
+import time
+from datetime import datetime
+import numpy as np
 if __name__ == "__main__":
-    train_image_classification_model(tp)
+    # Only one script at a time
+    start = time.time()
+    done = False
+    while not done:
+        try:
+            lock = singleton.SingleInstance(lockfile="miso.lock")
+            print()
+            train_image_classification_model(tp)
+            done = True
+        except singleton.SingleInstanceException:
+            print("{}: Another script is already running, trying again in 10 seconds. ({}s waiting)\r".format(datetime.now(), np.round(time.time() - start)), end='')
+            time.sleep(10)

@@ -78,7 +78,6 @@ def freeze(model, save_dir):
     remove(os.path.join(save_dir, "saved_model.pb"))
     remove(os.path.join(save_dir, "variables"))
 
-
 def load_frozen_model(source: str,
                       input_tensor="input_1:0",
                       output_tensor="conv2d_23/Sigmoid:0",
