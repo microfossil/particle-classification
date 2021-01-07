@@ -51,7 +51,7 @@ def generate(tp: MisoParameters):
                                     None,
                                     use_cyclic=True,
                                     global_pooling=tp.cnn.global_pooling)
-        model = ResNetCyclic(resnet_params, tp.cnn.img_shape, None, True, tp.cnn.num_classes)
+        model = ResNetCyclic(resnet_params, tp.cnn.img_shape, None, True, tp.dataset.num_classes)
     # EfficientNet
     elif tp.cnn.id.lower().startswith(("efficientnet")):
         if tp.cnn.id.lower() == "efficientnetb0":
@@ -78,7 +78,7 @@ def generate(tp: MisoParameters):
         classifier, preprocess_input = Classifiers.get(tp.cnn.id)
         model = classifier(input_shape=tp.cnn.img_shape,
                            weights=None,
-                           classes=tp.cnn.num_classes)
+                           classes=tp.dataset.num_classes)
     else:
         raise ValueError(
             "The CNN type {} is not supported, valid CNNs are base_cyclic, resnet_cyclic, efficientnetb[0-7] and {}".format(tp.cnn.id, ModelsFactory().models.keys()))
