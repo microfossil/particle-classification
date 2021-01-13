@@ -18,9 +18,11 @@ def process_dir(input_dir, save_dir, campaign_name, species_filename=None, save_
     # dirs = [d for d in sorted(glob(os.path.join(input_dir, "*"))) if os.path.isdir(d)]
     df_master = None
     for d in dirs:
-        # Last part of directory
-        # run_save_dir = os.path.join(save_dir, d[len(input_dir)+1:])
-        run_name = d[len(input_dir)+1:].replace("/", "_").replace(" ", "_").replace("\\", "_")
+        # Directory
+        if d == input_dir:
+            run_name = os.path.basename(d).replace("/", "_").replace(" ", "_").replace("\\", "_")
+        else:
+            run_name = d[len(input_dir)+1:].replace("/", "_").replace(" ", "_").replace("\\", "_")
         df = process(d, save_dir, campaign_name, run_name, species_filename, save_csv=True)
         if df_master is None:
             df_master = df
@@ -31,7 +33,7 @@ def process_dir(input_dir, save_dir, campaign_name, species_filename=None, save_
             print("append")
             print(len(df_master))
     if save_csv:
-        df_master.to_csv(os.path.join(save_dir, "images", "{}_data.csv".format(campaign_name)))
+        df_master.to_csv(os.path.join(save_dir, campaign_name, "{}_data.csv".format(campaign_name)))
     return df_master
 
 
@@ -94,8 +96,17 @@ def process(input_dir, save_dir, campaign_name, run_name, species_filename=None,
         # Load the image
         im_filename = os.path.join(input_dir, filename)
         mask_filename = os.path.join(input_dir, filename[:-4] + "_bin.tif")
-        im = skio.imread(im_filename)
-        mask = skio.imread(mask_filename)
+
+        try:
+            im = skio.imread(im_filename)
+        except:
+            print("Error opening {}".format(im_filename))
+            continue
+        try:
+            mask = skio.imread(mask_filename)
+        except:
+            print("Error opening {}".format(mask_filename))
+            continue
         # Cut each image out
         for row in group.iterrows():
             row_id = row[0]
