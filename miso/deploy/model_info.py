@@ -9,7 +9,6 @@ from miso.training.parameters import MisoParameters
 
 
 class ModelInfo:
-
     def __init__(self,
                  name: str,
                  description: str,

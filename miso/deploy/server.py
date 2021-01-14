@@ -1,40 +1,24 @@
+import argparse
 from flask import Flask, request, flash
-from PIL import Image
 import numpy as np
-from miso.archive.datasource import DataSource
+from miso.data.image_utils import load_image
 from miso.deploy.saving import load_from_xml
-from skimage.transform import resize
 import sys
 import pandas as pd
 
 app = Flask(__name__)
 
+
 @app.route('/')
 def index():
     return '''
     <!doctype html>
-    <title>MISO Server</title>
-    <h1>MISO Server</h1>
+    <title>MISO Classification Server</title>
+    <h1>MISO Classification Server</h1>
     <h2>Classification</h2>
-    <p>Use the image or file end points to classify an image</p>
-    <p>Use the info end point to obtain the current network details</p>
+    <p>Use the <a href="/file">file</a> end point to classify an image</p>
+    <p>Use the <a href="/count">count</a> end point to get the class counts</p>
     '''
-
-
-def load_image(filename, img_size):
-    if img_size[2] == 3:
-        im = Image.open(filename)
-    else:
-        im = Image.open(filename).convert('L')
-    im = np.asarray(im, dtype=np.float)
-    if im.ndim == 2:
-        im = np.expand_dims(im, -1)
-        if img_size[2] == 3:
-            im = np.repeat(im, repeats=3, axis=-1)
-    im = DataSource.make_image_square(im)
-    im = resize(im, (img_size[0], img_size[1]), order=1)
-    im = np.divide(im, 255)
-    return im
 
 
 @app.route('/count', methods=['GET'])
@@ -51,8 +35,9 @@ def classify_file():
     global app_df
     if request.method == 'GET':
         # check if the post request has the file part
-        print(request.args)
+        print("Classification request:")
         if 'filename' not in request.args:
+            print("- no filename, serving webpage instead...")
             return '''
             <!doctype html>
             <title>Import file</title>
@@ -82,33 +67,43 @@ def classify_file():
             index1 = request.args['index1']
             index2 = request.args['index2']
             resolution = request.args['resolution']
-            print(filename)
-            print(sample)
-            print(index1)
-            print(index2)
-            print(resolution)
+            print(f" - filename:   {filename}")
+            print(f" - sample:     {sample}")
+            print(f" - index1:     {index1}")
+            print(f" - index2:     {index2}")
+            print(f" - resolution: {resolution}")
 
             if filename == "":
                 flash('{"error":"No filename was entered"}')
                 return
             try:
-                im = load_image(filename, app_img_size)
+                # Load image
+                if app_img_size[2] == 1:
+                    img_type = 'rgm'
+                else:
+                    img_type = 'greyscale'
+                im = load_image(filename, app_img_size, img_type)
+
+                # Classify
                 result = app_session.run(app_output, feed_dict={app_input: im[np.newaxis, :, :, :]})
+
+                # Predictions
                 idx = np.argmax(result)
                 code = app_cls_labels[idx]
                 score = np.max(result)
+
+                # Format response
                 result_str = "{{\"code\":\"{}\", \"score\":{}}}".format(code, score)
-                print(app_df.index.contains(sample))
                 if len(app_df) == 0:
                     app_df = app_df.append(pd.Series([sample] + [0] * len(app_cls_labels), index=app_df.columns), ignore_index=True)
                     app_df.set_index('sample', inplace=True)
-                elif app_df.index.contains(sample) is False:
+                elif app_df.index.str.contains(sample) is False:
                     app_df = app_df.append(pd.Series([0] * len(app_cls_labels), name=sample, index=app_df.columns), ignore_index=False)
-                print(app_df)
                 app_df.loc[sample][idx] = app_df.loc[sample][idx] + 1
-                print("Image {} classified.\nCode: {}, score: {}".format(filename, code, score))
+                print("Results\n - code: {}\n - score: {}".format(filename, code, score))
                 return result_str
             except Exception as e:
+                # Erros
                 exc_type, exc_obj, exc_tb = sys.exc_info()
                 print("Exception on line: {}".format(exc_tb.tb_lineno))
                 print(e)
@@ -116,30 +111,21 @@ def classify_file():
                 return result_str
 
 
-def test():
-    session, input, output, img_size, cls_labels = load_from_xml(r"C:\Users\rossm\Documents\Data\TrainedNetworks\OB\OB\model\network_info.xml")
-
-    im = load_image(r"C:\Users\rossm\Documents\Data\Foraminifera\EndlessForams\border_removed\endless_forams_20190914_165343\Beella_digitata\00026-Beella_digitata.jpg", img_size)
-    result = session.run(output, feed_dict={input: im[np.newaxis, :, :, :]})
-
-    print(cls_labels)
-    print(img_size)
-    print(result)
-    print("{{\"code\":{}, \"score\":{}}}".format(cls_labels[np.argmax(result)], np.max(result)))
-    return session, input, output, img_size, cls_labels
-
-
 if __name__ == '__main__':
-    if len(sys.argv) < 2:
-        print("Error: You must specify a network description xml.")
-        # app_session, app_input, app_output, app_img_size, app_cls_labels = test()
-    else:
-        app_session, app_input, app_output, app_img_size, app_cls_labels = load_from_xml(sys.argv[1])
-        app_df = pd.DataFrame(columns=['sample'] + app_cls_labels)
-        print("CLASSIFICATION SERVER")
-        print("---------------------")
-        print("Labels:")
-        print(app_cls_labels)
-        app.run(debug=False, port=5555)
+
+    app_session, app_input, app_output, app_img_size, app_cls_labels = load_from_xml(r"C:\Users\rossm\Documents\Data\TrainedNetworks\ResNet50 TL (fast)_20210101-174602\model\network_info.xml")
+
+    parser = argparse.ArgumentParser("MISO Classification Server")
+    parser.add_argument("-i", "--info", required=True, help="CNN network information file")
+    parser.add_argument("-p", "--port", required=True, help="Server port")
+    args = parser.parse_args()
+
+    app_session, app_input, app_output, app_img_size, app_cls_labels = load_from_xml(args.info)
+    app_df = pd.DataFrame(columns=['sample'] + app_cls_labels)
+    print("MISO Classification Server - port {}".format(args.port))
+    print("--------------------------")
+    print("Labels:")
+    print(app_cls_labels)
+    app.run(debug=False, port=args.port)
 
 
