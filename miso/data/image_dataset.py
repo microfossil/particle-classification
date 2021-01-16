@@ -44,7 +44,7 @@ class ImageDataset(DatasetBase):
         if memmap_directory is None:
             print("- stored in RAM")
         else:
-            print("- stored on disk a {}".format(self.memmap_file))
+            print("- stored on disk at {}".format(self.memmap_file))
 
         if img_size is None:
             # Read first image to see the size

@@ -87,7 +87,7 @@ def to_channels(im, out_channels, to_greyscale=False):
         img_channels = 1
     # Repeat if needed
     if img_channels == 1 and out_channels == 3:
-        im = np.repeat(im[..., np.newaxis], 3, axis=-1)
+        im = np.repeat(im, 3, axis=-1)
     return im
 
 

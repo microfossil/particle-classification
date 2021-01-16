@@ -75,18 +75,3 @@ class ParallelImageLoader:
         self.producer_queue.close()
         self.consumer_queue.close()
 
-
-if __name__ == "__main__":
-    from mml.data.filenames_dataset import FilenamesDataset
-
-    fs = FilenamesDataset(r"C:\data\SeagrassFrames")
-    fs.split(0.05)
-
-    shape = get_array_shape(fs.test_filenames)
-    print("Array shape is {}".format(shape))
-
-    from numpy.lib.format import open_memmap
-
-    mmap = open_memmap(r"D:\temp\test.npy", mode='w+', dtype=np.int8, shape=shape)
-    loader = ParallelImageLoader(fs.test_filenames, mmap)
-    loader.load()
