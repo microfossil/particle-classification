@@ -104,6 +104,8 @@ class MisoParameters(Parameters):
                     shape[2] = 1
                     self.augmentation.orig_img_shape[2] = 3
             self.cnn.img_shape = shape
+        elif self.cnn.id.endswith("_tl"):
+            self.cnn.img_shape[2] = 3
         if self.name == "":
             self.name = self.dataset.source.replace("http://", "").replace("https://", "").replace("/", "-").replace("\\", "-") + "_" + self.cnn.id + "_" + self.cnn.img_shape + "_" + self.cnn.img_type
 
