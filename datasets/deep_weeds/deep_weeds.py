@@ -4,9 +4,9 @@ from glob import glob
 import shutil
 from tqdm import tqdm
 
-SOURCE_DIR = r"D:\Download\images"
-SOURCE_CSV = r"D:\Download\deep_weeds.csv"
-OUTPUT_DIR = "/Users/chaos/OneDrive/Datasets/DeepWeeds"
+SOURCE_DIR = r"C:\Users\rossm\Documents\Data\Weeds\NavuaSedge_Malanda_May2020"
+SOURCE_CSV = r"C:\Users\rossm\Documents\Data\Weeds\NavuaSedge_Malanda_May2020.csv"
+OUTPUT_DIR = r"C:\Users\rossm\Documents\Data\Weeds\NavuaSedge_Malanda_May2020_sorted"
 
 df = pd.read_csv(SOURCE_CSV)
 
