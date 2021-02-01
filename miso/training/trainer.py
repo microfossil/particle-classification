@@ -118,7 +118,7 @@ def train_image_classification_model(tp: MisoParameters):
                                 tp.training.batch_size,
                                 shuffle=True,
                                 one_shot=False,
-                                oversample=tp.training.use_class_undersampling)
+                                undersample=tp.training.use_class_undersampling)
 
         # Validation generator
         if tf_version == 2:
@@ -145,7 +145,7 @@ def train_image_classification_model(tp: MisoParameters):
         else:
             class_weights = None
         if tp.training.use_class_undersampling:
-            print("- class balancing using random over sampling")
+            print("- class balancing using random under sampling")
 
         v = model_tail.predict(vectors[0:1])
         print(v[0, :10])
@@ -244,7 +244,9 @@ def train_image_classification_model(tp: MisoParameters):
                                                verbose=1)
 
         # Training generator
-        train_gen = ds.images.create_generator(tp.training.batch_size, map_fn=augment_fn)
+        train_gen = ds.train_generator(batch_size=tp.training.batch_size,
+                                       map_fn=augment_fn,
+                                       undersample=tp.training.use_class_undersampling)
 
         # Validation generator
         if tf_version == 2:
@@ -265,6 +267,8 @@ def train_image_classification_model(tp: MisoParameters):
                 class_weights = dict(enumerate(class_weights))
         else:
             class_weights = None
+        if tp.training.use_class_undersampling:
+            print("- class balancing using random under sampling")
 
         # Train the model
         history = model.fit_generator(train_gen.create(),

@@ -10,7 +10,7 @@ tp = MisoParameters()
 # Name
 # -----------------------------------------------------------------------------
 # Name of this training run (leave as "" to auto-generate
-tp.name = r"Base Cyclic 8"
+tp.name = r""
 # Description of this training run (leave as "" to auto-generate
 tp.description = None
 # -----------------------------------------------------------------------------
@@ -50,7 +50,7 @@ tp.cnn.img_shape = [224, 224, 3]
 # Input image colour space [greyscale/rgb]
 tp.cnn.img_type = "rgb"
 # Number of filters in first block (custom networks)
-tp.cnn.filters = 8
+tp.cnn.filters = 4
 # Number of blocks (custom networks), set to None for automatic selection
 tp.cnn.blocks = None
 # Size of dense layers (custom networks / transfer learning) as a list, e.g. [512, 512] for two dense layers size 512
@@ -73,7 +73,7 @@ tp.training.batch_size = 32
 tp.training.max_epochs = 10000
 # Number of epochs to monitor for no improvement by the adaptive learning rate scheduler.
 # After no improvement for this many epochs, the learning rate is dropped by half
-tp.training.alr_epochs = 10
+tp.training.alr_epochs = 20
 # Number of learning rate drops after which training is suspended
 tp.training.alr_drops = 4
 # Monitor the validation loss instead?
@@ -117,7 +117,7 @@ tp.output.save_dir = r"C:\Users\rossm\Documents\Data\TrainedNetworks"
 # Save model?
 tp.output.save_model = False
 # Save the mislabelled image analysis?
-tp.output.save_mislabeled = False
+tp.output.save_mislabeled = True
 
 
 

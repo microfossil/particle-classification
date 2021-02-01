@@ -1,7 +1,6 @@
 import numpy as np
 import tensorflow as tf
 import tensorflow.keras.backend as K
-from imblearn.over_sampling import RandomOverSampler
 from imblearn.under_sampling import RandomUnderSampler
 
 
@@ -15,7 +14,7 @@ class TFGenerator(object):
                  prefetch=4,
                  map_fn=None,
                  one_shot=False,
-                 oversample=False,
+                 undersample=False,
                  data_dtype=tf.float32,
                  labels_dtype=tf.float32):
         """
@@ -41,7 +40,7 @@ class TFGenerator(object):
         self.prefetch = prefetch
         self.map_fn = map_fn
         self.one_shot = one_shot
-        self.oversample = oversample
+        self.undersample = undersample
         if idxs is None:
             self.idxs = np.arange(len(data))
         else:
@@ -55,7 +54,7 @@ class TFGenerator(object):
             return int(np.floor(len(self.idxs) / self.batch_size))
 
     def on_epoch_end(self):
-        if self.oversample:
+        if self.undersample:
             rus = RandomUnderSampler()
             if isinstance(self.labels[0], np.ndarray):
                 c = np.argmax(self.labels, axis=-1)
@@ -63,14 +62,14 @@ class TFGenerator(object):
                 c = self.labels
             x, y = rus.fit_sample(self.idxs.reshape(-1, 1), c[self.idxs])
             x = x.flatten()
-            # y = y.flatten()
+            #y = y.flatten()
             np.random.shuffle(x)
-            # print(len(x))
-            # print(np.unique(y, return_counts=True))
-            # np.random.shuffle(y)
-            # for i in range(100):
-                # print(y[i], end="")
-            # print()
+            #print(len(x))
+            #print(np.unique(y, return_counts=True))
+            #np.random.shuffle(y)
+            #for i in range(100):
+            #    print(y[i], end="")
+            #print()
             self.idxs = x
         elif self.shuffle:
             np.random.shuffle(self.idxs)

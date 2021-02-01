@@ -84,11 +84,11 @@ class TrainingDataset(object):
                                    memmap_directory=self.memmap_directory)
         self.images.load()
 
-    def train_generator(self, batch_size=32, shuffle=True, one_shot=False):
-        return self.images.create_generator(batch_size, self.train_idx, shuffle=shuffle, one_shot=one_shot)
+    def train_generator(self, batch_size=32, shuffle=True, one_shot=False, undersample=False, map_fn=TFGenerator.map_fn_divide_255):
+        return self.images.create_generator(batch_size, self.train_idx, map_fn=map_fn, shuffle=shuffle, one_shot=one_shot, undersample=undersample)
 
-    def test_generator(self, batch_size=32, shuffle=True, one_shot=False):
-        return self.images.create_generator(batch_size, self.test_idx, shuffle=shuffle, one_shot=one_shot)
+    def test_generator(self, batch_size=32, shuffle=True, one_shot=False, undersample=False, map_fn=TFGenerator.map_fn_divide_255):
+        return self.images.create_generator(batch_size, self.test_idx, map_fn=map_fn, shuffle=shuffle, one_shot=one_shot, undersample=undersample)
 
     def release(self):
         self.images.release()

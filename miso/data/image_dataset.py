@@ -67,7 +67,7 @@ class ImageDataset(DatasetBase):
                                          transform_args=self.transform_args)
             loader.load()
 
-    def create_generator(self, batch_size, idxs=None, map_fn=TFGenerator.map_fn_divide_255, shuffle=True, one_shot=False):
+    def create_generator(self, batch_size, idxs=None, map_fn=TFGenerator.map_fn_divide_255, shuffle=True, one_shot=False, undersample=False):
         # Create generators for training
         gen = TFGenerator(self.data,
                           self.cls,
@@ -75,5 +75,6 @@ class ImageDataset(DatasetBase):
                           batch_size=batch_size,
                           map_fn=map_fn,
                           shuffle=shuffle,
-                          one_shot=one_shot)
+                          one_shot=one_shot,
+                          undersample=undersample)
         return gen

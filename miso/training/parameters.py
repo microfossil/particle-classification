@@ -45,7 +45,7 @@ class TrainingParameters(Parameters):
     alr_drops = 4
     monitor_val_loss = False
     use_class_weights = True
-    use_class_balancing = False
+    use_class_undersampling = False
     use_augmentation = True
 
 
