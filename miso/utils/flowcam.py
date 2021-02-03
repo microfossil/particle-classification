@@ -33,7 +33,7 @@ def process_dir(input_dir, save_dir, campaign_name, species_filename=None, save_
             print("append")
             print(len(df_master))
     if save_csv:
-        df_master.to_csv(os.path.join(save_dir, campaign_name, "{}_data.csv".format(campaign_name)))
+        df_master.to_csv(os.path.join(save_dir, campaign_name, "{}_data.csv".format(campaign_name)), index=False)
     return df_master
 
 
@@ -145,7 +145,7 @@ def process(input_dir, save_dir, campaign_name, run_name, species_filename=None,
     df.insert(3, 'sample', df_sample)
     df.insert(4, 'class', df_cls)
     if save_csv:
-        df.to_csv(os.path.join(im_save_dir, "{}_{}_data.csv".format(campaign_name, run_name)))
+        df.to_csv(os.path.join(im_save_dir, "{}_{}_data.csv".format(campaign_name, run_name)), index=False)
     print("Complete!")
     return df
 

@@ -31,7 +31,7 @@ class DatasetBase:
                 self.data = open_memmap(self.memmap_file, mode='r+', dtype=self.dtype, shape=self.shape)
                 # Check if not all zeros
                 # If all zeros, usually indication of an error creating the memmap file previously, therefore recreate
-                if np.count_nonzero(self.data[0]) > 0:
+                if np.count_nonzero(self.data[0]) > 0 and np.count_nonzero(self.data[-1]) > 0:
                     return True
                 else:
                     self.data._mmap.close()
