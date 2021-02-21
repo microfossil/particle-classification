@@ -17,3 +17,4 @@ test/
 examples/output/
 build/
 dist/
+miso2.egg-info/
