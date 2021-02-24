@@ -76,7 +76,7 @@ class TrainingDataset(object):
         to_greyscale = False
         if self.img_type == 'k' or self.img_type == 'greyscale':
             to_greyscale = True
-        print(self.img_size)
+        # print(self.img_size)
         self.images = ImageDataset(self.filenames.filenames,
                                    self.cls_onehot,
                                    transform_fn='resize_with_pad',

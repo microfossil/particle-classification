@@ -2,7 +2,6 @@
 Creates and trains a generic network
 """
 import warnings
-
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 import time
@@ -26,6 +25,17 @@ from miso.models.factory import *
 
 import matplotlib.pyplot as plt
 import pandas as pd
+
+
+def predict_in_batches(model, generator):
+    results = []
+    try:
+        for x, y in iter(generator):
+            results.append(model.predict(x))
+    except tf.errors.OutOfRangeError:
+        pass
+    results = np.concatenate(results, axis=0)
+    return results
 
 
 def train_image_classification_model(tp: MisoParameters):
@@ -90,11 +100,11 @@ def train_image_classification_model(tp: MisoParameters):
         # Calculate vectors
         print("- calculating vectors")
         t = time.time()
-        gen = ds.images.create_generator(32, shuffle=False, one_shot=True)
+        gen = ds.images.create_generator(tp.training.batch_size, shuffle=False, one_shot=True)
         if tf_version == 2:
             vectors = model_head.predict(gen.create())
         else:
-            vectors = model_head.predict_generator(gen.create(), steps=len(gen))
+            vectors = predict_in_batches(model_head, gen.create())
         print("! {}s elapsed, ({}/{} vectors)".format(time.time() - t, len(vectors), len(ds.images.data)))
 
         # Clear session
@@ -147,8 +157,8 @@ def train_image_classification_model(tp: MisoParameters):
         if tp.training.use_class_undersampling:
             print("- class balancing using random under sampling")
 
-        v = model_tail.predict(vectors[0:1])
-        print(v[0, :10])
+        # v = model_tail.predict(vectors[0:1])
+        # print(v[0, :10])
 
         # model_head.summary()
 
@@ -303,11 +313,11 @@ def train_image_classification_model(tp: MisoParameters):
     # Accuracy
     if tp.dataset.val_split > 0:
         y_true = ds.cls[ds.test_idx]
-        gen = ds.test_generator(1, shuffle=False, one_shot=True)
+        gen = ds.test_generator(tp.training.batch_size, shuffle=False, one_shot=True)
         if tf_version == 2:
-            y_prob = model.predict(gen.to_tfdataset())
+            y_prob = model.predict(gen.create())
         else:
-            y_prob = model.predict_generator(gen.tf1_compat_generator(), len(gen))
+            y_prob = predict_in_batches(model, gen.create())
         y_pred = y_prob.argmax(axis=1)
     else:
         y_true = np.asarray([])
@@ -318,12 +328,12 @@ def train_image_classification_model(tp: MisoParameters):
     max_count = np.min([128, len(ds.images.data)])
     inf_times = []
     for i in range(3):
-        gen = ds.images.create_generator(32, idxs=np.arange(max_count), shuffle=False, one_shot=True)
+        gen = ds.images.create_generator(tp.training.batch_size, idxs=np.arange(max_count), shuffle=False, one_shot=True)
         start = time.time()
         if tf_version == 2:
-            model.predict(gen.to_tfdataset())
+            model.predict(gen.create())
         else:
-            model.predict_generator(gen.tf1_compat_generator(), len(gen))
+            predict_in_batches(model, gen.create())
         end = time.time()
         diff = (end - start) / max_count * 1000
         inf_times.append(diff)
@@ -411,15 +421,12 @@ def train_image_classification_model(tp: MisoParameters):
 
     # Vectors for mislabeled and t-SNE
     print("- calculating vectors... ", end='')
-    gen = ds.images.create_generator(1, shuffle=False, one_shot=True)
+    gen = ds.images.create_generator(tp.training.batch_size, shuffle=False, one_shot=True)
     if tf_version == 2:
-        vectors = vector_model.predict(gen.create(), steps=len(gen))
+        vectors = vector_model.predict(gen.create())
     else:
-        vectors = vector_model.predict_generator(gen.create(), steps=len(gen))
+        vectors = predict_in_batches(vector_model, gen.create())
     print("{} total".format(len(vectors)))
-    # print(vectors[0, :10])
-    v = vector_model.predict(ds.images.data[0:1] / 255)
-    # print(v[0, :10])
     if tp.output.save_mislabeled is True:
         print("- mislabeled")
         find_and_save_mislabelled(ds.images.data,

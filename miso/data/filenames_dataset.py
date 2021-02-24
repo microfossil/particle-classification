@@ -163,12 +163,16 @@ class FilenamesDataset(object):
             print("Removing classes with less than {} images:".format(min_count))
             others = []
             filtered_cls_filenames = OrderedDict()
+            was_min = False
             for k, v in self.cls_filenames.items():
                 if len(v) < min_count:
                     others.extend(v)
                     print("- {}: {} images".format(k, len(v)))
+                    was_min = True
                 else:
                     filtered_cls_filenames[k] = v
+            if was_min is False:
+                print("- none found")
             # Put in others
             if map_others is True and len(others) > min_count:
                 if 'others' in filtered_cls_filenames:
