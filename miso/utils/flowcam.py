@@ -37,7 +37,7 @@ def process_dir(input_dir, save_dir, campaign_name, species_filename=None, save_
     return df_master
 
 
-def process(input_dir, save_dir, campaign_name, run_name, species_filename=None, save_csv=True):
+def process(input_dir, save_dir, campaign_name, run_name, species_filename=None, save_csv=True, save_mask=False):
     # Load species conversion list
     if species_filename is not None and species_filename != "":
         # noms = pd.read_excel(species_filename, sheet_name=0, engine='openpyxl').dropna()
@@ -48,9 +48,10 @@ def process(input_dir, save_dir, campaign_name, run_name, species_filename=None,
 
     # The directory where we will save the images
     im_save_dir = os.path.join(save_dir, campaign_name, "images", run_name)
-    mask_save_dir = os.path.join(save_dir, campaign_name, "masks", run_name)
     os.makedirs(im_save_dir, exist_ok=True)
-    os.makedirs(mask_save_dir, exist_ok=True)
+    if save_mask:
+        mask_save_dir = os.path.join(save_dir, campaign_name, "masks", run_name)
+        os.makedirs(mask_save_dir, exist_ok=True)
     save_dir = os.path.join(save_dir, campaign_name, run_name)
 
     print('-' * 80)
@@ -97,16 +98,26 @@ def process(input_dir, save_dir, campaign_name, run_name, species_filename=None,
         im_filename = os.path.join(input_dir, filename)
         mask_filename = os.path.join(input_dir, filename[:-4] + "_bin.tif")
 
-        try:
-            im = skio.imread(im_filename)
-        except:
-            print("Error opening {}".format(im_filename))
-            continue
-        try:
-            mask = skio.imread(mask_filename)
-        except:
-            print("Error opening {}".format(mask_filename))
-            continue
+        if os.path.exists(im_filename):
+            try:
+                im = skio.imread(im_filename)
+            except:
+                print("Error opening image {}".format(im_filename))
+                continue
+        else:
+            print("Image not found {}".format(im_filename))
+
+        is_mask = False
+        if save_mask:
+            if os.path.exists(im_filename):
+                try:
+                    mask = skio.imread(mask_filename)
+                    is_mask = True
+                except:
+                    print("Error opening {}".format(mask_filename))
+            else:
+                print("Mask not found {}".format(im_filename))
+
         # Cut each image out
         for row in group.iterrows():
             row_id = row[0]
@@ -130,14 +141,14 @@ def process(input_dir, save_dir, campaign_name, run_name, species_filename=None,
             height = row['image_h']
             # Get the segmented image
             seg_im = im[y:y + height, x:x + width, ...]
-            seg_mask = mask[y:y + height, x:x + width, ...]
-            # Save it!
             seg_im_filename = os.path.join(im_save_dir, cls, "{}_{}_{:08d}.png".format(campaign_name, run_name, id))
-            seg_mask_filename = os.path.join(mask_save_dir, cls, "{}_{}_{:08d}.png".format(campaign_name, run_name, id))
             os.makedirs(os.path.dirname(seg_im_filename), exist_ok=True)
-            os.makedirs(os.path.dirname(seg_mask_filename), exist_ok=True)
             skio.imsave(seg_im_filename, seg_im)
-            skio.imsave(seg_mask_filename, seg_mask)
+            if is_mask:
+                seg_mask = mask[y:y + height, x:x + width, ...]
+                seg_mask_filename = os.path.join(mask_save_dir, cls, "{}_{}_{:08d}.png".format(campaign_name, run_name, id))
+                os.makedirs(os.path.dirname(seg_mask_filename), exist_ok=True)
+                skio.imsave(seg_mask_filename, seg_mask)
             df_cls[id-1] = cls
             df_filename[id-1] = seg_im_filename
     df.insert(0, 'filename', df_filename)
