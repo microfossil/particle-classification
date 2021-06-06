@@ -109,14 +109,14 @@ def process(input_dir, save_dir, campaign_name, run_name, species_filename=None,
 
         is_mask = False
         if save_mask:
-            if os.path.exists(im_filename):
+            if os.path.exists(mask_filename):
                 try:
                     mask = skio.imread(mask_filename)
                     is_mask = True
                 except:
                     print("Error opening {}".format(mask_filename))
             else:
-                print("Mask not found {}".format(im_filename))
+                print("Mask not found {}".format(mask_filename))
 
         # Cut each image out
         for row in group.iterrows():
