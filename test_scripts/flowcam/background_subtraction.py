@@ -21,6 +21,11 @@ print(df)
 
 im_cal = skio.imread(cal_filename).astype(np.float32)
 
+for raw_filename in tqdm(raw_filenames[:4]):
+    im_raw = skio.imread(raw_filename)
+    plt.imshow(im_raw)
+    plt.show()
+
 ims = []
 for raw_filename in tqdm(raw_filenames[:40]):
     im_raw = skio.imread(raw_filename)
