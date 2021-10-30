@@ -1,6 +1,8 @@
 """
 Creates and trains a generic network
 """
+import os
+import skimage.io
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
@@ -85,6 +87,11 @@ def train_image_classification_model(tp: MisoParameters):
                          tp.dataset.memmap_directory)
     ds.load()
     tp.dataset.num_classes = ds.num_classes
+
+    # Create save lodations
+    now = datetime.datetime.now()
+    save_dir = os.path.join(tp.output.save_dir, "{0}_{1:%Y%m%d-%H%M%S}".format(tp.name, now))
+    os.makedirs(save_dir, exist_ok=True)
 
     # ------------------------------------------------------------------------------
     # Transfer learning
@@ -228,15 +235,16 @@ def train_image_classification_model(tp: MisoParameters):
 
         # Generate model
         model = generate(tp)
+        model.summary()
 
         # Augmentation
         if tp.augmentation.rotation is True:
-            rotation_range = [0, 360]
-        else:
-            rotation_range = None
+            tp.augmentation.rotation = [0, 360]
+        elif tp.augmentation.rotation is False:
+            tp.augmentation.rotation = None
         if tp.training.use_augmentation is True:
             print("- using augmentation")
-            augment_fn = aug_all_fn(rotation=rotation_range,
+            augment_fn = aug_all_fn(rotation=tp.augmentation.rotation,
                                     gain=tp.augmentation.gain,
                                     gamma=tp.augmentation.gamma,
                                     zoom=tp.augmentation.zoom,
@@ -258,6 +266,16 @@ def train_image_classification_model(tp: MisoParameters):
                                        map_fn=augment_fn,
                                        undersample=tp.training.use_class_undersampling)
 
+        # Save example of training data
+        print(" - saving example training batch")
+        training_examples_dir = os.path.join(save_dir, "examples", "training")
+        os.makedirs(training_examples_dir)
+        images, labels = next(iter(train_gen.create()))
+        for t_idx, im in enumerate(images):
+            im = (im * 255)
+            im[im > 255] = 255
+            skimage.io.imsave(os.path.join(training_examples_dir, "{:03d}.jpg".format(t_idx)), im.astype(np.uint8))
+
         # Validation generator
         if tf_version == 2:
             val_one_shot = True
@@ -265,7 +283,9 @@ def train_image_classification_model(tp: MisoParameters):
             # One repeat for validation for TF1 otherwise we get end of dataset errors
             val_one_shot = False
         if tp.dataset.val_split > 0:
-            val_gen = ds.test_generator(tp.training.batch_size, shuffle=False, one_shot=val_one_shot)
+            # Maximum 8 in batch otherwise validation results jump around a bit because
+            val_gen = ds.test_generator(min(tp.training.batch_size, 16), shuffle=False, one_shot=val_one_shot)
+            # val_gen = ds.test_generator(tp.training.batch_size, shuffle=False, one_shot=val_one_shot)
         else:
             val_gen = None
 
@@ -307,9 +327,6 @@ def train_image_classification_model(tp: MisoParameters):
     # ------------------------------------------------------------------------------
     print('-' * 80)
     print("Evaluating model")
-    now = datetime.datetime.now()
-    save_dir = os.path.join(tp.output.save_dir, "{0}_{1:%Y%m%d-%H%M%S}".format(tp.name, now))
-    os.makedirs(save_dir, exist_ok=True)
     # Accuracy
     if tp.dataset.val_split > 0:
         y_true = ds.cls[ds.test_idx]

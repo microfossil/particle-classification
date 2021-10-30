@@ -104,14 +104,21 @@ class AdaptiveLearningRateScheduler(Callback):
         self.buffer.append(monitor_value)
 
         if count >= self.buffer.length() * 3 and self.buffer.full() and self.finished is False:
+            # if count % 20 == 19:
+            #     lr = float(K.get_value(self.model.optimizer.lr))
+            #     new_lr = lr * self.drop_rate
+            #     K.set_value(self.model.optimizer.lr, new_lr)
+            #     print("Learning rate dropped ({}/{}) to {}".format(self.drop_count, self.nb_drops, new_lr))
             if self.buffer.slope_probability_less_than(0) < 0.50:
                 lr = float(K.get_value(self.model.optimizer.lr))
+                # lr = self.model.optimizer.lr.read_value()
                 new_lr = lr * self.drop_rate
                 K.set_value(self.model.optimizer.lr, new_lr)
+                # self.model.optimizer.lr.assign(new_lr)
                 self.buffer.clear()
                 self.drop_count += 1
                 if self.drop_count == self.nb_drops:
                     self.finished = True
                     return
                 if self.verbose == 1:
-                    print("Learning rate dropped ({}/{})".format(self.drop_count, self.nb_drops))
+                    print("Learning rate dropped ({}/{}) to {}".format(self.drop_count, self.nb_drops, new_lr))
