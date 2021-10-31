@@ -1,8 +1,8 @@
-import tensorflow as tf
+import os
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+
 from miso.training.parameters import MisoParameters
 from miso.training.trainer import train_image_classification_model
-
-tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.WARN)
 
 tp = MisoParameters()
 
@@ -10,20 +10,21 @@ tp = MisoParameters()
 # Name 
 # -----------------------------------------------------------------------------
 # Name of this training run (leave as "" to auto-generate
-tp.name = r"ResNet50 TL (fast)"
+tp.name = r"Base Cyclic 16"
 # Description of this training run (leave as "" to auto-generate
 tp.description = None
 # -----------------------------------------------------------------------------
 # Dataset
 # -----------------------------------------------------------------------------
 # Source directory (local folder or download link to dataset)
-tp.dataset.source = r"C:\Users\rossm\Documents\Data\Foraminifera\ModernCoretop\project.xml"
+# tp.dataset.source = r"C:\Users\rossm\Documents\Data\Foraminifera\EndlessForams\1000\images_20211029_201024"
+tp.dataset.source = r"C:\Users\rossm\Documents\Data\Foraminifera\EndlessForams\border_removed\endless_forams_20190914_165343"
 # Minimum number of images to include in a class
 tp.dataset.min_count = 40
 # Whether to map the images in class with not enough examples to an "others" class
 tp.dataset.map_others = False
 # Fraction of dataset used for validation
-tp.dataset.val_split = 0.2
+tp.dataset.val_split = 0.25
 # Random seed used to split the dataset into train and validation
 tp.dataset.random_seed = 0
 # Set to a local directory to stored the loaded dataset on disk instead of in memory
@@ -44,13 +45,13 @@ tp.dataset.memmap_directory = None
 # - resnet[18,34,50]
 # - vgg[16,19]
 # - efficientnetB[0-7]
-tp.cnn.id = r"resnet50_tl"
+tp.cnn.id = r"base_cyclic"
 # Input image shape, set to None to use default size ([128, 128, 1] for custom, [224, 224, 3] for others)
-tp.cnn.img_shape = [224, 224, 3]
+tp.cnn.img_shape = [128, 128, 1]
 # Input image colour space [greyscale/rgb]
-tp.cnn.img_type = "rgb"
+tp.cnn.img_type = "greyscale"
 # Number of filters in first block (custom networks)
-tp.cnn.filters = 4
+tp.cnn.filters = 16
 # Number of blocks (custom networks), set to None for automatic selection
 tp.cnn.blocks = None
 # Size of dense layers (custom networks / transfer learning) as a list, e.g. [512, 512] for two dense layers size 512
@@ -58,7 +59,7 @@ tp.cnn.dense = None
 # Whether to use batch normalisation
 tp.cnn.use_batch_norm = True
 # Type of pooling [avg, max, none]
-tp.cnn.global_pooling = "avg"
+tp.cnn.global_pooling = None
 # Type of activation
 tp.cnn.activation = "relu"
 # Use A-Softmax
@@ -113,16 +114,39 @@ tp.augmentation.orig_img_shape = [224, 224, 3]
 # Output
 # -----------------------------------------------------------------------------
 # Directory to save output
-tp.output.save_dir = r"C:\Users\rossm\Documents\Data\TrainedNetworks"
+tp.output.save_dir = r"C:\Users\rossm\Documents\Development\Microfossil\particle-classification-experiments\exp3_latest_version"
 # Save model?
 tp.output.save_model = True
 # Save the mislabelled image analysis?
-tp.output.save_mislabeled = True
+tp.output.save_mislabeled = False
 
 
 
 
 # Train the model!!!
+import time
+import tempfile
+from datetime import datetime
+import numpy as np
+from miso.utils import singleton
 # Guard for windows
 if __name__ == "__main__":
-    train_image_classification_model(tp)
+    # Only one script at a time
+    start = time.time()
+    done = False
+    while not done:
+        try:
+            fn = os.path.join(tempfile.gettempdir(), "miso.lock")
+            with open(fn, 'w+') as fh:
+                fh.write('miso')
+            try:
+                os.chmod(fn, 0o777)
+            except OSError:
+                pass
+            lock = singleton.SingleInstance(lockfile=fn)
+            print()
+            train_image_classification_model(tp)
+            done = True
+        except singleton.SingleInstanceException:
+            print("{}: Another script is already running, trying again in 10 seconds. ({}s waiting)\r".format(datetime.now(), np.round(time.time() - start)), end='')
+            time.sleep(10)

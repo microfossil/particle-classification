@@ -5,16 +5,17 @@ import os
 import numpy as np
 from collections import OrderedDict
 
+from miso.training.parameters import MisoParameters
+
 
 class ModelInfo:
-
     def __init__(self,
                  name: str,
                  description: str,
                  type: str,
                  date: datetime.datetime,
                  protobuf: str,
-                 params: Dict,
+                 params: MisoParameters,
                  inputs: OrderedDict,
                  outputs: OrderedDict,
                  data_source_name: str,
@@ -71,7 +72,7 @@ class ModelInfo:
         ET.SubElement(root, "protobuf").text = self.protobuf
 
         parent_node = ET.SubElement(root, "params")
-        for key, value in self.params.items():
+        for key, value in self.params.asdict().items():
             ET.SubElement(parent_node, key).text = str(value)
 
         parent_node = ET.SubElement(root, "inputs")

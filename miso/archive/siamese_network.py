@@ -1,7 +1,5 @@
-import tensorflow as tf
 from tensorflow.keras.layers import Input, Flatten, Dense, Dropout, Lambda
 from tensorflow.keras.models import Model
-from tensorflow.keras.datasets import mnist
 import tensorflow.keras.backend as K
 from tensorflow.keras.optimizers import RMSprop
 import numpy as np
@@ -78,7 +76,7 @@ def create_pairs(x, digit_indices):
 
 
 if __name__ == "__main__":
-    from miso.data.datasource import DataSource
+    from miso.archive.datasource import DataSource
     from miso.models.transfer_learning import head
 
     # num_classes = 10

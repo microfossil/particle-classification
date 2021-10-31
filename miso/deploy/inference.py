@@ -5,7 +5,7 @@ and its classification
 import tensorflow as tf
 from tensorflow.keras.utils import Sequence, OrderedEnqueuer
 import numpy as np
-from miso.data.datasource import DataSource
+from miso.archive.datasource import DataSource
 import lxml.etree as ET
 from tensorflow.python.platform import gfile
 import tensorflow.keras.backend as K

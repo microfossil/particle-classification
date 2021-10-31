@@ -5,7 +5,7 @@ here = pathlib.Path(__file__).parent.resolve()
 long_description = (here / 'README.md').read_text(encoding='utf-8')
 
 setup(
-    name='miso2',
+    name='miso',
     version='2.4.3',
     description='Python scripts for training CNNs for particle classification',
     long_description=long_description,

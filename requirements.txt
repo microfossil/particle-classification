@@ -1,7 +1,5 @@
 dill
 h5py
-bz2
-hashlib
 lxml>=4.2.6
 matplotlib>=3.0.2
 numpy>=1.16.2
@@ -12,3 +10,4 @@ scikit-learn>=0.20.2
 scipy>=1.1.0
 image-classifiers>=1.0.0
 segmentation-models
+tqdm

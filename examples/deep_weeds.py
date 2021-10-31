@@ -1,25 +1,19 @@
-import tensorflow as tf
+"""
+Train an image classifier on the deep weeds dataset
+"""
+
 from miso.training.parameters import MisoParameters
 from miso.training.trainer import train_image_classification_model
-
-tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.WARN)
 
 tp = MisoParameters()
 
 # -----------------------------------------------------------------------------
-# Name 
-# -----------------------------------------------------------------------------
-# Name of this training run (leave as "" to auto-generate
-tp.name = r"ResNet50 TL (fast)"
-# Description of this training run (leave as "" to auto-generate
-tp.description = None
-# -----------------------------------------------------------------------------
 # Dataset
 # -----------------------------------------------------------------------------
-# Source directory (local folder or download link to dataset)
-tp.dataset.source = r"C:\Users\rossm\Documents\Data\Foraminifera\ModernCoretop\project.xml"
+# Mource directory (local folder or download link to dataset)
+tp.dataset.source = "https://1drv.ws/u/s!AiQM7sVIv7falskYWoLgrbSD2RC-Fg"
 # Minimum number of images to include in a class
-tp.dataset.min_count = 40
+tp.dataset.min_count = 10
 # Whether to map the images in class with not enough examples to an "others" class
 tp.dataset.map_others = False
 # Fraction of dataset used for validation
@@ -44,7 +38,7 @@ tp.dataset.memmap_directory = None
 # - resnet[18,34,50]
 # - vgg[16,19]
 # - efficientnetB[0-7]
-tp.cnn.id = r"resnet50_tl"
+tp.cnn.id = "resnet50_tl"
 # Input image shape, set to None to use default size ([128, 128, 1] for custom, [224, 224, 3] for others)
 tp.cnn.img_shape = [224, 224, 3]
 # Input image colour space [greyscale/rgb]
@@ -58,7 +52,7 @@ tp.cnn.dense = None
 # Whether to use batch normalisation
 tp.cnn.use_batch_norm = True
 # Type of pooling [avg, max, none]
-tp.cnn.global_pooling = "avg"
+tp.cnn.global_pooling = None
 # Type of activation
 tp.cnn.activation = "relu"
 # Use A-Softmax
@@ -94,35 +88,34 @@ tp.training.use_augmentation = True
 # Rotation
 tp.augmentation.rotation = [0, 360]
 # Gain: I' = I * gain
-tp.augmentation.gain = [0.8, 1.0, 1.2]
+tp.augmentation.gain = [0.8, 1, 1.2]
 # Gamma: I' = I ^ gamma
-tp.augmentation.gamma = [0.5, 1.0, 2.0]
+tp.augmentation.gamma = [0.5, 1, 2]
 # Bias: I' = I + bias
 tp.augmentation.bias = None
 # Zoom: I'[x,y] = I[x/zoom, y/zoom]
-tp.augmentation.zoom = [0.9, 1.0, 1.1]
+tp.augmentation.zoom = [0.9, 1, 1.1]
 # Gaussian noise std deviation
 tp.augmentation.gaussian_noise = None
 # The parameters for the following are not random
 # Random crop, e.g. [224, 224, 3]
 # If random crop is used, you MUST set the original image size that the crop is taken from
 tp.augmentation.random_crop = None
-tp.augmentation.orig_img_shape = [224, 224, 3]
+tp.augmentation.orig_img_shape = [256, 256, 3]
 
 # -----------------------------------------------------------------------------
 # Output
 # -----------------------------------------------------------------------------
 # Directory to save output
-tp.output.save_dir = r"C:\Users\rossm\Documents\Data\TrainedNetworks"
+tp.output.save_dir = "."
 # Save model?
-tp.output.save_model = True
+save_model = True
 # Save the mislabelled image analysis?
-tp.output.save_mislabeled = True
+tp.output.save_mislabelled = False
 
 
 
 
 # Train the model!!!
-# Guard for windows
-if __name__ == "__main__":
-    train_image_classification_model(tp)
+train_image_classification_model(tp)
+
