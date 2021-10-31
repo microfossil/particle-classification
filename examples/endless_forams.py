@@ -1,7 +1,8 @@
 """
+Train base_cyclic 16 network on the Endless Forams dataset using a random 80/20 train/validation split
 
-Train base_cyclic 16 network on the endless forams dataset using a random 80/20 train/validation split
-
+Requires tensorflow 1.15 (or later) or tensorflow 2 and this library installed either using "pip install miso2" or
+"pip install git+http://www.github.com/microfossil/particle-classification" for the latest version on github.
 """
 
 import os
