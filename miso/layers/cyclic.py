@@ -8,7 +8,6 @@ class CyclicSlice4(tf.keras.layers.Layer):
 
     def call(self, input):
         F = slice_4(input)
-        print(F)
         return F
 
 class CyclicGainSlice12(tf.keras.layers.Layer):
@@ -17,7 +16,6 @@ class CyclicGainSlice12(tf.keras.layers.Layer):
 
     def call(self, input):
         F = slice_gain_12(input)
-        print(F)
         return F
 
 

@@ -5,14 +5,16 @@ from sklearn.utils.extmath import weighted_mode
 from sklearn.preprocessing import normalize
 import os
 
+from tqdm import tqdm
 
-def plot_mislabelled(images,
-                     vectors,
-                     cls,
-                     cls_labels,
-                     image_names,
-                     output_dir,
-                     num_neighbours=11):
+
+def find_and_save_mislabelled(images,
+                              vectors,
+                              cls,
+                              cls_labels,
+                              image_names,
+                              output_dir,
+                              num_neighbours=11):
     """
     Uses nearest neighbour to classify the vectors and checks this matches the actual classifications.
     If not, prints the most similar other images. Also writes to a csv file with this list.
@@ -20,7 +22,7 @@ def plot_mislabelled(images,
         images: Images (for use in plots)
         vectors: Vectors for each image
         cls: Class label for each image
-        cls_labels: List of class labels in order [class_0, class_1, ..., class_N]
+        cls_labels: List of class cls in order [class_0, class_1, ..., class_N]
         image_names: List of ids for each image, e.g. their filenames
         output_dir: Directory to save the results
         num_neighbours: Number of neighbours to use for the kNN classification
@@ -69,7 +71,7 @@ def plot_mislabelled(images,
         ny = int(np.ceil((num_neighbours + 1) / 4))
 
     # Plot each image
-    for im_idx in diff_idx:
+    for im_idx in tqdm(diff_idx):
         fig, axes = plt.subplots(nrows=ny, ncols=nx, figsize=(2 * nx, 2 * ny + 1),
                                  gridspec_kw={"top": (2 * ny + 0.5) / (2 * ny + 1),
                                               "left": 0.05,
@@ -79,7 +81,7 @@ def plot_mislabelled(images,
         fig.set_facecolor("white")
         for i, ax in enumerate(axes.flat):
             if i == 0:
-                image = images[im_idx].astype(np.float32)
+                image = images[im_idx].astype(np.uint8)
                 if images.shape[3] == 1:
                     ax.imshow(image[:, :, 0])
                 else:
@@ -91,7 +93,7 @@ def plot_mislabelled(images,
                 ax.set_xlabel(xlabel)
             else:
                 kidx = idx[im_idx, i - 1]
-                image = images[kidx].astype(np.float32)
+                image = images[kidx].astype(np.uint8)
                 if images.shape[3] == 1:
                     ax.imshow(image[:, :, 0])
                 else:
@@ -107,7 +109,7 @@ def plot_mislabelled(images,
         # Tight layout looks nicer
         fig.tight_layout()
         plt.suptitle(image_names[im_idx])
-        print("@ Actual: {} Predicted: {} - {}".format(cls_labels[cls[im_idx]], cls_labels[pred_cls[im_idx]], image_names[im_idx]))
+        # print("- actual: {} predicted: {} - {}".format(cls_labels[cls[im_idx]], cls_labels[pred_cls[im_idx]], image_names[im_idx]))
         os.makedirs(os.path.join(output_dir,
                                  "mislabeled",
                                  cls_labels[cls[im_idx]]).replace("\\", "/"),
@@ -116,4 +118,5 @@ def plot_mislabelled(images,
                                  "mislabeled",
                                  cls_labels[cls[im_idx]],
                                  image_names[im_idx]).replace("\\", "/"))
+        plt.clf()
         plt.close('all')

@@ -8,19 +8,22 @@ from scipy.spatial.distance import cdist
 import scipy.ndimage as nd
 
 
-def plot_embedding(X, y, num_classes, labels, title=None, indices=None, alpha=1.0, figsize=(8,8)):
+def plot_embedding(X, y, num_classes, labels=None, title=None, indices=None, alpha=1.0, figsize=(8,8)):
     """
     Scatter plot of classes and their 2D embedding
     :param X: The 2D co-ordinates of each class value
     :param y: The classes
     :param num_classes: Total number of classes
-    :param labels: Names of each class
+    :param labels: Names of each class (if None, y values is used)
     :param title: Title of the plot
     :param indices: Extra label to append to each class point, e.g. the index of the image
     :param alpha: Transparency of the class label (0 - fully transparent, 1 - fully opaque)
     :param figsize: Size of the figure
     :return:
     """
+    if labels is None:
+        labels = ["{}".format(i) for i in range(num_classes)]
+    # print(labels)
     # TODO: This can be simplified
     target_values = np.array(range(num_classes))
     colors = target_values / num_classes
@@ -32,7 +35,7 @@ def plot_embedding(X, y, num_classes, labels, title=None, indices=None, alpha=1.
     for i in range(X.shape[0]):
         for j in range(len(target_values)):
             if y[i] == target_values[j]:
-                lbl = "{0}".format(labels[y[i]])
+                lbl = "{}".format(labels[y[i]])
                 if indices is not None:
                     lbl += " {}".format(indices[i])
                 plt.text(X[i, 0], X[i, 1], lbl,
