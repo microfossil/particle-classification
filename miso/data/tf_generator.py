@@ -188,3 +188,11 @@ class TFGenerator(object):
         t = tf.cast(t, tf.float32)
         return tf.divide(t, 255.0)
 
+    @staticmethod
+    def map_fn_divide_255_and_rotate_fn(k):
+        def wrapper(t):
+            t = tf.cast(t, tf.float32)
+            t = tf.image.rot90(t, k)
+            return tf.divide(t, 255.0)
+        return wrapper
+
