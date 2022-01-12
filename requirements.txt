@@ -1,5 +1,5 @@
 dill
-h5py
+h5py<3.0.0
 lxml>=4.2.6
 matplotlib>=3.0.2
 numpy>=1.16.2

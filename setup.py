@@ -6,7 +6,7 @@ long_description = (here / 'README.md').read_text(encoding='utf-8')
 
 setup(
     name='miso2',
-    version='2.4.3',
+    version='2.4.4',
     description='Python scripts for training CNNs for particle classification',
     long_description=long_description,
     long_description_content_type='text/markdown',
@@ -17,9 +17,10 @@ setup(
         'Intended Audience :: Science/Research',
     ],
     keywords='microfossil, cnn',
-    python_requires='>=3.6, <4',
+    python_requires='>=3.6, <3.8',
     packages=['miso', 'miso.data', 'miso.deploy', 'miso.layers', 'miso.models', 'miso.stats', 'miso.training', 'miso.utils'],
     install_requires=['image-classifiers>=1.0.0',
+                      'h5py<3.0.0',
                       'lxml',
                       'matplotlib',
                       'numpy',

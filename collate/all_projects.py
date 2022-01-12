@@ -7,6 +7,9 @@ import numpy as np
 
 ClsInfo = namedtuple('ClsInfo', 'cls score val_by project')
 
+total_projects = 0
+
+
 
 def parse_xml(xml_filename, data):
     project = ET.parse(xml_filename).getroot()
@@ -15,7 +18,11 @@ def parse_xml(xml_filename, data):
         data = OrderedDict()
 
     images_xml = project.find('images')
+    if images_xml is None:
+        return data
+    total_images = 0
     for i, image_xml in enumerate(images_xml.iter('image')):
+        total_images += 1
         relfile = image_xml.find('source').find('filename').text
         if os.path.isabs(relfile):
             absfile = relfile
@@ -32,11 +39,18 @@ def parse_xml(xml_filename, data):
             cls_scores.append(float(cls_val.find('value').text))
         if absfile not in data:
             data[absfile] = []
+        val_by = image_xml.find('val_by')
+        if val_by is None:
+            val_by = ""
+        else:
+            val_by = val_by.text
         info = ClsInfo(cls_names[np.argmax(cls_scores)],
                        np.max(cls_scores),
-                       image_xml.find('val_by').text,
+                       val_by,
                        xml_filename)
         data[absfile].append(info)
+
+    print(total_images)
 
     return data
 
@@ -51,7 +65,7 @@ def parse_xml(xml_filename, data):
     # return filenames_dict
 
 
-SOURCE_DIR = "/media/mar76c/DATA/Datasets/Texture"
+SOURCE_DIR = r"C:\Users\rossm\Documents\Data"
 
 xmls = Path(SOURCE_DIR).rglob("*.xml")
 data = None
@@ -62,6 +76,9 @@ for xml in xmls:
         line = pfn.readline()
         if line.startswith("<project"):
             data = parse_xml(str(xml), data)
+            total_projects += 1
+            if total_projects > 10:
+                break
 
 counts = {}
 for key, value in data.items():
@@ -72,3 +89,12 @@ for key, value in data.items():
         print(f"{key},{info.cls},{info.score},{info.val_by},{info.project}")
 
 print(counts)
+
+with open("info.csv", "w") as fp:
+    fp.write("Filename,Label,Annotator,Project\n")
+    for key, value in data.items():
+        for info in value:
+            if info.cls not in counts:
+                counts[info.cls] = 0
+            counts[info.cls] += 1
+            fp.write(f"{key},{info.cls},{info.val_by},{info.project}\n")
