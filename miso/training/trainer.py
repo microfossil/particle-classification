@@ -436,16 +436,15 @@ def train_image_classification_model(tp: MisoParameters):
         plt.savefig(os.path.join(save_dir, "confusion_matrix.pdf"))
         plt.close('all')
 
-    # Vectors for mislabeled and t-SNE
-    print("- calculating vectors... ", end='')
-    gen = ds.images.create_generator(tp.training.batch_size, shuffle=False, one_shot=True)
-    if tf_version == 2:
-        vectors = vector_model.predict(gen.create())
-    else:
-        vectors = predict_in_batches(vector_model, gen.create())
-    print("{} total".format(len(vectors)))
     if tp.output.save_mislabeled is True:
         print("- mislabeled")
+        print("- calculating vectors... ", end='')
+        gen = ds.images.create_generator(tp.training.batch_size, shuffle=False, one_shot=True)
+        if tf_version == 2:
+            vectors = vector_model.predict(gen.create())
+        else:
+            vectors = predict_in_batches(vector_model, gen.create())
+        print("{} total".format(len(vectors)))
         find_and_save_mislabelled(ds.images.data,
                                   vectors,
                                   ds.cls,
@@ -456,16 +455,16 @@ def train_image_classification_model(tp: MisoParameters):
 
     # t-SNE
     print("- t-SNE (1024 vectors max)")
-    idx = np.random.choice(range(len(vectors)), np.min((len(vectors), 1024)), replace=False)
-    vec_subset = vectors[idx]
+    print("- calculating vectors... ", end='')
+    idxs = np.random.choice(np.arange(len(ds.images.data)), 1024, replace=False)
+    gen = ds.images.create_generator(tp.training.batch_size, idxs=idxs, shuffle=False, one_shot=True)
+    if tf_version == 2:
+        vec_subset = vector_model.predict(gen.create())
+    else:
+        vec_subset = predict_in_batches(vector_model, gen.create())
     X = TSNE(n_components=2).fit_transform(vec_subset)
-    # counts = np.unique(ds.cls, return_counts=True)
-    # print(counts)
-    # counts = np.unique(ds.cls[idx], return_counts=True)
-    # print(counts)
-    plot_embedding(X, ds.cls[idx], ds.num_classes)
+    plot_embedding(X, ds.cls[idxs], ds.num_classes)
     plt.savefig(os.path.join(save_dir, "tsne.pdf"))
-    # Legend
     cls_info = pd.DataFrame({"index": range(ds.num_classes), "label": ds.cls_labels})
     cls_info.to_csv(os.path.join(save_dir, "legend.csv"), sep=';')
 
