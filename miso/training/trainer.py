@@ -456,7 +456,7 @@ def train_image_classification_model(tp: MisoParameters):
     # t-SNE
     print("- t-SNE (1024 vectors max)")
     print("- calculating vectors... ", end='')
-    idxs = np.random.choice(np.arange(len(ds.images.data)), 1024, replace=False)
+    idxs = np.random.choice(np.arange(len(ds.images.data)), np.min((1024, len(ds.images.data))), replace=False)
     gen = ds.images.create_generator(tp.training.batch_size, idxs=idxs, shuffle=False, one_shot=True)
     if tf_version == 2:
         vec_subset = vector_model.predict(gen.create())

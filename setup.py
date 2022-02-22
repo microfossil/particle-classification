@@ -6,7 +6,7 @@ long_description = (here / 'README.md').read_text(encoding='utf-8')
 
 setup(
     name='miso2',
-    version='2.4.5',
+    version='2.4.7',
     description='Python scripts for training CNNs for particle classification',
     long_description=long_description,
     long_description_content_type='text/markdown',
@@ -32,7 +32,7 @@ setup(
                       'scipy',
                       'segmentation-models',
                       'dill',
-                      'flask',
+                      'flask==1.1.2',
                       'tqdm',
                       'openpyxl',
                       'imblearn'],
