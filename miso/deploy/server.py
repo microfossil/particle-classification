@@ -112,9 +112,6 @@ def classify_file():
 
 
 if __name__ == '__main__':
-
-    app_session, app_input, app_output, app_img_size, app_cls_labels = load_from_xml(r"C:\Users\rossm\Documents\Data\TrainedNetworks\ResNet50 TL (fast)_20210101-174602\model\network_info.xml")
-
     parser = argparse.ArgumentParser("MISO Classification Server")
     parser.add_argument("-i", "--info", required=True, help="CNN network information file")
     parser.add_argument("-p", "--port", required=True, help="Server port")
