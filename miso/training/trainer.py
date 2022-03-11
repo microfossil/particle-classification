@@ -150,8 +150,12 @@ def train_image_classification_model(tp: MisoParameters):
                                   tp.training.batch_size,
                                   shuffle=False,
                                   one_shot=val_one_shot)
+            val_data = val_gen.create()
+            val_steps = len(val_gen)
         else:
             val_gen = None
+            val_data = None
+            val_steps = None
 
         # Class weights (only if over sampling is not used)
         if tp.training.use_class_weights is True and tp.training.use_class_undersampling is False:
@@ -179,8 +183,8 @@ def train_image_classification_model(tp: MisoParameters):
         # Train
         history = model_tail.fit_generator(train_gen.create(),
                                            steps_per_epoch=len(train_gen),
-                                           validation_data=val_gen.create(),
-                                           validation_steps=len(val_gen),
+                                           validation_data=val_data,
+                                           validation_steps=val_steps,
                                            epochs=tp.training.max_epochs,
                                            verbose=0,
                                            shuffle=False,
@@ -286,8 +290,12 @@ def train_image_classification_model(tp: MisoParameters):
             # Maximum 8 in batch otherwise validation results jump around a bit because
             val_gen = ds.test_generator(min(tp.training.batch_size, 16), shuffle=False, one_shot=val_one_shot)
             # val_gen = ds.test_generator(tp.training.batch_size, shuffle=False, one_shot=val_one_shot)
+            val_data = val_gen.create()
+            val_steps = len(val_gen)
         else:
             val_gen = None
+            val_data = None
+            val_steps = None
 
         # Class weights
         if tp.training.use_class_weights is True and tp.training.use_class_undersampling is False:
@@ -303,8 +311,8 @@ def train_image_classification_model(tp: MisoParameters):
         # Train the model
         history = model.fit_generator(train_gen.create(),
                                       steps_per_epoch=len(train_gen),
-                                      validation_data=val_gen.create(),
-                                      validation_steps=len(val_gen),
+                                      validation_data=val_data,
+                                      validation_steps=val_steps,
                                       epochs=tp.training.max_epochs,
                                       verbose=0,
                                       shuffle=False,
