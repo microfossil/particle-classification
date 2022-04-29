@@ -78,9 +78,11 @@ def plot_confusion_accuracy_matrix(y_true,
     This function prints and plots the confusion matrix.
     Normalization can be applied by setting `normalize=True`.
     """
+    mult = 2.2
     # If figsize is None, estimate the plot size
+    max_word = np.max([len(lab) for lab in cls_labels]) / 15
     if figsize is None:
-        figsize = (len(cls_labels) / 2.75 + 2, len(cls_labels) / 2.75 + 2)
+        figsize = (len(cls_labels) / mult + 0.5 + 2 * max_word, len(cls_labels) / mult + 0.5 + 2 * max_word)
     # Calculate precision, recall, etc
     p, r, f1, s = precision_recall_fscore_support(y_true, y_pred, labels=range(len(cls_labels)))
     # Calculate confusion matrix
@@ -94,8 +96,8 @@ def plot_confusion_accuracy_matrix(y_true,
         cm = np.round(cm * 100).astype(int)
     # Create combined plots
     f, ax = plt.subplots(2, 2,
-                         gridspec_kw={'width_ratios': [6, 1],
-                                      'height_ratios': [1, 6],
+                         gridspec_kw={'width_ratios': [len(cls_labels) / mult, 1],
+                                      'height_ratios': [1, len(cls_labels) / mult],
                                       'wspace': 0,
                                       'hspace': 0},
                          figsize=figsize)
@@ -209,7 +211,7 @@ def plot_comparison_matrix(y_true,
         figsize = (len(pred_cls_labels) / 2.75 + 2, len(true_cls_labels) / 2.75 + 2)
 
     # Calculate confusion matrix
-    max_labels = np.max((len(true_cls_labels),len(pred_cls_labels)))
+    max_labels = np.max((len(true_cls_labels), len(pred_cls_labels)))
     cm = confusion_matrix(y_true=y_true,
                           y_pred=y_pred,
                           labels=range(max_labels))
@@ -254,8 +256,8 @@ def plot_comparison_matrix(y_true,
         colors.append(cm[i, j] / 100)
         # if cm[i, j] != 0 or style == 'checker':
         ax.text(j, i + 0.25, cm[i, j],
-                   horizontalalignment="center",
-                   color="white" if cm[i, j] > thresh else "black")
+                horizontalalignment="center",
+                color="white" if cm[i, j] > thresh else "black")
     patcol = PatchCollection(patches, alpha=1, cmap=cmap)
     patcol.set_array(np.array(colors))
     ax.add_collection(patcol)
@@ -288,3 +290,35 @@ def plot_comparison_matrix(y_true,
     plt.tight_layout()
     if show is True:
         plt.show()
+
+
+# if __name__ == "__main__":
+#     import string
+#     import random
+#
+#     def get_random_string(length):
+#         # choose from all lowercase letter
+#         letters = string.ascii_lowercase
+#         result_str = ''.join(random.choice(letters) for i in range(length))
+#         print("Random string of length", length, "is:", result_str)
+#         return result_str
+#
+#
+#     for i in range(15):
+#         y_true = np.arange(i+3)
+#         y_pred = np.arange(i+3)
+#         cls_labels = [get_random_string(np.random.randint(3,30)) for j in range(i+3)]
+#         cls_labels[0] = "DIAT-Chaetoceros"
+#         cls_labels[1] = "DIAT-Other"
+#         cls_labels[2] = "DIAT-Pseudo-nitzschia"
+#         print(cls_labels)
+#         plot_confusion_accuracy_matrix(y_true,
+#                                        y_pred,
+#                                        cls_labels,
+#                                        normalise=True,
+#                                        title='Confusion matrix',
+#                                        cmap=plt.cm.Blues,
+#                                        figsize=None,
+#                                        style='grid5',
+#                                        show=False)
+#         plt.show()
