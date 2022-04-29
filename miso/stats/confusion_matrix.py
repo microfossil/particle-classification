@@ -65,6 +65,17 @@ def plot_confusion_matrix(y_true,
         plt.show()
 
 
+def get_text_width(txt):
+    f = plt.figure()
+    r = f.canvas.get_renderer()
+    t = plt.text(0.5, 0.5, txt)
+    plt.tight_layout()
+    bb = t.get_window_extent(renderer=r)
+    width = bb.width
+    plt.close('all')
+    return width
+
+
 def plot_confusion_accuracy_matrix(y_true,
                                    y_pred,
                                    cls_labels,
@@ -78,11 +89,15 @@ def plot_confusion_accuracy_matrix(y_true,
     This function prints and plots the confusion matrix.
     Normalization can be applied by setting `normalize=True`.
     """
-    mult = 2.2
+    mult = 3
     # If figsize is None, estimate the plot size
-    max_word = np.max([len(lab) for lab in cls_labels]) / 15
+    max_word = cls_labels[np.argmax([len(f"{lab}") for lab in cls_labels])]
+    txt_width = get_text_width(max_word) / 40
+    # print(txt_width)
+    sz = len(cls_labels) / mult + txt_width + 1.5
+    sz2 = len(cls_labels) / mult + 1.5
     if figsize is None:
-        figsize = (len(cls_labels) / mult + 0.5 + 2 * max_word, len(cls_labels) / mult + 0.5 + 2 * max_word)
+        figsize = (sz, sz)
     # Calculate precision, recall, etc
     p, r, f1, s = precision_recall_fscore_support(y_true, y_pred, labels=range(len(cls_labels)))
     # Calculate confusion matrix
@@ -96,8 +111,8 @@ def plot_confusion_accuracy_matrix(y_true,
         cm = np.round(cm * 100).astype(int)
     # Create combined plots
     f, ax = plt.subplots(2, 2,
-                         gridspec_kw={'width_ratios': [len(cls_labels) / mult, 1],
-                                      'height_ratios': [1, len(cls_labels) / mult],
+                         gridspec_kw={'width_ratios': [sz2 - 1.5, 1],
+                                      'height_ratios': [1, sz2 - 1.5],
                                       'wspace': 0,
                                       'hspace': 0},
                          figsize=figsize)
@@ -291,7 +306,7 @@ def plot_comparison_matrix(y_true,
     if show is True:
         plt.show()
 
-
+#
 # if __name__ == "__main__":
 #     import string
 #     import random
@@ -300,17 +315,22 @@ def plot_comparison_matrix(y_true,
 #         # choose from all lowercase letter
 #         letters = string.ascii_lowercase
 #         result_str = ''.join(random.choice(letters) for i in range(length))
-#         print("Random string of length", length, "is:", result_str)
+#         # print("Random string of length", length, "is:", result_str)
 #         return result_str
 #
-#
-#     for i in range(15):
-#         y_true = np.arange(i+3)
-#         y_pred = np.arange(i+3)
-#         cls_labels = [get_random_string(np.random.randint(3,30)) for j in range(i+3)]
+#     offset = 0
+#     for i in [3,4,30,50]:
+#         y_true = np.arange(i+offset)
+#         y_pred = np.arange(i+offset)
+#         cls_labels = [get_random_string(np.random.randint(3,30)) for j in range(i+offset)]
 #         cls_labels[0] = "DIAT-Chaetoceros"
 #         cls_labels[1] = "DIAT-Other"
 #         cls_labels[2] = "DIAT-Pseudo-nitzschia"
+#         # cls_labels[0] = "DIAT-"
+#         # cls_labels[1] = "DIAT-"
+#         # cls_labels[2] = "DIAT-"
+#         if len(cls_labels) > 3:
+#             cls_labels[3] = "DIAT-Pseudo-nitzschia"
 #         print(cls_labels)
 #         plot_confusion_accuracy_matrix(y_true,
 #                                        y_pred,
