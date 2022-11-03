@@ -8,6 +8,7 @@ import tensorflow.keras.backend as K
 import tempfile
 import lxml.etree as ET
 import numpy as np
+import tf2onnx
 
 
 def remove(path):
@@ -193,6 +194,14 @@ def save_frozen_model_tf2(model, out_dir, filename):
                       name=filename,
                       as_text=False)
     return frozen_func
+
+
+def save_model_as_onnx(model, input_name, input_shape, out_dir, opset=13):
+    spec = (tf.TensorSpec(input_shape, tf.float32, name=input_name),)
+    output_path = os.path.join(out_dir, "model.onnx")
+    model_proto, _ = tf2onnx.convert.from_keras(model, input_signature=spec, opset=opset, output_path=output_path)
+    output_names = [n.name for n in model_proto.graph.output]
+    print(output_names)
 
 
 def load_frozen_model_tf2(filepath, inputs, outputs):

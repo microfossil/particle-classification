@@ -43,8 +43,6 @@ class RollingBuffer:
         slope, intercept, r_value, p_value, std_err = stats.linregress(idxs, values)
         residuals = idxs * slope + intercept
         variance = np.sum(np.power(residuals - values, 2)) / (n - 2)
-        # print(n)
-        # print(variance)
         slope_std_error = np.sqrt(variance * (12.0 / (np.power(n, 3) - n)))
         p_less_than_zero = stats.norm.cdf(prob, slope, slope_std_error)
         return p_less_than_zero

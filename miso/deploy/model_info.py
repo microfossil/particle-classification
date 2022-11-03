@@ -63,6 +63,12 @@ class ModelInfo:
         f.write(self.to_xml())
         f.close()
 
+    def _get_op_name(self, tensor):
+        try:
+            return tensor.op.name
+        except TypeError:
+            return tensor.name
+
     def to_xml(self):
         root = ET.Element("network", version=self.version)
         ET.SubElement(root, "name").text = self.name
@@ -79,7 +85,7 @@ class ModelInfo:
         for name, tensor in self.inputs.items():
             node = ET.SubElement(parent_node, "input")
             ET.SubElement(node, "name").text = name
-            ET.SubElement(node, "operation").text = tensor.op.name
+            ET.SubElement(node, "operation").text = self._get_op_name(tensor)
             ET.SubElement(node, "height").text = str(tensor.shape[1])
             if len(tensor.shape) > 2:
                 ET.SubElement(node, "width").text = str(tensor.shape[2])
@@ -94,7 +100,7 @@ class ModelInfo:
         for name, tensor in self.outputs.items():
             node = ET.SubElement(parent_node, "output")
             ET.SubElement(node, "name").text = name
-            ET.SubElement(node, "operation").text = tensor.op.name
+            ET.SubElement(node, "operation").text = self._get_op_name(tensor)
             ET.SubElement(node, "height").text = str(tensor.shape[1])
             if len(tensor.shape) > 2:
                 ET.SubElement(node, "width").text = str(tensor.shape[2])

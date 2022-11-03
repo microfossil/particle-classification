@@ -17,7 +17,7 @@ tp = MisoParameters()
 # -----------------------------------------------------------------------------
 # Mource directory (local folder or download link to dataset)
 tp.dataset.source = "https://1drv.ws/u/s!AiQM7sVIv7falskYWoLgrbSD2RC-Fg"
-tp.dataset.source = "https://1drv.ws/u/s!AiQM7sVIv7fak98qYjFt5GELIEqSMQ?e=P0TPtC"
+tp.dataset.source = "https://yzx51w.db.files.1drv.com/y4mRpCni2f297ZD-TfYoNbzN6HGUl0lw3Y7xt9aRg6nVEZooZWdYtN3oOG1WOkEtyCma_HxLCRVr7WnHR4DvT7nmTmHBgp7oJNJA-dodSElKZEt-sDER2e4_EwqEIa_UDFyzoz3ws_QPMXnEN5P-HALxNp5zChlES0ZawnPXDIwkod_H3nsSYaZBHBgYIQTJCKSk3BCMXr2F1uf0I_KsoSqJQ"
 # Minimum number of images to include in a class
 tp.dataset.min_count = 10
 # Whether to map the images in class with not enough examples to an "others" class

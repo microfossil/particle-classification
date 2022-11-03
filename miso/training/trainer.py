@@ -21,7 +21,8 @@ from miso.training.training_result import TrainingResult
 from miso.stats.confusion_matrix import *
 from miso.stats.training import *
 from miso.training.tf_augmentation import aug_all_fn
-from miso.deploy.saving import freeze, convert_to_inference_mode, save_frozen_model_tf2, convert_to_inference_mode_tf2, load_from_xml
+from miso.deploy.saving import freeze, convert_to_inference_mode, save_frozen_model_tf2, convert_to_inference_mode_tf2, \
+    load_from_xml, save_model_as_onnx
 from miso.deploy.model_info import ModelInfo
 from miso.models.factory import *
 
@@ -426,6 +427,30 @@ def train_image_classification_model(tp: MisoParameters):
                      tp.dataset.val_split,
                      inference_time)
     # ------------------------------------------------------------------------------
+    # Cleanlab health report
+    # ------------------------------------------------------------------------------
+    print("-" * 80)
+    print("Health report")
+    import cleanlab
+    report = cleanlab.dataset.health_summary(y_true, y_prob, class_names=ds.cls_labels)
+    with open(os.path.join(save_dir, "health_summary.txt"), 'w') as fp:
+        fp.write("Dataset health report\n")
+        fp.write("\n")
+        fp.write("This is calculated using the test data\n")
+        fp.write("\n" + "-" * 80 + "\n")
+        fp.write(f"Overall label heath: {report['overall_label_health_score']}")
+        # fp.write("-" * 80 + "\n")
+        # fp.write("Joint probabilities\n")
+        # fp.write(report["joint"])
+        fp.write("\n" + "-" * 80 + "\n")
+        fp.write("Classes by label quality\n")
+        fp.write(report["classes_by_label_quality"].to_string())
+        fp.write("\n" + "-" * 80 + "\n")
+        fp.write("Overlapping classes\n")
+        fp.write(report["overlapping_classes"].to_string())
+
+
+    # ------------------------------------------------------------------------------
     # Plots
     # ------------------------------------------------------------------------------
     # Plot the graphs
@@ -491,6 +516,7 @@ def train_image_classification_model(tp: MisoParameters):
             frozen_func = save_frozen_model_tf2(inference_model, os.path.join(save_dir, "model"), "frozen_model.pb")
             info.inputs["image"] = frozen_func.inputs[0]
             info.outputs["pred"] = frozen_func.outputs[0]
+            save_model_as_onnx(inference_model, inference_model.inputs[0].name, [None,] + tp.cnn.img_shape, os.path.join(os.path.join(save_dir, "model_onnx")))
         else:
             inference_model = convert_to_inference_mode(model, lambda: generate(tp))
             tf.saved_model.save(inference_model, os.path.join(os.path.join(save_dir, "model_keras")))
