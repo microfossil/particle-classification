@@ -66,8 +66,9 @@ class ModelInfo:
     def _get_op_name(self, tensor):
         try:
             return tensor.op.name
-        except TypeError:
+        except:
             return tensor.name
+
 
     def to_xml(self):
         root = ET.Element("network", version=self.version)

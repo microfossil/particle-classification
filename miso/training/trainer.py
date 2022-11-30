@@ -514,8 +514,8 @@ def train_image_classification_model(tp: MisoParameters):
             inference_model = convert_to_inference_mode_tf2(model, lambda: generate(tp))
             # tf.saved_model.save(inference_model, os.path.join(os.path.join(save_dir, "model_keras")))
             # frozen_func = save_frozen_model_tf2(inference_model, os.path.join(save_dir, "model"), "frozen_model.pb")
-            info.inputs["image"] = inference_model.inputs[0].name  # frozen_func.inputs[0]
-            info.outputs["pred"] = inference_model.outputs[0].name  # frozen_func.outputs[0]
+            info.inputs["image"] = inference_model.inputs[0]  # frozen_func.inputs[0]
+            info.outputs["pred"] = inference_model.outputs[0]  # frozen_func.outputs[0]
             save_model_as_onnx(inference_model, inference_model.inputs[0].name, [None,] + tp.cnn.img_shape, os.path.join(os.path.join(save_dir, "model")))
             info.protobuf = "model.onnx"
         else:
