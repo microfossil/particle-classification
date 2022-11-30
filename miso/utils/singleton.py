@@ -6,6 +6,7 @@ from multiprocessing import Process
 import os
 import sys
 import tempfile
+import atexit
 
 
 if sys.platform != "win32":
@@ -66,8 +67,9 @@ class SingleInstance(object):
                 #     "Another instance is already running, quitting.")
                 raise SingleInstanceException()
         self.initialized = True
+        atexit.register(self.__close)
 
-    def __del__(self):
+    def __close(self):
         if not self.initialized:
             return
         try:
@@ -81,10 +83,10 @@ class SingleInstance(object):
                 if os.path.isfile(self.lockfile):
                     os.unlink(self.lockfile)
         except Exception as e:
-            if logger:
-                logger.warning(e)
-            else:
-                print("Unloggable error: %s" % e)
+            # if logger:
+            #     logger.warning(e)
+            # else:
+            print("Error: %s" % e)
             sys.exit(-1)
 
 
