@@ -6,7 +6,7 @@ long_description = (here / 'README.md').read_text(encoding='utf-8')
 
 setup(
     name='miso2',
-    version='2.5.5',
+    version='2.5.6',
     description='Python scripts for training CNNs for particle classification',
     long_description=long_description,
     long_description_content_type='text/markdown',
@@ -37,7 +37,8 @@ setup(
                       'openpyxl',
                       'imblearn',
                       'tf2onnx',
-                      'cleanlab'],
+                      'cleanlab',
+                      'packaging'],
     url='https://github.com/microfossil/particle-classification',
     license='MIT',
     project_urls={  # Optional
