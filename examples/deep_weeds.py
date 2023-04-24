@@ -10,7 +10,7 @@ tp = MisoParameters()
 # -----------------------------------------------------------------------------
 # Dataset
 # -----------------------------------------------------------------------------
-# Mource directory (local folder or download link to dataset)
+# Source directory (local folder or download link to dataset)
 tp.dataset.source = "https://1drv.ws/u/s!AiQM7sVIv7falskYWoLgrbSD2RC-Fg"
 # Minimum number of images to include in a class
 tp.dataset.min_count = 10

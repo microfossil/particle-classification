@@ -272,7 +272,7 @@ def train_image_classification_model(tp: MisoParameters):
                                        undersample=tp.training.use_class_undersampling)
 
         # Save example of training data
-        print(" - saving example training batch")
+        print("- saving example training batch")
         training_examples_dir = os.path.join(save_dir, "examples", "training")
         os.makedirs(training_examples_dir)
         images, labels = next(iter(train_gen.create()))
