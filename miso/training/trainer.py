@@ -337,6 +337,8 @@ def train_image_classification_model(tp: MisoParameters):
             im[im > 255] = 255
             if np.ndim(im) == 2:
                 im = np.repeat(im[:, :, np.newaxis], 3, axis=-1)
+            elif im.shape[-1] == 1:
+                im = np.repeat(im, 3, axis=-1)
             skimage.io.imsave(
                 os.path.join(training_examples_dir, "{:03d}.jpg".format(t_idx)),
                 im.astype(np.uint8),
