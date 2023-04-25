@@ -111,7 +111,7 @@ def load_from_xml(filename, session=None):
 
     input = None
     output = None
-    img_size = np.zeros(3, dtype=np.int)
+    img_size = np.zeros(3, dtype=np.int32)
     cls_labels = []
 
     list_xml = project.find('labels')
@@ -212,7 +212,7 @@ def load_frozen_model_tf2(filepath, inputs, outputs):
     frozen_func = wrap_frozen_graph_tf2(graph_def=graph_def,
                                         inputs=inputs,
                                         outputs=outputs,
-                                        print_graph=True)
+                                        print_graph=False)
     print("-" * 80)
     print("Frozen model inputs: ")
     print(frozen_func.inputs)
