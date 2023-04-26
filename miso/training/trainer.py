@@ -66,30 +66,14 @@ def train_image_classification_model(tp: MisoParameters):
     # Clean the training parameters
     tp.sanitise()
 
-    print(
-        "+---------------------------------------------------------------------------+"
-    )
-    print(
-        "| MISO Particle Classification Library                                      |"
-    )
-    print(
-        "+---------------------------------------------------------------------------+"
-    )
-    print(
-        "| Stable version:                                                           |"
-    )
-    print(
-        "| pip install miso2                                                         |"
-    )
-    print(
-        "| Development version:                                                      |"
-    )
-    print(
-        "| pip install git+http://www.github.com/microfossil/particle-classification |"
-    )
-    print(
-        "+---------------------------------------------------------------------------+"
-    )
+    print("+---------------------------------------------------------------------------+")
+    print("| MISO Particle Classification Library                                      |")
+    print("+---------------------------------------------------------------------------+")
+    print("| Stable version:                                                           |")
+    print("| pip install miso2                                                         |")
+    print("| Development version:                                                      |")
+    print("| pip install git+http://www.github.com/microfossil/particle-classification |")
+    print("+---------------------------------------------------------------------------+")
     print("Tensorflow version: {}".format(tf.__version__))
     print("-" * 80)
     print("Train information:")
@@ -142,43 +126,32 @@ def train_image_classification_model(tp: MisoParameters):
             vectors = model_head.predict(gen.create())
         else:
             vectors = predict_in_batches(model_head, gen.create())
-        print(
-            "! {}s elapsed, ({}/{} vectors)".format(
-                time.time() - t, len(vectors), len(ds.images.data)
-            )
-        )
+        print(f"! {time.time() - t}s elapsed, ({len(vectors)}/{len(ds.images.data)} vectors)")
 
         # Clear session
         # K.clear_session()
 
         # Generate tail model and compile
-        model_tail = generate_tl_tail(
-            tp.dataset.num_classes,
-            [
-                vectors.shape[-1],
-            ],
-        )
-        model_tail.compile(
-            optimizer="adam", loss="categorical_crossentropy", metrics=["accuracy"]
-        )
+        model_tail = generate_tl_tail(tp.dataset.num_classes, [vectors.shape[-1]])
+        model_tail.compile(optimizer="adam",
+                           loss="categorical_crossentropy",
+                           metrics=["accuracy"])
 
         # Learning rate scheduler
-        alr_cb = AdaptiveLearningRateScheduler(
-            nb_epochs=tp.training.alr_epochs, nb_drops=tp.training.alr_drops, verbose=1
-        )
+        alr_cb = AdaptiveLearningRateScheduler(nb_epochs=tp.training.alr_epochs,
+                                               nb_drops=tp.training.alr_drops,
+                                               verbose=1)
         print("-" * 80)
         print("Training")
 
         # Training generator
-        train_gen = TFGenerator(
-            vectors,
-            ds.cls_onehot,
-            ds.train_idx,
-            tp.training.batch_size,
-            shuffle=True,
-            one_shot=False,
-            undersample=tp.training.use_class_undersampling,
-        )
+        train_gen = TFGenerator(vectors,
+                                ds.cls_onehot,
+                                ds.train_idx,
+                                tp.training.batch_size,
+                                shuffle=True,
+                                one_shot=False,
+                                undersample=tp.training.use_class_undersampling)
 
         # Validation generator
         if tf_version == 2:
@@ -203,10 +176,7 @@ def train_image_classification_model(tp: MisoParameters):
             val_steps = None
 
         # Class weights (only if over sampling is not used)
-        if (
-            tp.training.use_class_weights is True
-            and tp.training.use_class_undersampling is False
-        ):
+        if tp.training.use_class_weights is True and tp.training.use_class_undersampling is False:
             class_weights = ds.class_weights
             print("- class weights: {}".format(class_weights))
             if tf_version == 2:
@@ -233,18 +203,16 @@ def train_image_classification_model(tp: MisoParameters):
             train_fn = model_tail.fit
         else:
             train_fn = model_tail.fit_generator
-        history = train_fn(
-            train_gen.create(),
-            steps_per_epoch=len(train_gen),
-            validation_data=val_data,
-            validation_steps=val_steps,
-            epochs=tp.training.max_epochs,
-            verbose=0,
-            shuffle=False,
-            max_queue_size=1,
-            class_weight=class_weights,
-            callbacks=[alr_cb],
-        )
+        history = train_fn(train_gen.create(),
+                           steps_per_epoch=len(train_gen),
+                           validation_data=val_data,
+                           validation_steps=val_steps,
+                           epochs=tp.training.max_epochs,
+                           verbose=0,
+                           shuffle=False,
+                           max_queue_size=1,
+                           class_weight=class_weights,
+                           callbacks=[alr_cb])
         # Elapsed time
         end = time.time()
         training_time = end - start
@@ -365,8 +333,8 @@ def train_image_classification_model(tp: MisoParameters):
 
         # Class weights
         if (
-            tp.training.use_class_weights is True
-            and tp.training.use_class_undersampling is False
+                tp.training.use_class_weights is True
+                and tp.training.use_class_undersampling is False
         ):
             class_weights = ds.class_weights
             print("- class weights: {}".format(class_weights))
@@ -636,7 +604,6 @@ def train_image_classification_model(tp: MisoParameters):
             )
             freeze(inference_model, os.path.join(save_dir, "model"))
             info.save(os.path.join(save_dir, "model", "network_info.xml"))
-    
 
     # ------------------------------------------------------------------------------
     # Confirm model save
