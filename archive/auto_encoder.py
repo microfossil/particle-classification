@@ -6,7 +6,7 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.losses import mse, binary_crossentropy
 
 from miso.layers import cyclic
-from miso.archive.datasource import DataSource
+from archive.datasource import DataSource
 import numpy as np
 
 

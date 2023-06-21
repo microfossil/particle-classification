@@ -169,6 +169,7 @@ def wrap_frozen_graph_tf2(graph_def, inputs, outputs, print_graph=False):
 def save_frozen_model_tf2(model, out_dir, filename):
     print("-" * 80)
     print("Freezing model")
+
     # Convert Keras model to ConcreteFunction
     full_model = tf.function(lambda x: model(x))
     full_model = full_model.get_concrete_function(

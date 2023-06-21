@@ -1,6 +1,6 @@
 import argparse
 from miso.training.trainer import train_image_classification_model
-from miso.training.parameters import MisoParameters
+from miso.training.parameters import MisoConfig
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train a CNN to classify images")
@@ -14,7 +14,7 @@ if __name__ == "__main__":
     parser.add_argument("--map_others", action='store_true', help="Classes with not enough images will be put into 'others' class (so long as the total is also greater than min_count")
     args = parser.parse_args()
 
-    tp = MisoParameters()
+    tp = MisoConfig()
     tp.source = args.input
     tp.output_dir = args.output
     tp.cnn_type = args.type

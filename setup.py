@@ -1,12 +1,12 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 import pathlib
 
 here = pathlib.Path(__file__).parent.resolve()
 long_description = (here / 'README.md').read_text(encoding='utf-8')
 
 setup(
-    name='miso2',
-    version='3.0.3',
+    name='miso',
+    version='4.0.0',
     description='Python scripts for training CNNs for particle classification',
     long_description=long_description,
     long_description_content_type='text/markdown',
@@ -17,32 +17,31 @@ setup(
         'Intended Audience :: Science/Research',
     ],
     keywords='microfossil, cnn',
-    python_requires='>=3.6',
-    packages=['miso', 'miso.data', 'miso.deploy', 'miso.layers', 'miso.models', 'miso.stats', 'miso.training', 'miso.utils'],
-    install_requires=['image-classifiers>=1.0.0',
-                      'lxml',
+    python_requires='>=3.10',
+    packages=find_packages(),
+    install_requires=['lxml',
                       'matplotlib',
                       'numpy',
                       'pandas',
-                      'Pillow',
                       'imagecodecs',
                       'scikit-image',
                       'scikit-learn',
                       'scipy',
-                      'segmentation-models',
-                      'dill',
-                      'flask==1.1.2',
-                      'itsdangerous==1.1.0',
+                      'flask',
                       'tqdm',
                       'openpyxl',
                       'imblearn',
                       'tf2onnx',
                       'cleanlab',
                       'packaging',
-                      'tensorflow_addons'],
+                      'tensorflow_addons',
+                      'flask_smorest',
+                      'flask_cors',
+                      'marshmallow_dataclass',
+                      'celery[redis]'],
     url='https://github.com/microfossil/particle-classification',
     license='MIT',
-    project_urls={  # Optional
+    project_urls={
         'Source': 'https://github.com/microfossil/particle-classification',
         'Paper': 'https://jm.copernicus.org/articles/39/183/2020/',
     },

@@ -5,7 +5,7 @@ import os
 import numpy as np
 from collections import OrderedDict
 
-from miso.training.parameters import MisoParameters
+from miso.training.parameters import MisoConfig
 
 
 class ModelInfo:
@@ -15,7 +15,7 @@ class ModelInfo:
                  type: str,
                  date: datetime.datetime,
                  protobuf: str,
-                 params: MisoParameters,
+                 params: MisoConfig,
                  inputs: OrderedDict,
                  outputs: OrderedDict,
                  data_source_name: str,
@@ -140,6 +140,6 @@ class ModelInfo:
         ET.SubElement(parent_node, "training_time").text = str(self.training_time)
         ET.SubElement(parent_node, "training_split").text = str(self.training_split)
         ET.SubElement(parent_node, "training_time_per_image").text = str(self.training_time / self.training_epochs / (np.sum(self.counts) * (1 - self.training_split)))
-        ET.SubElement(parent_node, "inference_time_per_image").text = str(np.mean(self.f1score))
+        ET.SubElement(parent_node, "inference_time_per_image").text = str(np.mean(self.inference_time_per_image))
 
         return ET.tostring(root, pretty_print=True)

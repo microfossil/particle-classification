@@ -8,16 +8,17 @@ Requires tensorflow 1.15 (or later) or tensorflow 2 and this library installed e
 import os
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
-from miso.training.parameters import MisoParameters
+from miso.training.parameters import MisoConfig
 from miso.training.trainer import train_image_classification_model
 
-tp = MisoParameters()
+tp = MisoConfig()
 
 # -----------------------------------------------------------------------------
 # Name
 # -----------------------------------------------------------------------------
 # Name of this training run (leave as "" to auto-generate
 tp.name = r"Base Cyclic 16"
+tp.name = r"Test"
 # Description of this training run (leave as "" to auto-generate
 tp.description = None
 # -----------------------------------------------------------------------------
@@ -33,7 +34,7 @@ tp.dataset.map_others = False
 tp.dataset.val_split = 0.2
 # Random seed used to split the dataset into train and validation
 tp.dataset.random_seed = 0
-# Set to a local directory to stored the loaded dataset on disk instead of in memory
+# Set to a local directory to store the loaded dataset on disk instead of in memory
 tp.dataset.memmap_directory = None
 
 # -----------------------------------------------------------------------------
@@ -51,11 +52,14 @@ tp.dataset.memmap_directory = None
 # - resnet[18,34,50]
 # - vgg[16,19]
 # - efficientnetB[0-7]
-tp.cnn.id = r"base_cyclic"
+tp.cnn.type = r"base_cyclic"
+tp.cnn.type = r"resnet50_tl"
 # Input image shape, set to None to use default size ([128, 128, 1] for custom, [224, 224, 3] for others)
 tp.cnn.img_shape = [128, 128, 1]
+tp.cnn.img_shape = [224, 224, 3]
 # Input image colour space [greyscale/rgb]
 tp.cnn.img_type = "greyscale"
+tp.cnn.img_type = "rgb"
 # Number of filters in first block (custom networks)
 tp.cnn.filters = 16
 # Number of blocks (custom networks), set to None for automatic selection

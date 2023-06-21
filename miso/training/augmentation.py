@@ -1,11 +1,6 @@
 import tensorflow as tf
 import numpy as np
-
-if int(tf.__version__[0]) == 2:
-    try:
-        import tensorflow_addons as tfa
-    except ImportError:
-        pass
+import tensorflow_addons as tfa
 
 
 def aug_all_fn(rotation=(0, 360),

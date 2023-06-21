@@ -11,3 +11,4 @@ scipy>=1.1.0
 image-classifiers>=1.0.0
 segmentation-models
 tqdm
+marshmallow_dataclass

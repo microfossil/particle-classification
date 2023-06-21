@@ -6,8 +6,8 @@ import datetime
 from collections import OrderedDict
 
 from miso.stats.mislabelling import find_and_save_mislabelled
-from miso.archive.datasource import DataSource
-from miso.archive.generators import *
+from archive.datasource import DataSource
+from archive.generators import *
 from miso.utils.wave import *
 from miso.training.adaptive_learning_rate import AdaptiveLearningRateScheduler
 from miso.training.training_result import TrainingResult
@@ -20,11 +20,8 @@ from miso.models.model_factory import *
 
 
 def train_image_classification_model(params: dict, data_source: DataSource = None):
+    # Make both backends use the same session
     K.clear_session()
-
-    config = tf.ConfigProto()
-    config.gpu_options.allow_growth = True
-    session = tf.Session(config=config)
 
     intro()
 
@@ -36,58 +33,38 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
     cnn_type = params.get('type')
 
     # Input
-    img_size = params.get('img_size')
-    if img_size is not None:
-        [img_height, img_width, img_channels] = params.get('img_size')
-    else:
-        img_height = params.get('img_height')
-        img_width = params.get('img_width')
-        img_channels = params.get('img_channels')
+    img_height = params.get('img_height')
+    img_width = params.get('img_width')
+    img_channels = params.get('img_channels')
 
     # Training
-    batch_size = params.get('batch_size', 64)
-    max_epochs = params.get('max_epochs', 1000)
-    alr_epochs = params.get('alr_epochs', 10)
-    alr_drops = params.get('alr_drops', 4)
+    batch_size = params.get('batch_size')
+    max_epochs = params.get('max_epochs')
+    alr_epochs = params.get('alr_epochs')
+    alr_drops = params.get('alr_drops')
 
     # Input data
-    input_dir = params.get('input_source', None)
-    data_min_count = params.get('data_min_count', 40)
-    data_split = params.get('data_split', 0.2)
-    data_split_offset = params.get('data_split_offset', 0)
-    seed = params.get('seed', None)
+    input_dir = params.get('input_source')
+    data_min_count = params.get('data_min_count')
+    data_split = params.get('data_split')
+    data_split_offset = params.get('data_split_offset')
+    seed = params.get('seed')
 
     # Output
     output_dir = params.get('save_dir')
 
-    # Type
-    # - rgb
-    # - greyscale
-    # - greyscale3
-    # - rgbd
-    # - greyscaled
-    img_type = params.get('img_type', None)
-    if img_type is None:
-        if img_channels == 3:
-            img_type = 'rgb'
-        elif img_channels == 1:
-            if cnn_type.endswith('tl'):
-                img_type = 'greyscale3'
-                params['img_channels'] = 3
-            else:
-                img_type = 'greyscale'
-        else:
-            raise ValueError("Number of channels must be 1 or 3")
-    elif img_type == 'rgbd':
-        params['img_channels'] = 4
-    elif img_type == 'greyscaled':
-        params['img_channels'] = 2
-    elif img_type == 'greyscaledm':
-        params['img_channels'] = 3
-
-    print('@ Image type: {}'.format(img_type))
-
     # Data -------------------------------------------------------------------------------------------------------------
+    # print("@Loading images...")
+    if img_channels == 3:
+        color_mode = 'rgb'
+    else:
+        if cnn_type.endswith('tl'):
+            color_mode = 'greyscale3'
+            params['img_channels'] = 3
+        else:
+            color_mode = 'greyscale'
+    print('Color mode: {}'.format(color_mode))
+
     if data_source is None:
         data_source = DataSource()
         data_source.use_mmap = params['use_mmap']
@@ -96,50 +73,132 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
                                mapping=params['class_mapping'],
                                min_count_to_others=params['data_map_others'],
                                mmap_directory=params['mmap_directory'])
-        data_source.load_dataset(img_size=(img_height, img_width), img_type=img_type)
-    data_source.split(data_split, seed)
+        data_source.load_dataset(img_size=(img_height, img_width),
+                                 prepro_type=None,
+                                 prepro_params=(255, 0, 1),
+                                 img_type=color_mode,
+                                 print_status=True)
+    data_source.split(data_split, data_split_offset, seed)
 
     if params['use_class_weights'] is True:
         params['class_weights'] = data_source.get_class_weights()
-        print("@ Class weights are {}".format(params['class_weights']))
+        print("@Class weights are {}".format(params['class_weights']))
     else:
         params['class_weights'] = None
     params['num_classes'] = data_source.num_classes
 
     if cnn_type.endswith('tl'):
+
+        # mnist = tf.keras.datasets.mnist
+        # (x_train, y_train), (x_test, y_test) = mnist.load_data()
+        # x_train, x_test = x_train / 255.0, x_test / 255.0
+        # model = tf.keras.models.Sequential([
+        #     tf.keras.layers.Flatten(input_shape=(28, 28)),
+        #     tf.keras.layers.Dense(128, activation='relu'),
+        #     tf.keras.layers.Dropout(0.2),
+        #     tf.keras.layers.Dense(10)
+        # ])
+        # loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+        # model.compile(optimizer='adam',
+        #               loss=loss_fn,
+        #               metrics=['accuracy'])
+        # model.fit(x_train, y_train, epochs=5)
+        # model.evaluate(x_test, y_test, verbose=2)
+        # probability_model = tf.keras.Sequential([
+        #     model,
+        #     tf.keras.layers.Softmax()
+        # ])
+
         start = time.time()
+        # Create Vectors -----------------------------------------------------------------------------------------------
+        # Note that the images are scaled internally in the network to match the expected preprocessing
+        # print(time.time())
+        # model_head.predict(data_source.train_images[0:1024])
+        # print(time.time())
+        # model_head.predict(data_source.train_images[0:1024])
+        # print(time.time())
+        # test = data_source.train_images[0:1024].copy()
+        # model_head.predict(test)
+        # print(time.time())
+        # model_head.predict(data_source.train_images[0:1024])
+        # print(time.time())
+        # test = data_source.train_images[0:1024].copy()
+        # model_head.predict(test)
+        # print(time.time())
 
         # Generate vectors
         model_head = generate_tl_head(params)
-        print("@ Calculating train vectors")
+        print("@Calculating train vectors")
         t = time.time()
         train_vector = model_head.predict(data_source.train_images)
-        print("! {}s elapsed".format(time.time() - t))
-        print("@ Calculating test vectors")
+        print("!{}s elapsed".format(time.time() - t))
+        print("@Calculating test vectors")
         t = time.time()
         test_vector = model_head.predict(data_source.test_images)
-        print("! {}s elapsed".format(time.time() - t))
+        print("!{}s elapsed".format(time.time() - t))
         # Clear
         K.clear_session()
 
-        config = tf.ConfigProto()
-        config.gpu_options.allow_growth = True
-        session = tf.Session(config=config)
+        # print(train_vector.dtype)
+        # print(test_vector.dtype)
+
+        # Generate vectors (random!)
+        # train_vector = np.random.random(size=[data_source.train_images.shape[0], 2048])
+        # test_vector = np.random.random(size=[data_source.test_images.shape[0], 2048])
+
+        # train_vector = []
+        # test_vector = []
+        # step = 64
+        #
+        # for i in range(0, len(data_source.train_images), step):
+        #     train_vector.append(model_head.predict(data_source.train_images[i:i+step]))
+        #     print("@Calculating train vectors - {} of {}".format(i, len(data_source.train_images)))
+        # train_vector = np.concatenate(train_vector, axis=0)
+        #
+        # for i in range(0, len(data_source.test_images), step):
+        #     test_vector.append(model_head.predict(data_source.test_images[i:i + step]))
+        #     print("@Calculating test vectors - {} of {}".format(i, len(data_source.test_images)))
+        # test_vector = np.concatenate(test_vector, axis=0)
 
         data_source.train_vectors = train_vector
         data_source.test_vectors = test_vector
 
         # Augmentation -------------------------------------------------------------------------------------------------
-        # No augmentation as we pre-calculate vectors
+        # No augmentation - there is a bug in the batch normalisation layer for tensorflow v1.xx where the mean and variance
+        # are still calculated even when the layer is set to not trainable. This means the vectors produced are not the
+        # vary according to the batch. For augmentation we need to include the ResNet network (with its batch normalisation
+        # layers) in the graph, and because of this bug, the training performance is poor.
 
         # Generator ----------------------------------------------------------------------------------------------------
         # No generator needed
 
         # Model --------------------------------------------------------------------------------------------------------
-        print("@ Generating tail")
+        print("@Generating tail")
         # Get  tail
         model_tail = generate_tl_tail(params, [train_vector.shape[1], ])
         model_tail.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
+        # Training -----------------------------------------------------------------------------------------------------
+        # alr_cb = AdaptiveLearningRateScheduler(nb_epochs=alr_epochs,
+        #                                        nb_drops=alr_drops)
+        # print("@Training")
+        # if data_split > 0:
+        #     validation_data = (test_vector, data_source.test_onehots)
+        # else:
+        #     validation_data = None
+        # history = model_tail.fit(train_vector,
+        #                          data_source.train_onehots,
+        #                          validation_data=validation_data,
+        #                          epochs=max_epochs,
+        #                          batch_size=batch_size,
+        #                          shuffle=True,
+        #                          verbose=0,
+        #                          class_weight=params['class_weights'],
+        #                          callbacks=[alr_cb])
+        # end = time.time()
+        # training_time = end - start
+        # print("@Training time: {}s".format(training_time))
+        # time.sleep(3)
 
         # Generator ----------------------------------------------------------------------------------------------------
         train_gen = tf_vector_generator(train_vector,
@@ -152,7 +211,7 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
         # Training -----------------------------------------------------------------------------------------------------
         alr_cb = AdaptiveLearningRateScheduler(nb_epochs=alr_epochs,
                                                nb_drops=alr_drops)
-        print("@ Training")
+        print("@Training")
         if data_split > 0:
             validation_data = test_gen
         else:
@@ -172,7 +231,7 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
             callbacks=[alr_cb])
         end = time.time()
         training_time = end - start
-        print("@ Training time: {}s".format(training_time))
+        print("@Training time: {}s".format(training_time))
         time.sleep(3)
 
         # Generator ----------------------------------------------------------------------------------------------------
@@ -188,7 +247,7 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
 
     else:
         # Model --------------------------------------------------------------------------------------------------------
-        print("@ Generating model")
+        print("@Generating model")
         start = time.time()
         model = generate(params)
 
@@ -225,7 +284,7 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
 
         alr_cb = AdaptiveLearningRateScheduler(nb_epochs=alr_epochs,
                                                nb_drops=alr_drops)
-        print("@ Training")
+        print("@Training")
         if data_split > 0:
             validation_data = test_gen
         else:
@@ -243,14 +302,14 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
             callbacks=[alr_cb])
         end = time.time()
         training_time = end - start
-        print("@ Training time: {}s".format(training_time))
+        print("@Training time: {}s".format(training_time))
         time.sleep(3)
 
         # Vector -------------------------------------------------------------------------------------------------------
         vector_model = generate_vector(model, params)
 
     # Graphs -----------------------------------------------------------------------------------------------------------
-    print("@ Generating results")
+    print("@Generating results")
     if data_split > 0:
         # Calculate test set scores
         y_true = data_source.test_cls
@@ -272,7 +331,7 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
         end = time.time()
         diff = (end - start) / max_count * 1000
         inf_times.append(diff)
-        print("@ Calculating inference time {}/10: {:.3f}ms".format(i + 1, diff))
+        print("@Calculating inference time {}/10: {:.3f}ms".format(i + 1, diff))
     inference_time = np.median(inf_times)
 
     # Store results
@@ -302,7 +361,7 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
         plt.close('all')
 
     if params['save_mislabeled'] is True:
-        print("@ Estimating mislabeled")
+        print("@Estimating mislabeled")
         vectors = vector_model.predict(data_source.images)
         find_and_save_mislabelled(data_source.images,
                                   vectors,
@@ -313,7 +372,7 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
                                   11)
 
     # Save model -------------------------------------------------------------------------------------------------------
-    print("@ Saving model")
+    print("@Saving model")
     # Convert if necessary to fix TF batch normalisation issues
     model = convert_to_inference_mode(model, lambda: generate(params))
     vector_model = generate_vector(model, params)
@@ -370,12 +429,12 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
     # Save info
     info.save(os.path.join(save_dir, "model", "network_info.xml"))
 
-    print("@ Deleting temporary files")
+    print("@Deleting temporary files")
     data_source.delete_memmap_files(del_split=True, del_source=params['delete_mmap_files'])
 
     wave()
 
-    print("@ Complete")
+    print("@Complete")
     return model, vector_model, data_source, result
 
 # tensorboard_cb = TensorBoard(log_dir='./tensorboard',
