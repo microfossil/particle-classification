@@ -8,9 +8,13 @@
 
 name: Publish package to PyPI
 
+# on:
+#   release:
+#     types: [published]
 on:
-  release:
-    types: [published]
+  push:
+    branches:
+      - tf2_only
 
 permissions:
   contents: read
