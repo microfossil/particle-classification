@@ -4,6 +4,8 @@ Creates and trains a generic network
 import os
 import skimage.io
 import warnings
+import matplotlib.pyplot as plt
+plt.switch_backend('agg')
 
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
