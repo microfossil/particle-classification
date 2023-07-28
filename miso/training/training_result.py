@@ -1,13 +1,18 @@
 """
 Results of training
 """
+from dataclasses import dataclass
+
 import numpy as np
 from sklearn.metrics import precision_recall_fscore_support, accuracy_score
 
+from miso.utils.base_config import BaseConfig
 
-class TrainingResult:
+
+@dataclass
+class TrainingResult(BaseConfig):
+
     def __init__(self,
-                 model_params,
                  history,
                  y_true,
                  y_pred,

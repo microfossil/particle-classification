@@ -1,37 +1,75 @@
-import datetime
+from datetime import datetime
+from dataclasses import dataclass
 from typing import List, Dict
 from lxml import etree as ET
 import os
 import numpy as np
-from collections import OrderedDict
 
 from miso.training.parameters import MisoConfig
+from miso.utils.base_config import BaseConfig
 
 
-class ModelInfo:
-    def __init__(self,
-                 name: str,
-                 description: str,
-                 type: str,
-                 date: datetime.datetime,
-                 protobuf: str,
-                 params: MisoConfig,
-                 inputs: OrderedDict,
-                 outputs: OrderedDict,
-                 data_source_name: str,
-                 labels: List[str],
-                 counts: List[int],
-                 prepro_name: str,
-                 prepro_params: List,
-                 accuracy: float,
-                 precision: float,
-                 recall: float,
-                 f1score: float,
-                 support: float,
-                 training_epochs: int,
-                 training_time: float,
-                 training_split: float,
-                 inference_time_per_image: float):
+@dataclass(kw_only=True)
+class Input(BaseConfig):
+    name: str
+    operation: str
+    height: int
+    width: int
+    channels: int
+
+@dataclass(kw_only=True)
+class Output(BaseConfig):
+    name: str
+    operation: str
+    height: int
+    width: int
+    channels: int
+
+
+@dataclass(kw_only=True)
+class Label(BaseConfig):
+    name: str
+    operation: str
+    height: int
+    width: int
+    channels: int
+
+
+@dataclass
+class Load(BaseConfig):
+    training_epochs: int
+    training_time: float
+    training_split: float
+    training_time_per_image: float
+    inference_time_per_image: float
+
+
+@dataclass(kw_only=True)
+class ModelInfo(BaseConfig):
+     name: str
+     description: str
+     type: str
+     date: datetime
+     protobuf: str
+     source_data: str
+     source_size: str
+     accuracy: float
+     precision: float
+     recall: float
+     f1score: float
+     support: float
+     training_epochs: int
+     training_time: float
+     training_split: float
+     inference_time_per_image: float
+     params: MisoConfig
+     inputs: List[Input]
+     outputs: List[Output]
+     data_source_name: str
+     labels: List[str]
+     counts: List[int]
+     prepro_name: str
+     prepro_params: List):
 
         self.name = name
         self.description = description

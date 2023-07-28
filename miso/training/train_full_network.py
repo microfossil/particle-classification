@@ -80,15 +80,10 @@ def train_full_network(tp: MisoConfig, ds: TrainingDataset, save_dir: str):
     save_images(images, training_examples_dir)
 
     # Validation generator
-    if tf_version == 2:
-        val_one_shot = True
-    else:
-        # One repeat for validation for TF1 otherwise we get end of dataset errors
-        val_one_shot = False
     if tp.dataset.val_split > 0:
-        # Maximum 8 in batch otherwise validation results jump around a bit because
+        # Maximum 16 in batch otherwise validation results jump around a bit because ??
         val_gen = ds.test_generator(
-            min(tp.training.batch_size, 16), shuffle=False, one_shot=val_one_shot
+            min(tp.training.batch_size, 16), shuffle=False, one_shot=True
         )
         val_data = val_gen.create()
         val_steps = len(val_gen)
@@ -115,11 +110,7 @@ def train_full_network(tp: MisoConfig, ds: TrainingDataset, save_dir: str):
         print("- class balancing using random under sampling")
 
     # Train the model
-    if tf_version == 2:
-        train_fn = model.fit
-    else:
-        train_fn = model.fit_generator
-    history = train_fn(
+    history = model.fit(
         train_gen.create(),
         steps_per_epoch=len(train_gen),
         validation_data=val_data,

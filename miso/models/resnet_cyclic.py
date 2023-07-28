@@ -224,7 +224,7 @@ def ResNetCyclic(model_params,
     init_filters = model_params.filters
 
     # resnet bottom
-    if model_params.use_cyclic:
+    if model_params.use_tl_cyclic:
         x = CyclicSlice4()(img_input)
         # x = tfkeras.layers.BatchNormalization(name='bn_data', **no_scale_bn_params)(x)
     else:
@@ -243,7 +243,7 @@ def ResNetCyclic(model_params,
 
     x = tfkeras.layers.ZeroPadding2D(padding=(1, 1))(x)
     x = tfkeras.layers.Conv2D(init_filters, (3, 3), strides=(1, 1), name='conv0b', **conv_params)(x)
-    if model_params.use_cyclic:
+    if model_params.use_tl_cyclic:
         x = CyclicRoll4()(x)
 
     # x = tfkeras.layers.ZeroPadding2D(padding=(1, 1))(x)

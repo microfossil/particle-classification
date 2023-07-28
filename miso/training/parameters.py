@@ -1,44 +1,17 @@
 """
 Training parameters
 """
-import copy
-
-from pathlib import Path
-from typing import Union, List, Optional
+from pprint import pprint
+from typing import List, Optional
 from dataclasses import dataclass, field
 import re
-from marshmallow_dataclass import class_schema
+from xml.dom.minidom import parseString
+
+import dicttoxml
+import xmltodict
 
 from miso.models.keras_models import KERAS_MODEL_PARAMETERS
-from miso.utils.compact_json import CompactJSONEncoder
-
-
-def default_field(obj):
-    return field(default_factory=lambda: copy.copy(obj))
-
-@dataclass
-class BaseConfig(object):
-    class Meta:
-        ordered = True
-
-    def dumps(self):
-        return class_schema(self.__class__)().dumps(self, indent=4, cls=CompactJSONEncoder)
-
-    def save(self, path: str):
-        with open(path, "w") as fp:
-            metadata = class_schema(self.__class__)().dumps(self, indent=4)
-            fp.write(metadata)
-
-    @classmethod
-    def loads(cls, json):
-        instance = class_schema(cls)().loads(json)
-        return instance
-    @classmethod
-    def load(cls, path: Union[Path, str]):
-        if isinstance(path, str):
-            path = Path(path)
-        instance = class_schema(cls)().loads(path.read_text())
-        return instance
+from miso.utils.base_config import BaseConfig, default_field
 
 
 @dataclass
@@ -49,8 +22,8 @@ class ModelConfig(BaseConfig):
     img_type: str = "greyscale"
 
     # Transfer learning cyclic layers
-    use_cyclic: bool = False
-    use_cyclic_gain: bool = False
+    use_tl_cyclic: bool = False
+    use_tl_cyclic_gain: bool = False
 
     # Parameters for custom networks
     filters: Optional[int] = 4
@@ -72,7 +45,7 @@ class TrainingConfig(BaseConfig):
     use_class_weights: bool = True
     use_class_undersampling: bool = False
     use_augmentation: bool = True
-    use_transfer_learning: bool = False
+    use_transfer_learning: bool = True
     transfer_learning_augmentation_factor: int = 0
 
 
@@ -151,7 +124,19 @@ def get_default_shape(cnn_type):
 
 if __name__ == "__main__":
     m = MisoConfig()
+    m.name = "test"
+    m.description = "test description"
     print(m.dumps())
+    xml = xmltodict.unparse({"config": m.asdict()}, pretty=True)
+    print(xml)
+    pprint(xmltodict.parse(xml))
+    m = MisoConfig.load(xmltodict.parse(xml)["config"])
+    pprint(m)
+    # print(dicttoxml.dicttoxml(m.asdict(), attr_type=False, custom_root="config", item_func=lambda x: x[0]).toprettyxml())
+    # xml = parseString(dicttoxml.dicttoxml(m.asdict())).toprettyxml()
+    # print(xml)
+    #
+    # print(xmltodict.parse(xml))
 
 
 

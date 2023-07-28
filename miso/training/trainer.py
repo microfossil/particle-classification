@@ -20,15 +20,12 @@ from collections import OrderedDict
 import keras.backend as K
 from sklearn.manifold import TSNE
 
-from miso.data.tf_generator import TFGenerator
 from miso.data.training_dataset import TrainingDataset
 from miso.stats.embedding import plot_embedding
 from miso.stats.mislabelling import find_and_save_mislabelled
-from miso.training.adaptive_learning_rate import AdaptiveLearningRateScheduler
 from miso.training.training_result import TrainingResult
 from miso.stats.confusion_matrix import *
 from miso.stats.training import *
-from miso.training.augmentation import aug_all_fn
 from miso.deploy.saving import (
     freeze,
     convert_to_inference_mode,
@@ -51,22 +48,12 @@ def train_image_classification_model(tp: MisoConfig):
     tf_version = int(tf.__version__[0])
     now = datetime.datetime.now()
 
-    # ClearML task
-    # print(f"ClearML initialising")
-    # task = Task.init(project_name='MISO',
-    #                  task_name=f"{tp.name}_{now:%Y%m%d-%H%M%S}")
-    # task.connect(tp)
 
     # Hack to make RTX cards work
-    if tf_version == 2:
-        physical_devices = tf.config.list_physical_devices("GPU")
-        print(physical_devices)
-        for device in physical_devices:
-            tf.config.experimental.set_memory_growth(device, True)
-    else:
-        config = tf.ConfigProto()
-        config.gpu_options.allow_growth = True
-        session = tf.Session(config=config)
+    physical_devices = tf.config.list_physical_devices("GPU")
+    print(physical_devices)
+    for device in physical_devices:
+        tf.config.experimental.set_memory_growth(device, True)
 
     K.clear_session()
 
@@ -77,7 +64,7 @@ def train_image_classification_model(tp: MisoConfig):
     print("| MISO Particle Classification Library                                      |")
     print("+---------------------------------------------------------------------------+")
     print("| Stable version:                                                           |")
-    print("| pip install miso2                                                         |")
+    print("| pip install miso                                                          |")
     print("| Development version:                                                      |")
     print("| pip install git+http://www.github.com/microfossil/particle-classification |")
     print("+---------------------------------------------------------------------------+")

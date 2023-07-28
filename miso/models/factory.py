@@ -51,13 +51,13 @@ def generate(tp: MisoConfig):
         if len(parts) > 0:
             tp.cnn.type = parts[0]
             if "cyclic" in parts:
-                tp.cnn.use_cyclic = True
+                tp.cnn.use_tl_cyclic = True
             if "cyclicgain" in parts:
-                tp.cnn.use_cyclic_gain = True
+                tp.cnn.use_tl_cyclic_gain = True
         if tp.cnn.type in KERAS_MODEL_PARAMETERS.keys():
             model_head = head(tp.cnn.type,
-                              use_cyclic=tp.cnn.use_cyclic,
-                              use_gain=tp.cnn.use_cyclic_gain,
+                              use_cyclic=tp.cnn.use_tl_cyclic,
+                              use_gain=tp.cnn.use_tl_cyclic_gain,
                               input_shape=tp.cnn.img_shape,
                               weights='imagenet',
                               add_prepro=True,
@@ -79,13 +79,13 @@ def generate_tl(tp: MisoConfig):
     if len(parts) > 0:
         tp.cnn.type = parts[0]
         if "cyclic" in parts:
-            tp.cnn.use_cyclic = True
+            tp.cnn.use_tl_cyclic = True
         if "cyclicgain" in parts:
-            tp.cnn.use_cyclic_gain = True
+            tp.cnn.use_tl_cyclic_gain = True
     if tp.cnn.type in KERAS_MODEL_PARAMETERS.keys():
         model_head = head(tp.cnn.type,
-                          use_cyclic=tp.cnn.use_cyclic,
-                          use_gain=tp.cnn.use_cyclic_gain,
+                          use_cyclic=tp.cnn.use_tl_cyclic,
+                          use_gain=tp.cnn.use_tl_cyclic_gain,
                           input_shape=tp.cnn.img_shape,
                           weights='imagenet',
                           add_prepro=True,

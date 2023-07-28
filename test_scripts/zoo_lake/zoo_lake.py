@@ -42,9 +42,11 @@ tp.dataset.memmap_directory = None
 # - resnet[18,34,50]
 # - vgg[16,19]
 # - efficientnetb[0-7]
-tp.cnn.type = "efficientnetb2"
+tp.cnn.type = "resnet50"
+use_cyclic: bool = True
+use_cyclic_gain: bool = False
 # Input image shape, set to None to use default size ([128, 128, 1] for custom, [224, 224, 3] for others)
-tp.cnn.img_shape = [128, 128, 3]
+tp.cnn.img_shape = [224, 224, 3]
 # Input image colour space [greyscale/rgb]
 tp.cnn.img_type = "rgb"
 # Number of filters in first block (custom networks)
@@ -65,6 +67,7 @@ tp.cnn.use_asoftmax = False
 # -----------------------------------------------------------------------------
 # Training
 # -----------------------------------------------------------------------------
+tp.training.use_transfer_learning = True
 # Number of images for each training step
 tp.training.batch_size = 64
 # Number of epochs after which training is stopped regardless
@@ -111,7 +114,7 @@ tp.augmentation.orig_img_shape = [256, 256, 3]
 # Output
 # -----------------------------------------------------------------------------
 # Directory to save output
-tp.output.save_dir = "."
+tp.output.output_dir = "."
 # Save model?
 save_model = True
 # Save the mislabelled image analysis?

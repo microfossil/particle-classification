@@ -21,11 +21,12 @@ app.config["OPENAPI_VERSION"] = "3.0.2"
 app.config["OPENAPI_SWAGGER_UI_PATH"] = "/swagger"
 app.config["OPENAPI_SWAGGER_UI_URL"] = "https://cdn.jsdelivr.net/npm/swagger-ui-dist/"
 app.config["CELERY"] = dict(
-    broker_url=os.getenv("VISAGE_RABBITMQ_URL", "amqp://guest:guest@localhost:5672/"),
-    result_backend=os.getenv("VISAGE_REDIS_URL", "redis://localhost:6379/0"),
+    broker_url=os.getenv("MISO_RABBITMQ_URL", "amqp://guest:guest@localhost:5672/"),
+    result_backend=os.getenv("MISO_REDIS_URL", "redis://localhost:6379/0"),
     task_ignore_result=False,
 )
 app.secret_key = "super secret key"
+
 
 @app.errorhandler(InternalServerError)
 def internal_server_error_handler(e):
@@ -34,6 +35,7 @@ def internal_server_error_handler(e):
         "message": str(traceback.format_exc()),
         "status": e.description
     }, 500
+
 
 api = Api(app)
 app.register_error_handler(500, internal_server_error_handler)

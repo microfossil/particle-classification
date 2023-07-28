@@ -27,6 +27,7 @@ class TaskMonitor:
 
     def failed(self, message):
         self._update("FAILED", message, 0, 1)
+        raise Exception(message)
 
     def is_cancelled(self):
         if self.celery_obj.is_aborted():

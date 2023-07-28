@@ -31,6 +31,6 @@ class TaskService:
                                       total=1)
 
     def task_delete(self, id):
-        current_app.control.revoke(id)
+        current_app.control.revoke(id, terminate=True)
         res = AbortableAsyncResult(id, app=current_app)
         res.abort()
