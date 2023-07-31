@@ -38,7 +38,10 @@ setup(
                       'flask_smorest',
                       'flask_cors',
                       'marshmallow_dataclass',
-                      'celery[redis]'],
+                      'celery[redis]',
+                      'streamlit',
+                      'dicttoxml',
+                      'xmltodict'],
     url='https://github.com/microfossil/particle-classification',
     license='MIT',
     project_urls={

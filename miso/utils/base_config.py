@@ -22,7 +22,7 @@ class BaseConfig(object):
     def dumps(self):
         return class_schema(self.__class__)().dumps(self, indent=4, cls=CompactJSONEncoder)
 
-    def save(self, path: str):
+    def save_to_xml(self, path: str):
         with open(path, "w") as fp:
             metadata = class_schema(self.__class__)().dumps(self, indent=4)
             fp.write(metadata)

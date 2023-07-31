@@ -341,18 +341,18 @@ def train_image_classification_model(tp: MisoConfig):
             info.protobuf = "model.onnx"
             info.inputs["image"] = inference_model.inputs[0]
             info.outputs["pred"] = inference_model.outputs[0]
-            info.save(os.path.join(save_dir, "model_onnx", "network_info.xml"))
+            info.save_to_xml(os.path.join(save_dir, "model_onnx", "network_info.xml"))
             info.protobuf = "frozen_model.pb"
             info.inputs["image"] = frozen_func.inputs[0]
             info.outputs["pred"] = frozen_func.outputs[0]
-            info.save(os.path.join(save_dir, "model", "network_info.xml"))
+            info.save_to_xml(os.path.join(save_dir, "model", "network_info.xml"))
         else:
             inference_model = convert_to_inference_mode(model, lambda: generate(tp))
             tf.saved_model.save(
                 inference_model, os.path.join(os.path.join(save_dir, "model_keras"))
             )
             freeze(inference_model, os.path.join(save_dir, "model"))
-            info.save(os.path.join(save_dir, "model", "network_info.xml"))
+            info.save_to_xml(os.path.join(save_dir, "model", "network_info.xml"))
 
     # ------------------------------------------------------------------------------
     # Confirm model save

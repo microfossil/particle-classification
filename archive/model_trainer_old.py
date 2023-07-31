@@ -368,7 +368,7 @@ def train_image_classification_model(params: dict, data_source: DataSource = Non
                info)
 
     # Save info
-    info.save(os.path.join(save_dir, "model", "network_info.xml"))
+    info.save_to_xml(os.path.join(save_dir, "model", "network_info.xml"))
 
     print("@ Deleting temporary files")
     data_source.delete_memmap_files(del_split=True, del_source=params['delete_mmap_files'])

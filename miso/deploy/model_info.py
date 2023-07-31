@@ -46,56 +46,33 @@ class Load(BaseConfig):
 
 @dataclass(kw_only=True)
 class ModelInfo(BaseConfig):
-     name: str
-     description: str
-     type: str
-     date: datetime
-     protobuf: str
-     source_data: str
-     source_size: str
-     accuracy: float
-     precision: float
-     recall: float
-     f1score: float
-     support: float
-     training_epochs: int
-     training_time: float
-     training_split: float
-     inference_time_per_image: float
-     params: MisoConfig
-     inputs: List[Input]
-     outputs: List[Output]
-     data_source_name: str
-     labels: List[str]
-     counts: List[int]
-     prepro_name: str
-     prepro_params: List):
+    name: str
+    description: str
+    type: str
+    date: datetime
+    protobuf: str
+    source_data: str
+    source_size: str
+    accuracy: float
+    precision: float
+    recall: float
+    f1score: float
+    support: float
+    training_epochs: int
+    training_time: float
+    training_split: float
+    inference_time_per_image: float
+    params: MisoConfig
+    inputs: List[Input]
+    outputs: List[Output]
+    data_source_name: str
+    labels: List[str]
+    counts: List[int]
+    prepro_name: str
+    prepro_params: List[float]
+    version: str = "3.0"
 
-        self.name = name
-        self.description = description
-        self.type = type
-        self.date = date
-        self.params = params
-        self.inputs = inputs
-        self.outputs = outputs
-        self.data_source_name = data_source_name
-        self.labels = labels
-        self.counts = counts
-        self.prepro_name = prepro_name
-        self.prepro_params = prepro_params
-        self.protobuf = protobuf
-        self.accuracy = accuracy
-        self.precision = precision
-        self.recall = recall
-        self.f1score = f1score
-        self.support = support
-        self.training_epochs = training_epochs
-        self.training_time = training_time
-        self.training_split = training_split
-        self.inference_time_per_image = inference_time_per_image
-        self.version = "2.1"
-
-    def save(self, filename):
+    def save_to_xml(self, filename):
         os.makedirs(os.path.dirname(filename), exist_ok=True)
         f = open(filename, 'wb')
         f.write(self.to_xml())
@@ -106,7 +83,6 @@ class ModelInfo(BaseConfig):
             return tensor.op.name
         except:
             return tensor.name
-
 
     def to_xml(self):
         root = ET.Element("network", version=self.version)

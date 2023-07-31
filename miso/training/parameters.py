@@ -95,7 +95,7 @@ class MisoConfig(BaseConfig):
             self.name = self.dataset.source[:64] + "_" + self.cnn.type
             self.name = re.sub('[^A-Za-z0-9]+', '-', self.name)
         if self.cnn.img_shape is None:
-            if self.cnn.type.endswith("_tl"):
+            if self.training.use_transfer_learning:
                 shape = KERAS_MODEL_PARAMETERS[self.cnn.type.split('_')[0]].default_input_shape
             else:
                 if self.cnn.type.startswith("base_cyclic") or self.cnn.type.startswith("resnet_cyclic"):
