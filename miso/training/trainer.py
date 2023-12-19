@@ -582,19 +582,19 @@ def train_image_classification_model(tp: MisoParameters):
             frozen_func = save_frozen_model_tf2(
                 inference_model, os.path.join(save_dir, "model"), "frozen_model.pb"
             )
-            save_model_as_onnx(
-                inference_model,
-                inference_model.inputs[0].name,
-                [
-                    None,
-                ]
-                + tp.cnn.img_shape,
-                os.path.join(os.path.join(save_dir, "model_onnx")),
-            )
-            info.protobuf = "model.onnx"
-            info.inputs["image"] = inference_model.inputs[0]
-            info.outputs["pred"] = inference_model.outputs[0]
-            info.save(os.path.join(save_dir, "model_onnx", "network_info.xml"))
+            # save_model_as_onnx(
+                # inference_model,
+                # inference_model.inputs[0].name,
+                # [
+                    # None,
+                # ]
+                # + tp.cnn.img_shape,
+                # os.path.join(os.path.join(save_dir, "model_onnx")),
+            # )
+            # info.protobuf = "model.onnx"
+            # info.inputs["image"] = inference_model.inputs[0]
+            # info.outputs["pred"] = inference_model.outputs[0]
+            # info.save(os.path.join(save_dir, "model_onnx", "network_info.xml"))
             info.protobuf = "frozen_model.pb"
             info.inputs["image"] = frozen_func.inputs[0]
             info.outputs["pred"] = frozen_func.outputs[0]
