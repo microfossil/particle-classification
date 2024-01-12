@@ -500,7 +500,7 @@ def train_image_classification_model(tp: MisoParameters):
     if tp.output.save_model is not None:
         inference_model = convert_to_inference_mode_tf2(model, lambda: generate(tp))
         frozen_func = save_frozen_model_tf2(
-            inference_model, os.path.join(save_dir, "model"), "model_tf2.pb"
+            inference_model, os.path.join(save_dir, "model_tf2"), "model_tf2.pb"
         )
         info.protobuf = "model_tf2.pb"
         info.inputs["image"] = frozen_func.inputs[0]
