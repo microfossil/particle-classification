@@ -53,17 +53,11 @@ def predict_in_batches(model, generator):
 
 
 def train_image_classification_model(tp: MisoParameters):
-    tf_version = int(tf.__version__[0])
 
     # Hack to make RTX cards work
-    if tf_version == 2:
-        physical_devices = tf.config.list_physical_devices("GPU")
-        for device in physical_devices:
-            tf.config.experimental.set_memory_growth(device, True)
-    else:
-        config = tf.ConfigProto()
-        config.gpu_options.allow_growth = True
-        session = tf.Session(config=config)
+    physical_devices = tf.config.list_physical_devices("GPU")
+    for device in physical_devices:
+        tf.config.experimental.set_memory_growth(device, True)
 
     K.clear_session()
 
@@ -126,10 +120,7 @@ def train_image_classification_model(tp: MisoParameters):
         gen = ds.images.create_generator(
             tp.training.batch_size, shuffle=False, one_shot=True
         )
-        if tf_version == 2:
-            vectors = model_head.predict(gen.create())
-        else:
-            vectors = predict_in_batches(model_head, gen.create())
+        vectors = model_head.predict(gen.create())
         print(f"! {time.time() - t}s elapsed, ({len(vectors)}/{len(ds.images.data)} vectors)")
 
         # Clear session
@@ -158,11 +149,7 @@ def train_image_classification_model(tp: MisoParameters):
                                 undersample=tp.training.use_class_undersampling)
 
         # Validation generator
-        if tf_version == 2:
-            val_one_shot = True
-        else:
-            # One repeat for validation for TF1 otherwise we get end of dataset errors
-            val_one_shot = False
+        val_one_shot = True
         if tp.dataset.val_split > 0:
             val_gen = TFGenerator(
                 vectors,
@@ -183,30 +170,14 @@ def train_image_classification_model(tp: MisoParameters):
         if tp.training.use_class_weights is True and tp.training.use_class_undersampling is False:
             class_weights = ds.class_weights
             print("- class weights: {}".format(class_weights))
-            if tf_version == 2:
-                class_weights = dict(enumerate(class_weights))
+            class_weights = dict(enumerate(class_weights))
         else:
             class_weights = None
         if tp.training.use_class_undersampling:
             print("- class balancing using random under sampling")
 
-        # v = model_tail.predict(vectors[0:1])
-        # print(v[0, :10])
-
-        # model_head.summary()
-
-        # model = Model(inputs=model_head.input, outputs=model_tail(model_head.output))
-        # vector_model = Model(model.inputs, model.get_layer(index=-2).get_output_at(0))
-        # v = vector_model.predict(ds.images.data[0:1] / 255)
-        # print(v[0, :10])
-        # v = vector_model.predict(ds.images.data[0:1])
-        # print(v[0, :10])
-
         # Train
-        if tf_version == 2:
-            train_fn = model_tail.fit
-        else:
-            train_fn = model_tail.fit_generator
+        train_fn = model_tail.fit
         history = train_fn(train_gen.create(),
                            steps_per_epoch=len(train_gen),
                            validation_data=val_data,
@@ -226,34 +197,7 @@ def train_image_classification_model(tp: MisoParameters):
         # Now we join the trained dense layers to the resnet model to create a model that accepts images as input
         # model_head = generate_tl_head(tp.cnn.id, tp.cnn.img_shape)
         model = combine_tl(model_head, model_tail)
-        # model.summary()
-
-        # print(model.layers[-1])
-        # print(model.layers[-2])
-        #
-        # vector_model = Model(inputs=model.inputs, outputs=model.layers[-2].get_output_at(1))
-        # print(vector_model.layers[-1])
-        # print(vector_model.layers[-2])
-        # v = vector_model.predict(ds.images.data[0:1] / 255)
-        # print(v[0, :10])
-        # v = vector_model.predict(ds.images.data[0:1])
-        # print(v[0, :10])
-
-        # model = Model(inputs=model_head.input, outputs=model_tail(model_head.layers[-1].layers[-1].output))
-        # model.summary()
-
-        # print(model_tail.get_layer(index=-2).get_weights())
-        #
-        # vector_tensor = model_tail.get_layer(index=-2).get_output_at(0)
-        # vector_model = Model(model_tail.inputs, vector_tensor)
         vector_model = generate_vector(model, tp.cnn.id)
-        # v = vector_model.predict(vectors[0:1])
-        # print(v[0, :10])
-        #
-        # vectors = model_head.predict(next(iter(gen.create())))
-        # v = vector_model.predict(vectors[0:1])
-        # print(v[0, :10])
-
     # ------------------------------------------------------------------------------
     # Full network train
     # ------------------------------------------------------------------------------
@@ -317,11 +261,7 @@ def train_image_classification_model(tp: MisoParameters):
             )
 
         # Validation generator
-        if tf_version == 2:
-            val_one_shot = True
-        else:
-            # One repeat for validation for TF1 otherwise we get end of dataset errors
-            val_one_shot = False
+        val_one_shot = True
         if tp.dataset.val_split > 0:
             # Maximum 8 in batch otherwise validation results jump around a bit because
             val_gen = ds.test_generator(
@@ -342,18 +282,14 @@ def train_image_classification_model(tp: MisoParameters):
         ):
             class_weights = ds.class_weights
             print("- class weights: {}".format(class_weights))
-            if tf_version == 2:
-                class_weights = dict(enumerate(class_weights))
+            class_weights = dict(enumerate(class_weights))
         else:
             class_weights = None
         if tp.training.use_class_undersampling:
             print("- class balancing using random under sampling")
 
         # Train the model
-        if tf_version == 2:
-            train_fn = model.fit
-        else:
-            train_fn = model.fit_generator
+        train_fn = model.fit
         history = train_fn(
             train_gen.create(),
             steps_per_epoch=len(train_gen),
@@ -386,10 +322,7 @@ def train_image_classification_model(tp: MisoParameters):
     if tp.dataset.val_split > 0:
         y_true = ds.cls[ds.test_idx]
         gen = ds.test_generator(tp.training.batch_size, shuffle=False, one_shot=True)
-        if tf_version == 2:
-            y_prob = model.predict(gen.create())
-        else:
-            y_prob = predict_in_batches(model, gen.create())
+        y_prob = model.predict(gen.create())
         y_pred = y_prob.argmax(axis=1)
     else:
         y_true = np.asarray([])
@@ -407,10 +340,7 @@ def train_image_classification_model(tp: MisoParameters):
             one_shot=True,
         )
         start = time.time()
-        if tf_version == 2:
-            model.predict(gen.create())
-        else:
-            predict_in_batches(model, gen.create())
+        model.predict(gen.create())
         end = time.time()
         diff = (end - start) / max_count * 1000
         inf_times.append(diff)
@@ -498,9 +428,6 @@ def train_image_classification_model(tp: MisoParameters):
         fp.write("This is calculated using the test data\n")
         fp.write("\n" + "-" * 80 + "\n")
         fp.write(f"Overall label heath: {report['overall_label_health_score']}")
-        # fp.write("-" * 80 + "\n")
-        # fp.write("Joint probabilities\n")
-        # fp.write(report["joint"])
         fp.write("\n" + "-" * 80 + "\n")
         fp.write("Classes by label quality\n")
         fp.write(report["classes_by_label_quality"].to_string())
@@ -512,7 +439,6 @@ def train_image_classification_model(tp: MisoParameters):
     # Plots
     # ------------------------------------------------------------------------------
     # Plot the graphs
-    # plot_model(model, to_file=os.path.join(save_dir, "model_plot.pdf"), show_shapes=True)
     print("-" * 80)
     print("Plotting")
     if tp.dataset.val_split > 0:
@@ -533,10 +459,7 @@ def train_image_classification_model(tp: MisoParameters):
         gen = ds.images.create_generator(
             tp.training.batch_size, shuffle=False, one_shot=True
         )
-        if tf_version == 2:
-            vectors = vector_model.predict(gen.create())
-        else:
-            vectors = predict_in_batches(vector_model, gen.create())
+        vectors = vector_model.predict(gen.create())
         print("{} total".format(len(vectors)))
         find_and_save_mislabelled(
             ds.images.data,
@@ -559,10 +482,7 @@ def train_image_classification_model(tp: MisoParameters):
     gen = ds.images.create_generator(
         tp.training.batch_size, idxs=idxs, shuffle=False, one_shot=True
     )
-    if tf_version == 2:
-        vec_subset = vector_model.predict(gen.create())
-    else:
-        vec_subset = predict_in_batches(vector_model, gen.create())
+    vec_subset = vector_model.predict(gen.create())
     X = TSNE(n_components=2).fit_transform(vec_subset)
     plot_embedding(X, ds.cls[idxs], ds.num_classes)
     plt.savefig(os.path.join(save_dir, "tsne.pdf"))
@@ -578,39 +498,29 @@ def train_image_classification_model(tp: MisoParameters):
 
     # Freeze and save graph
     if tp.output.save_model is not None:
-        if tf_version == 2:
-            inference_model = convert_to_inference_mode_tf2(model, lambda: generate(tp))
-            # tf.saved_model.save(inference_model, os.path.join(os.path.join(save_dir, "model_keras")))
-            frozen_func = save_frozen_model_tf2(
-                inference_model, os.path.join(save_dir, "model"), "frozen_model.pb"
-            )
-            info.protobuf = "frozen_model.pb"
-            info.inputs["image"] = frozen_func.inputs[0]
-            info.outputs["pred"] = frozen_func.outputs[0]
-            info.save(os.path.join(save_dir, "model", "network_info.xml"))
+        inference_model = convert_to_inference_mode_tf2(model, lambda: generate(tp))
+        frozen_func = save_frozen_model_tf2(
+            inference_model, os.path.join(save_dir, "model"), "model_tf2.pb"
+        )
+        info.protobuf = "model_tf2.pb"
+        info.inputs["image"] = frozen_func.inputs[0]
+        info.outputs["pred"] = frozen_func.outputs[0]
+        info.save(os.path.join(save_dir, "model", "network_info.xml"))
 
-            try:
-                save_model_as_onnx(
-                    inference_model,
-                    inference_model.inputs[0].name, [None, ] + tp.cnn.img_shape,
-                    os.path.join(os.path.join(save_dir, "model_onnx")),
-                )
-                info.protobuf = "model.onnx"
-                info.inputs["image"] = inference_model.inputs[0]
-                info.outputs["pred"] = inference_model.outputs[0]
-                info.save(os.path.join(save_dir, "model_onnx", "network_info.xml"))
-            except Exception as e:
-                print("Failed to save ONNX model!")
-                print(e)
-                traceback.print_exc()
-
-        else:
-            inference_model = convert_to_inference_mode(model, lambda: generate(tp))
-            tf.saved_model.save(
-                inference_model, os.path.join(os.path.join(save_dir, "model_keras"))
+        try:
+            save_model_as_onnx(
+                inference_model,
+                inference_model.inputs[0].name, [None, ] + tp.cnn.img_shape,
+                os.path.join(os.path.join(save_dir, "model_onnx")),
             )
-            freeze(inference_model, os.path.join(save_dir, "model"))
-            info.save(os.path.join(save_dir, "model", "network_info.xml"))
+            info.protobuf = "model.onnx"
+            info.inputs["image"] = inference_model.inputs[0]
+            info.outputs["pred"] = inference_model.outputs[0]
+            info.save(os.path.join(save_dir, "model_onnx", "network_info.xml"))
+        except Exception as e:
+            print("Failed to save ONNX model!")
+            print(e)
+            traceback.print_exc()
 
     # ------------------------------------------------------------------------------
     # Confirm model save
@@ -622,21 +532,11 @@ def train_image_classification_model(tp: MisoParameters):
         y_true = ds.cls[ds.test_idx]
         gen = ds.test_generator(32, shuffle=False, one_shot=True)
         y_prob = []
-        if tf_version == 2:
-            model, img_size, cls_labels = load_from_xml(
-                os.path.join(save_dir, "model", "network_info.xml")
-            )
-            for b in iter(gen.to_tfdataset()):
-                y_prob.append(model(b[0]).numpy())
-        else:
-            session, input, output, img_size, cls_labels = load_from_xml(
-                os.path.join(save_dir, "model", "network_info.xml")
-            )
-            iterator = iter(gen.tf1_compat_generator())
-            for bi in range(len(gen)):
-                b = next(iterator)
-                y_p = session.run(output, feed_dict={input: b[0]})
-                y_prob.append(y_p)
+        model, img_size, cls_labels = load_from_xml(
+            os.path.join(save_dir, "model", "network_info.xml")
+        )
+        for b in iter(gen.to_tfdataset()):
+            y_prob.append(model(b[0]).numpy())
         y_prob = np.concatenate(y_prob, axis=0)
         y_pred = y_prob.argmax(axis=1)
         acc = accuracy_score(y_true, y_pred)

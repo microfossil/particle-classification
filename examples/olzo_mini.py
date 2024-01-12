@@ -13,7 +13,6 @@ from miso.training.trainer import train_image_classification_model
 tp = MisoParameters()
 
 import tensorflow as tf
-print(tf.config.list_physical_devices('GPU'))
 
 # -----------------------------------------------------------------------------
 # Dataset
@@ -47,7 +46,7 @@ tp.dataset.memmap_directory = None
 # - resnet[18,34,50]
 # - vgg[16,19]
 # - efficientnetB[0-7]
-tp.cnn.id = "base_cyclic"
+tp.cnn.id = "resnet50_tl"
 # Input image shape, set to None to use default size ([128, 128, 1] for custom, [224, 224, 3] for others)
 tp.cnn.img_shape = [128, 128, 1]
 # Input image colour space [greyscale/rgb]

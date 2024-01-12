@@ -7,7 +7,6 @@ import sys
 import pandas as pd
 import tensorflow as tf
 
-tf_version = int(tf.__version__[0])
 app = Flask(__name__)
 
 
@@ -87,10 +86,7 @@ def classify_file():
                 im = load_image(filename, app_img_size, img_type)
 
                 # Classify
-                if tf_version == 2:
-                    result = app_model(tf.convert_to_tensor(im[np.newaxis, :, :, :], dtype=tf.float32)).numpy()[0]
-                else:
-                    result = app_session.run(app_output, feed_dict={app_input: im[np.newaxis, :, :, :]})
+                result = app_model(tf.convert_to_tensor(im[np.newaxis, :, :, :], dtype=tf.float32)).numpy()[0]
 
                 # Predictions
                 idx = np.argmax(result)
@@ -122,10 +118,7 @@ if __name__ == '__main__':
     parser.add_argument("-p", "--port", required=True, help="Server port")
     args = parser.parse_args()
 
-    if tf_version == 2:
-        app_model, app_img_size, app_cls_labels = load_from_xml(args.info)
-    else:
-        app_session, app_input, app_output, app_img_size, app_cls_labels = load_from_xml(args.info)
+    app_model, app_img_size, app_cls_labels = load_from_xml(args.info)
     app_df = pd.DataFrame(columns=['sample'] + app_cls_labels)
     print("MISO Classification Server - port {}".format(args.port))
     print("--------------------------")
