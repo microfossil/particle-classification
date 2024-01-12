@@ -17,7 +17,7 @@ setup(
         'Intended Audience :: Science/Research',
     ],
     keywords='microfossil, cnn',
-    python_requires='>=3.9<=3.11',
+    python_requires='>=3.9,<=3.11',
     packages=['miso', 'miso.data', 'miso.deploy', 'miso.layers', 'miso.models', 'miso.stats', 'miso.training',
               'miso.utils'],
     install_requires=['tensorflow==2.10.1',
