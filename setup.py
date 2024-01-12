@@ -37,7 +37,7 @@ setup(
                       'openpyxl',
                       'imblearn',
                       'tf2onnx',
-                      'protobuf==3.20.3',
+                      "protobuf==3.20.3"
                       'cleanlab',
                       'packaging',
                       'tensorflow_addons'],
