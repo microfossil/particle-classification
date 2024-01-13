@@ -1,11 +1,12 @@
 import math
 
+from keras import Model
 from keras.optimizers import SGD, Adam
 
 from miso.models.keras_models import head, tail, KERAS_MODEL_PARAMETERS
 from miso.models.base_cyclic import *
 from miso.models.resnet_cyclic import *
-from miso.training.parameters import MisoConfig
+from miso.training.parameters import MisoParameters
 
 try:
     from tensorflow.keras.applications.efficientnet import *
@@ -13,9 +14,22 @@ except ImportError:
     pass
 
 
-def generate(tp: MisoConfig):
+def create_optimizer(tp: MisoParameters):
+    if tp.optimizer.name == "sgd":
+        opt = SGD(learning_rate=tp.optimizer.learning_rate,
+                  decay=tp.optimizer.decay,
+                  momentum=tp.optimizer.momentum,
+                  nesterov=tp.optimizer.nesterov)
+    elif tp.optimizer.name == "adam":
+        opt = Adam(learning_rate=tp.optimizer.learning_rate, decay=tp.optimizer.decay)
+    else:
+        raise ValueError(f"The optimizer {tp.optimizer.name} is not supported, valid optimizers are: sgd, adam")
+    return opt
+
+
+def generate(tp: MisoParameters):
     # Base Cyclic - custom network created at CEREGE specifically for foraminifera by adding cyclic layers
-    if tp.cnn.type.startswith("base_cyclic"):
+    if tp.cnn.id.startswith("base_cyclic"):
         model = base_cyclic(input_shape=tp.cnn.img_shape,
                             nb_classes=tp.dataset.num_classes,
                             filters=tp.cnn.filters,
@@ -29,7 +43,7 @@ def generate(tp: MisoConfig):
         model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
 
     # ResNet Cyclic - custom network created at CEREGE specifically for foraminifera by adding cyclic layers
-    elif tp.cnn.type.startswith("resnet_cyclic"):
+    elif tp.cnn.id.startswith("resnet_cyclic"):
         blocks = int(math.log2(tp.cnn.img_shape[0]) - 2)
         blocks -= 1  # Resnet has one block to start with already
         resnet_params = ResnetModelParameters('resnet_cyclic',
@@ -40,21 +54,21 @@ def generate(tp: MisoConfig):
                                     use_cyclic=True,
                                     global_pooling=tp.cnn.global_pooling)
         model = ResNetCyclic(resnet_params, tp.cnn.img_shape, None, True, tp.dataset.num_classes)
-        opt = Adam(lr=0.001)
+        opt = create_optimizer(tp)
         model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
 
     # Standard networks in keras applications (with options for transfer learning or cyclic gain
     else:
         # Legacy support where transfer learning, cyclic and gain were part of the cnn type
-        parts = tp.cnn.type.split("_")
+        parts = tp.cnn.id.split("_")
         if len(parts) > 0:
-            tp.cnn.type = parts[0]
+            tp.cnn.id = parts[0]
             if "cyclic" in parts:
                 tp.cnn.use_cyclic = True
-            if "cyclicgain" in parts:
-                tp.cnn.use_cyclic_gain = True
-        if tp.cnn.type in KERAS_MODEL_PARAMETERS.keys():
-            model_head = head(tp.cnn.type,
+                if "gain" in parts:
+                    tp.cnn.use_cyclic_gain = True
+        if tp.cnn.id in KERAS_MODEL_PARAMETERS.keys():
+            model_head = head(tp.cnn.id,
                               use_cyclic=tp.cnn.use_cyclic,
                               use_gain=tp.cnn.use_cyclic_gain,
                               input_shape=tp.cnn.img_shape,
@@ -65,24 +79,24 @@ def generate(tp: MisoConfig):
             model = combine_head_and_tail(model_head, model_tail)
         else:
             raise ValueError(
-                "The CNN type {} is not supported, valid CNNs are {}".format(tp.cnn.type, KERAS_MODEL_PARAMETERS.keys()))
+                "The CNN type {} is not supported, valid CNNs are {}".format(tp.cnn.id, KERAS_MODEL_PARAMETERS.keys()))
         # opt = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
-        opt = Adam(lr=0.001)
+        opt = create_optimizer(tp)
         model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
     return model
 
 
-def generate_tl(tp: MisoConfig):
+def generate_tl(tp: MisoParameters):
     # Legacy support where transfer learning, cyclic and gain were part of the cnn type
-    parts = tp.cnn.type.split("_")
+    parts = tp.cnn.id.split("_")
     if len(parts) > 0:
-        tp.cnn.type = parts[0]
+        tp.cnn.id = parts[0]
         if "cyclic" in parts:
             tp.cnn.use_cyclic = True
-        if "cyclicgain" in parts:
-            tp.cnn.use_cyclic_gain = True
-    if tp.cnn.type in KERAS_MODEL_PARAMETERS.keys():
-        model_head = head(tp.cnn.type,
+            if "gain" in parts:
+                tp.cnn.use_cyclic_gain = True
+    if tp.cnn.id in KERAS_MODEL_PARAMETERS.keys():
+        model_head = head(tp.cnn.id,
                           use_cyclic=tp.cnn.use_cyclic,
                           use_gain=tp.cnn.use_cyclic_gain,
                           input_shape=tp.cnn.img_shape,
@@ -92,8 +106,8 @@ def generate_tl(tp: MisoConfig):
         model_tail = tail(tp.dataset.num_classes, [model_head.layers[-1].output.shape[-1], ])
     else:
         raise ValueError(
-            "The CNN type {} is not supported, valid CNNs are {}".format(tp.cnn.type, KERAS_MODEL_PARAMETERS.keys()))
-    opt = Adam(lr=0.001)
+            "The CNN type {} is not supported, valid CNNs are {}".format(tp.cnn.id, KERAS_MODEL_PARAMETERS.keys()))
+    opt = create_optimizer(tp)
     model_tail.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
     return model_head, model_tail
 
@@ -102,7 +116,12 @@ def combine_head_and_tail(model_head, model_tail):
     return Model(inputs=model_head.input, outputs=model_tail.call(model_head.output))
 
 
-def generate_vector_from_model(model, cnn_type):
-    vector_tensor = model.get_layer(index=-2).get_output_at(1)
-    vector_model = Model(model.inputs, vector_tensor)
+def generate_vector_from_model(model, tp):
+    try:
+        vector_model = Model(model.inputs, model.get_layer(index=-2).get_output_at(1))
+        return vector_model
+    except:
+        pass
+
+    vector_model = Model(model.inputs, model.get_layer(index=-2).get_output_at(0))
     return vector_model

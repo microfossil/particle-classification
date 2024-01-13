@@ -16,7 +16,7 @@ if __name__ == "__main__":
 
     tp = MisoParameters()
     tp.source = args.input
-    tp.output_dir = args.output
+    tp.save_dir = args.output
     tp.cnn_type = args.type
     tp.filters = args.filters
     tp.min_count = args.min_count

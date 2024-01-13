@@ -34,7 +34,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 
-def train_image_classification_model(tp: MisoConfig):
+def train_image_classification_model(tp: MisoParameters):
     now = datetime.datetime.now()
 
     # Hack to make RTX cards work
@@ -51,7 +51,7 @@ def train_image_classification_model(tp: MisoConfig):
     print("| MISO Particle Classification Library                                      |")
     print("+---------------------------------------------------------------------------+")
     print("| Stable version:                                                           |")
-    print("| pip install miso2                                                         |")
+    print("| pip install miso                                                          |")
     print("| Development version:                                                      |")
     print("| pip install git+http://www.github.com/microfossil/particle-classification |")
     print("+---------------------------------------------------------------------------+")
@@ -60,7 +60,7 @@ def train_image_classification_model(tp: MisoConfig):
     print("Train information:")
     print("- name: {}".format(tp.name))
     print("- description: {}".format(tp.description))
-    print("- CNN type: {}".format(tp.cnn.type))
+    print("- CNN type: {}".format(tp.cnn.id))
     print("- image type: {}".format(tp.cnn.img_type))
     print("- image shape: {}".format(tp.cnn.img_shape))
     print()
@@ -86,7 +86,7 @@ def train_image_classification_model(tp: MisoConfig):
 
     # Create save locations
     save_dir = os.path.join(
-        tp.output.output_dir, "{0}_{1:%Y%m%d-%H%M%S}".format(tp.name, now)
+        tp.output.save_dir, "{0}_{1:%Y%m%d-%H%M%S}".format(tp.name, now)
     )
     os.makedirs(save_dir, exist_ok=True)
 
@@ -166,7 +166,7 @@ def train_image_classification_model(tp: MisoConfig):
             "{}: {} model trained on data from {} ({} images in {} classes).\n"
             "Accuracy: {:.1f} (P: {:.1f}, R: {:.1f}, F1 {:.1f})".format(
                 tp.name,
-                tp.cnn.type,
+                tp.cnn.id,
                 tp.dataset.source,
                 len(ds.filenames.filenames),
                 len(ds.cls_labels),
@@ -186,7 +186,7 @@ def train_image_classification_model(tp: MisoConfig):
     info = ModelInfo(
         tp.name,
         tp.description,
-        tp.cnn.type,
+        tp.cnn.id,
         now,
         "frozen_model.pb",
         tp,
@@ -252,7 +252,7 @@ def train_image_classification_model(tp: MisoConfig):
         plt.close("all")
 
     # Mislabelled
-    vector_model = generate_vector_from_model(model, None)
+    vector_model = generate_vector_from_model(model, tp)
     if tp.output.save_mislabeled is True:
         print("- mislabeled")
         print("- calculating vectors... ", end="")
@@ -301,7 +301,7 @@ def train_image_classification_model(tp: MisoConfig):
         inference_model = convert_to_inference_mode_tf2(model, lambda: generate(tp))
         # tf.saved_model.save(inference_model, os.path.join(os.path.join(save_dir, "model_keras")))
         frozen_func = save_frozen_model_tf2(
-            inference_model, os.path.join(save_dir, "model"), "frozen_model.pb"
+            inference_model, os.path.join(save_dir, "model_tf2"), "frozen_model.pb"
         )
         info.protobuf = "frozen_model.pb"
         info.inputs["image"] = frozen_func.inputs[0]
@@ -322,6 +322,9 @@ def train_image_classification_model(tp: MisoConfig):
         info.outputs["pred"] = inference_model.outputs[0]
         info.save(os.path.join(save_dir, "model_onnx", "network_info.xml"))
 
+    # Save parameters
+    tp.save(os.path.join(save_dir, "training_parameters.json"))
+
     # ------------------------------------------------------------------------------
     # Confirm model save
     # ------------------------------------------------------------------------------
@@ -333,7 +336,7 @@ def train_image_classification_model(tp: MisoConfig):
         gen = ds.test_generator(32, shuffle=False, one_shot=True)
         y_prob = []
         model, img_size, cls_labels = load_from_xml(
-            os.path.join(save_dir, "model", "network_info.xml")
+            os.path.join(save_dir, "model_tf2", "network_info.xml")
         )
         for b in iter(gen.to_tfdataset()):
             y_prob.append(model(b[0]).numpy())

@@ -7,11 +7,11 @@ from miso.data.training_dataset import TrainingDataset
 from miso.models.factory import generate_tl, combine_head_and_tail
 from miso.training.adaptive_learning_rate import AdaptiveLearningRateScheduler
 from miso.training.helpers import predict_in_batches
-from miso.training.parameters import MisoConfig
+from miso.training.parameters import MisoParameters
 from miso.training.augmentation import aug_all_fn
 
 
-def train_transfer_learning(tp: MisoConfig, ds: TrainingDataset):
+def train_transfer_learning(tp: MisoParameters, ds: TrainingDataset):
 
     print("-" * 80)
     print("Transfer learning network training")

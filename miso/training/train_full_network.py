@@ -9,7 +9,7 @@ from miso.data.tf_generator import TFGenerator
 from miso.data.training_dataset import TrainingDataset
 from miso.models.factory import generate
 from miso.training.adaptive_learning_rate import AdaptiveLearningRateScheduler
-from miso.training.parameters import MisoConfig
+from miso.training.parameters import MisoParameters
 from miso.training.augmentation import aug_all_fn
 
 
@@ -28,7 +28,7 @@ def save_images(images, output_dir):
         )
 
 
-def train_full_network(tp: MisoConfig, ds: TrainingDataset, save_dir: str):
+def train_full_network(tp: MisoParameters, ds: TrainingDataset, save_dir: str):
     # Tensorflow version
     tf_version = int(tf.__version__[0])
 
@@ -38,7 +38,7 @@ def train_full_network(tp: MisoConfig, ds: TrainingDataset, save_dir: str):
 
     # Generate model
     model = generate(tp)
-    model.summary()
+    # model.summary()
 
     # Augmentation
     if tp.augmentation.rotation is True:

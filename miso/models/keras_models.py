@@ -133,5 +133,9 @@ KERAS_MODEL_PARAMETERS = {
     'efficientnetb5': KerasModelParameters(ka.efficientnet.EfficientNetB5, no_prepro, [456, 456, 3]),
     'efficientnetb6': KerasModelParameters(ka.efficientnet.EfficientNetB6, no_prepro, [528, 528, 3]),
     'efficientnetb7': KerasModelParameters(ka.efficientnet.EfficientNetB7, no_prepro, [600, 600, 3]),
-    'convnexttiny': KerasModelParameters(ka.convnext.ConvNeXtTiny, no_prepro, [600, 600, 3]),
+    'convnexttiny': KerasModelParameters(ka.convnext.ConvNeXtTiny, no_prepro, [224, 224, 3]),
+    'convnextsmall': KerasModelParameters(ka.convnext.ConvNeXtSmall, no_prepro, [224, 224, 3]),
+    'convnextbase': KerasModelParameters(ka.convnext.ConvNeXtBase, no_prepro, [224, 224, 3]),
+    'convnextlarge': KerasModelParameters(ka.convnext.ConvNeXtLarge, no_prepro, [224, 224, 3]),
+    'convnextxlarge': KerasModelParameters(ka.convnext.ConvNeXtXLarge, no_prepro, [224, 224, 3]),
 }

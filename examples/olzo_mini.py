@@ -7,13 +7,10 @@ from miso.utils import singleton
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
-from miso.training.parameters import MisoConfig
+from miso.training.parameters import MisoParameters
 from miso.training.trainer import train_image_classification_model
 
-tp = MisoConfig()
-
-import tensorflow as tf
-print(tf.config.list_physical_devices('GPU'))
+tp = MisoParameters()
 
 # -----------------------------------------------------------------------------
 # Dataset
@@ -47,7 +44,7 @@ tp.dataset.memmap_directory = None
 # - resnet[18,34,50]
 # - vgg[16,19]
 # - efficientnetB[0-7]
-tp.cnn.type = "base_cyclic"
+tp.cnn.id = "convnexttiny"
 # Input image shape, set to None to use default size ([128, 128, 1] for custom, [224, 224, 3] for others)
 tp.cnn.img_shape = [128, 128, 1]
 # Input image colour space [greyscale/rgb]

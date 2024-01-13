@@ -5,7 +5,7 @@ import os
 import numpy as np
 from collections import OrderedDict
 
-from miso.training.parameters import MisoConfig
+from miso.training.parameters import MisoParameters
 
 
 class ModelInfo:
@@ -15,7 +15,7 @@ class ModelInfo:
                  type: str,
                  date: datetime.datetime,
                  protobuf: str,
-                 params: MisoConfig,
+                 params: MisoParameters,
                  inputs: OrderedDict,
                  outputs: OrderedDict,
                  data_source_name: str,
@@ -78,9 +78,9 @@ class ModelInfo:
         ET.SubElement(root, "date").text = "{0:%Y-%m-%d_%H%M%S}".format(self.date)
         ET.SubElement(root, "protobuf").text = self.protobuf
 
-        parent_node = ET.SubElement(root, "params")
-        for key, value in self.params.asdict().items():
-            ET.SubElement(parent_node, key).text = str(value)
+        # parent_node = ET.SubElement(root, "params")
+        # for key, value in self.params.asdict().items():
+        #     ET.SubElement(parent_node, key).text = str(value)
 
         parent_node = ET.SubElement(root, "inputs")
         for name, tensor in self.inputs.items():

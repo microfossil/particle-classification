@@ -17,7 +17,7 @@ def default_field(obj):
     return field(default_factory=lambda: copy.copy(obj))
 
 @dataclass
-class BaseConfig(object):
+class BaseParameters(object):
     class Meta:
         ordered = True
 
@@ -42,9 +42,9 @@ class BaseConfig(object):
 
 
 @dataclass
-class ModelConfig(BaseConfig):
+class ModelParameters(BaseParameters):
     # Common values
-    type: str = "base_cyclic"
+    id: str = "base_cyclic"
     img_shape: List[int] = field(default=(128, 128, 1))
     img_type: str = "greyscale"
 
@@ -63,7 +63,7 @@ class ModelConfig(BaseConfig):
 
 
 @dataclass
-class TrainingConfig(BaseConfig):
+class TrainingParameters(BaseParameters):
     batch_size: int = 64
     max_epochs: int = 10000
     alr_epochs: int = 10
@@ -77,7 +77,16 @@ class TrainingConfig(BaseConfig):
 
 
 @dataclass
-class DatasetConfig(BaseConfig):
+class OptimizerParameters(BaseParameters):
+    name: str = "adam"
+    learning_rate: float = 0.001
+    momentum: float = 0.9
+    decay: float = 0.0
+    nesterov: bool = False
+
+
+@dataclass
+class DatasetParameters(BaseParameters):
     num_classes: Optional[int] = None
     source: Optional[str] = None
     min_count: Optional[int] = 10
@@ -89,7 +98,7 @@ class DatasetConfig(BaseConfig):
 
 
 @dataclass
-class AugmentationConfig(BaseConfig):
+class AugmentationParameters(BaseParameters):
     rotation: List[float] = field(default=(0, 360))
     gain: Optional[List[float]] = field(default=(0.8, 1, 1.2))
     gamma: Optional[List[float]] = field(default=(0.5, 1, 2))
@@ -101,31 +110,32 @@ class AugmentationConfig(BaseConfig):
 
 
 @dataclass
-class OutputConfig(BaseConfig):
-    output_dir: str = None
+class OutputParameters(BaseParameters):
+    save_dir: str = None
     save_model: bool = True
     save_mislabeled: bool = False
 
 
 @dataclass
-class MisoConfig(BaseConfig):
+class MisoParameters(BaseParameters):
     name: str = ""
     description: str = ""
-    cnn: ModelConfig = default_field(ModelConfig())
-    dataset: DatasetConfig = default_field(DatasetConfig())
-    training: TrainingConfig = default_field(TrainingConfig())
-    augmentation: AugmentationConfig = default_field(AugmentationConfig())
-    output: OutputConfig = default_field(OutputConfig())
+    cnn: ModelParameters = default_field(ModelParameters())
+    dataset: DatasetParameters = default_field(DatasetParameters())
+    training: TrainingParameters = default_field(TrainingParameters())
+    augmentation: AugmentationParameters = default_field(AugmentationParameters())
+    output: OutputParameters = default_field(OutputParameters())
+    optimizer: OptimizerParameters = default_field(OptimizerParameters())
 
     def sanitise(self):
         if self.name == "":
-            self.name = self.dataset.source[:64] + "_" + self.cnn.type
+            self.name = self.dataset.source[:64] + "_" + self.cnn.id
             self.name = re.sub('[^A-Za-z0-9]+', '-', self.name)
         if self.cnn.img_shape is None:
-            if self.cnn.type.endswith("_tl"):
-                shape = KERAS_MODEL_PARAMETERS[self.cnn.type.split('_')[0]].default_input_shape
+            if self.cnn.id.endswith("_tl"):
+                shape = KERAS_MODEL_PARAMETERS[self.cnn.id.split('_')[0]].default_input_shape
             else:
-                if self.cnn.type.startswith("base_cyclic") or self.cnn.type.startswith("resnet_cyclic"):
+                if self.cnn.id.startswith("base_cyclic") or self.cnn.id.startswith("resnet_cyclic"):
                     shape = [128, 128, 3]
                 else:
                     shape = [224, 224, 3]
@@ -136,7 +146,7 @@ class MisoConfig(BaseConfig):
                     shape[2] = 1
                     self.augmentation.orig_img_shape[2] = 3
             self.cnn.img_shape = shape
-        elif self.cnn.type.startswith("base_cyclic") or self.cnn.type.startswith("resnet_cyclic"):
+        elif self.cnn.id.startswith("base_cyclic") or self.cnn.id.startswith("resnet_cyclic"):
             pass
         else:
             self.cnn.img_shape[2] = 3
@@ -150,7 +160,7 @@ def get_default_shape(cnn_type):
 
 
 if __name__ == "__main__":
-    m = MisoConfig()
+    m = MisoParameters()
     print(m.dumps())
 
 

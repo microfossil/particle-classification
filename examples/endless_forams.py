@@ -1,10 +1,10 @@
 import os
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
-from miso.training.parameters import MisoConfig
+from miso.training.parameters import MisoParameters
 from miso.training.trainer import train_image_classification_model
 
-tp = MisoConfig()
+tp = MisoParameters()
 
 # -----------------------------------------------------------------------------
 # Name
@@ -44,8 +44,8 @@ tp.dataset.memmap_directory = None
 # - resnet[18,34,50]
 # - vgg[16,19]
 # - efficientnetB[0-7]
-tp.cnn.type = r"base_cyclic"
-tp.cnn.type = r"resnet50_tl"
+tp.cnn.id = r"base_cyclic"
+tp.cnn.id = r"resnet50_tl"
 # Input image shape, set to None to use default size ([128, 128, 1] for custom, [224, 224, 3] for others)
 tp.cnn.img_shape = [128, 128, 1]
 tp.cnn.img_shape = [224, 224, 3]
