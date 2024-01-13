@@ -42,7 +42,8 @@ setup(
                       'protobuf==3.19.6',
                       'cleanlab==2.5.0',
                       'packaging==23.2',
-                      'tensorflow_addons==0.19.0'],
+                      'tensorflow_addons==0.19.0',
+                      'marshmallow_dataclass==8.6.0'],
     url='https://github.com/microfossil/particle-classification',
     license='MIT',
     project_urls={  # Optional

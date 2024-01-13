@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import matplotlib.pyplot as plt
 from sklearn.neighbors import KNeighborsClassifier
 import numpy as np
@@ -110,13 +112,10 @@ def find_and_save_mislabelled(images,
         fig.tight_layout()
         plt.suptitle(image_names[im_idx])
         # print("- actual: {} predicted: {} - {}".format(cls_labels[cls[im_idx]], cls_labels[pred_cls[im_idx]], image_names[im_idx]))
-        os.makedirs(os.path.join(output_dir,
-                                 "mislabeled",
-                                 cls_labels[cls[im_idx]]).replace("\\", "/"),
-                    exist_ok=True)
-        plt.savefig(os.path.join(output_dir,
-                                 "mislabeled",
-                                 cls_labels[cls[im_idx]],
-                                 image_names[im_idx]).replace("\\", "/"))
+
+        filename = str(Path(image_names[im_idx]).stem) + ".png"
+        path = Path(output_dir) / "mislabeled" / cls_labels[cls[im_idx]]
+        path.mkdir(parents=True, exist_ok=True)
+        plt.savefig(path / filename)
         plt.clf()
         plt.close('all')
