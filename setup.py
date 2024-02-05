@@ -31,7 +31,7 @@ setup(
                       'scipy',
                       'segmentation-models',
                       'dill',
-                      'flask==1.1.2',
+                      'flask==2.3.2',
                       'itsdangerous==1.1.0',
                       'tqdm',
                       'openpyxl',
