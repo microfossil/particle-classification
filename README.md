@@ -5,16 +5,20 @@ Used by particle trieur to perform model training.
 
 ## Installation
 
+```
 conda create -n miso python=3.9
 conda activate miso
 conda install -c conda-forge cudatoolkit=11.2 cudnn=8.1.0
 pip install tensorflow==2.10.1
 pip install miso
+```
 
 ## Updating
 
+```
 conda activate miso
 pip install -U miso
+```
 
 ## Command line interface (CLI)
 
