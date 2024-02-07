@@ -69,7 +69,6 @@ class ModelInfo:
         except:
             return tensor.name
 
-
     def to_xml(self):
         root = ET.Element("network", version=self.version)
         ET.SubElement(root, "name").text = self.name
@@ -139,7 +138,68 @@ class ModelInfo:
         ET.SubElement(parent_node, "training_epochs").text = str(self.training_epochs)
         ET.SubElement(parent_node, "training_time").text = str(self.training_time)
         ET.SubElement(parent_node, "training_split").text = str(self.training_split)
-        ET.SubElement(parent_node, "training_time_per_image").text = str(self.training_time / self.training_epochs / (np.sum(self.counts) * (1 - self.training_split)))
+        ET.SubElement(parent_node, "training_time_per_image").text = str(
+            self.training_time / self.training_epochs / (np.sum(self.counts) * (1 - self.training_split)))
         ET.SubElement(parent_node, "inference_time_per_image").text = str(np.mean(self.inference_time_per_image))
 
         return ET.tostring(root, pretty_print=True)
+
+    @staticmethod
+    def from_xml(xml_data_or_path):
+        if os.path.exists(xml_data_or_path):
+            tree = ET.parse(xml_data_or_path)
+            root = tree.getroot()
+        else:
+            root = ET.fromstring(xml_data_or_path)
+
+        name = root.findtext('name')
+        description = root.findtext('description')
+        model_type = root.findtext('type')
+        date_str = root.findtext('date')
+        date = datetime.datetime.strptime(date_str, "%Y-%m-%d_%H%M%S")
+        protobuf = root.findtext('protobuf')
+
+        inputs = []
+        for inp in root.find('inputs').findall('input'):
+            d = {}
+            d["name"] = inp.findtext('name')
+            d["operation"] = inp.findtext('operation')
+            d["height"] = inp.findtext('height')
+            d["width"] = inp.findtext('width')
+            d["channels"] = inp.findtext('channels')
+            inputs.append(d)
+
+        outputs = []
+        for out in root.find('outputs').findall('output'):
+            d = {}
+            d["name"] = out.findtext('name')
+            d["operation"] = out.findtext('operation')
+            d["height"] = out.findtext('height')
+            d["width"] = out.findtext('width')
+            d["channels"] = out.findtext('channels')
+            outputs.append(d)
+
+        labels = [label.findtext('code') for label in root.findall('.//labels/label')]
+
+        return ModelInfo(name,
+                         description,
+                         model_type,
+                         date,
+                         protobuf,
+                         None,
+                         inputs,
+                         outputs,
+                         None,
+                         labels,
+                         None,
+                         None,
+                         None,
+                         None,
+                         None,
+                         None,
+                         None,
+                         None,
+                         None,
+                         None,
+                         None,
+                         None)

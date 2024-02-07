@@ -94,7 +94,7 @@ def train_image_classification_model(tp: MisoParameters):
     # Training
     # ------------------------------------------------------------------------------
     # Transfer learning
-    if tp.training.use_transfer_learning:
+    if tp.training.use_transfer_learning or tp.cnn.id.endswith("_tl"):
         model, history = train_transfer_learning(tp, ds)
     # Full network
     else:

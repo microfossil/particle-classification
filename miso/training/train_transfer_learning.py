@@ -19,7 +19,7 @@ def train_transfer_learning(tp: MisoParameters, ds: TrainingDataset):
 
     # Generate head and tail models separately
     model_head, model_tail = generate_tl(tp)
-    model_head.summary()
+    # model_head.summary()
 
     # Calculate vectors using head model
     print("- calculating vectors")

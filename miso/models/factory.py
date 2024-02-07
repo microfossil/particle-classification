@@ -62,6 +62,8 @@ def generate(tp: MisoParameters):
         # Legacy support where transfer learning, cyclic and gain were part of the cnn type
         parts = tp.cnn.id.split("_")
         if len(parts) > 0:
+            if parts[-1] == "tl":
+                tp.training.use_transfer_learning = True
             tp.cnn.id = parts[0]
             if "cyclic" in parts:
                 tp.cnn.use_cyclic = True
