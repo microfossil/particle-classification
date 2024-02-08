@@ -6,7 +6,7 @@ long_description = (here / 'README.md').read_text(encoding='utf-8')
 
 setup(
     name='miso',
-    version='3.1.5',
+    version='3.1.6',
     description='Python scripts for training CNNs for particle classification',
     long_description=long_description,
     long_description_content_type='text/markdown',
@@ -18,7 +18,8 @@ setup(
     ],
     keywords='microfossil, cnn',
     python_requires='>=3.9,<=3.11',
-    packages=find_packages(where='miso'),
+    package_dir={'': 'miso'},
+    packages=find_packages('miso'),
     install_requires=['tensorflow==2.10.1',
                       'image-classifiers==1.0.0',
                       'lxml==5.1.0',
