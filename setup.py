@@ -6,7 +6,7 @@ long_description = (here / 'README.md').read_text(encoding='utf-8')
 
 setup(
     name='miso',
-    version='3.1.8',
+    version='3.1.9',
     description='Python scripts for training CNNs for particle classification',
     long_description=long_description,
     long_description_content_type='text/markdown',
@@ -24,7 +24,7 @@ setup(
                       'image-classifiers==1.0.0',
                       'lxml==5.1.0',
                       'matplotlib==3.8.2',
-                      'numpy==1.25.0',
+                      'numpy==1.24.0',
                       'pandas==2.1.4',
                       'Pillow==10.2.0',
                       'imagecodecs==2024.1.1',
