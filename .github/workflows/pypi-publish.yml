@@ -14,7 +14,7 @@ name: Publish package to PyPI
 on:
   push:
     branches:
-      - master
+      - legacy
 
 permissions:
   contents: read
