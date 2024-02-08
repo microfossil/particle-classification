@@ -3,7 +3,16 @@ Python scripts for particle classification
 
 Used by particle trieur to perform model training.
 
+There are two main branches:
+
+* **legacy** corresponding to the libraries used in the old miso2 environment and Particle Trieur 3.0.4 and below
+* **master** latest version used in the miso environment and Particle Trieur 3.0.5 and above
+
 ## Installation
+
+This library needs to be installed to perform training with Particle Trieur. It can also be used stand-alone via the command line interface (CLI)
+
+### Initial
 
 ```
 conda create -n miso python=3.9
@@ -13,7 +22,7 @@ pip install tensorflow==2.10.1
 pip install miso
 ```
 
-## Updating
+### Updating
 
 ```
 conda activate miso
