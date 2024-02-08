@@ -3,6 +3,8 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import skimage.io
+from PIL import Image
 from tqdm import tqdm
 
 from miso.deploy.model_info import ModelInfo
@@ -46,11 +48,32 @@ def classify_folder(model_info_path,
 
     # Map the preprocessing function to each element, and set the number of parallel calls
     def load_and_preprocess_image(image_path):
-        image = tf.io.read_file(image_path)
-        image = tf.image.decode_image(image, channels=img_size[2], expand_animations=False)
-        image = tf.image.resize(image, [img_size[0], img_size[1]])
-        image = image / 255.0  # Normalize to [0,1] range
+        # image = tf.io.read_file(image_path)
+        # image = tf.image.decode_image(image, channels=img_size[2], expand_animations=False)
+        # image = tf.image.resize(image, [img_size[0], img_size[1]])
+        # image = image / 255.0  # Normalize to [0,1] range
+        # return image
+        # Use tf.py_function to wrap the Pillow-based loading and preprocessing
+        def _load_image(image_path):
+            # Convert image_path from tensor to string
+            image_path = image_path.numpy().decode('utf-8')
+            # Use Pillow to open the TIFF image and convert it to an RGB array
+            image = Image.open(image_path)
+            if img_size[2] == 3:
+                image = np.array(image.convert('RGB'), dtype=np.float32)
+            else:
+                image = np.array(image.convert('L'), dtype=np.float32)
+            # Resize and normalize the image
+            image = tf.image.resize(image, [img_size[0], img_size[1]])
+            image = image / 255.0  # Normalize to [0,1] range
+            return image
+        # Wrap the custom loading function using tf.py_function
+        # The output_types argument is important for TensorFlow to manage the tensor's dtype
+        image = tf.py_function(_load_image, [image_path], tf.float32)
+        # Set the shape of the tensor after the tf.py_function since it loses shape information
+        image.set_shape([img_size[0], img_size[1], img_size[2]])
         return image
+
     image_dataset = image_dataset.map(load_and_preprocess_image, num_parallel_calls=tf.data.AUTOTUNE)
 
     # Batch the dataset
