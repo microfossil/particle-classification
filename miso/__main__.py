@@ -19,11 +19,11 @@ def cli():
 @click.option('--in_samples/--no-in_samples', '-f', default=False, show_default=True, help='Set this flag if images are stored in subfolders, using the subfolder names as sample labels.')
 @click.option('--sample', '-s', type=str, default='unknown', show_default=True, help='Default sample name if not using subdirectories.')
 @click.option('--unsure_threshold', 'u', type=float, default=0.0, show_default=True, help='Threshold below which predictions are considered unsure.')
-def classify_folder(model, folder, output, batch_size, in_samples, sample, unsure_threshold):
+def classify_folder(model, input, output, batch_size, in_samples, sample, unsure_threshold):
     """
     Classify images in a folder and output the results to a CSV file.
     """
-    classify_folder(model, folder, output, batch_size, in_samples, sample, unsure_threshold)
+    classify_folder(model, input, output, batch_size, in_samples, sample, unsure_threshold)
 
 
 if __name__ == "__main__":
