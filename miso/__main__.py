@@ -1,9 +1,7 @@
-import argparse
-from miso.training.trainer import train_image_classification_model
-from miso.training.parameters import MisoParameters
-
 import click
-from miso.inference.classify import classify_folder
+
+# Cant have name same as cli method name
+from miso.inference.classify import classify_folder as miso_classify_folder
 
 
 @click.group()
@@ -18,16 +16,17 @@ def cli():
 @click.option('--batch_size', '-b', type=int, default=32, show_default=True, help='Batch size for processing images.')
 @click.option('--in_samples/--no-in_samples', '-f', default=False, show_default=True, help='Set this flag if images are stored in subfolders, using the subfolder names as sample labels.')
 @click.option('--sample', '-s', type=str, default='unknown', show_default=True, help='Default sample name if not using subdirectories.')
-@click.option('--unsure_threshold', 'u', type=float, default=0.0, show_default=True, help='Threshold below which predictions are considered unsure.')
+@click.option('--unsure_threshold', '-u', type=float, default=0.0, show_default=True, help='Threshold below which predictions are considered unsure.')
 def classify_folder(model, input, output, batch_size, in_samples, sample, unsure_threshold):
     """
     Classify images in a folder and output the results to a CSV file.
     """
-    classify_folder(model, input, output, batch_size, in_samples, sample, unsure_threshold)
+    miso_classify_folder(model, input, output, batch_size, in_samples, sample, unsure_threshold)
 
 
 if __name__ == "__main__":
     cli()
+
 
 # if __name__ == "__main__":
 #     parser = argparse.ArgumentParser(description="Train a CNN to classify images")
