@@ -111,7 +111,7 @@ tp.output.save_dir = "."
 # Save model?
 save_model = True
 # Save the mislabelled image analysis?
-tp.output.save_mislabelled = False
+tp.output.save_mislabeled = False
 
 
 

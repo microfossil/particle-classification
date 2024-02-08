@@ -1,11 +1,6 @@
 import tensorflow as tf
 import numpy as np
-
-if int(tf.__version__[0]) == 2:
-    try:
-        import tensorflow_addons as tfa
-    except ImportError:
-        pass
+import tensorflow_addons as tfa
 
 
 def aug_all_fn(rotation=(0, 360),
@@ -38,10 +33,7 @@ def aug_rotation(im_x, rotation=(0, 360)):
             rotation_factor = tf.random.uniform([], rotation[0] / 180 * np.pi, rotation[1] / 180 * np.pi)
         else:
             raise ValueError("Rotation needs at least 2 values")
-        if int(tf.__version__[0]) == 2:
-            im_x = tfa.image.rotate(im_x, rotation_factor, interpolation='bilinear')
-        else:
-            im_x = tf.contrib.image.rotate(im_x, rotation_factor, interpolation='BILINEAR')
+        im_x = tfa.image.rotate(im_x, rotation_factor, interpolation='bilinear')
     return im_x
 
 
@@ -56,20 +48,12 @@ def aug_zoom(im_x, zoom=(0.9, 1.0, 1.1)):
         zoom_start_factor = tf.divide(tf.subtract(1.0, zoom_value), 2)
         zoom_end_factor = tf.subtract(1.0, zoom_start_factor)
         zoom_factor = [[zoom_start_factor, zoom_start_factor, zoom_end_factor, zoom_end_factor]]
-        if int(tf.__version__[0]) == 2:
-            im_x = tf.image.crop_and_resize([im_x],
-                                            boxes=zoom_factor,
-                                            box_indices=tf.constant([0]),
-                                            crop_size=tf.shape(im_x)[0:2],
-                                            method='bilinear',
-                                            extrapolation_value=0)[0]
-        else:
-            im_x = tf.image.crop_and_resize([im_x],
-                                            boxes=zoom_factor,
-                                            box_ind=tf.constant([0]),
-                                            crop_size=tf.shape(im_x)[0:2],
-                                            method='bilinear',
-                                            extrapolation_value=0)[0]
+        im_x = tf.image.crop_and_resize([im_x],
+                                        boxes=zoom_factor,
+                                        box_indices=tf.constant([0]),
+                                        crop_size=tf.shape(im_x)[0:2],
+                                        method='bilinear',
+                                        extrapolation_value=0)[0]
     return im_x
 
 

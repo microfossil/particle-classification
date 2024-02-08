@@ -1,89 +1,131 @@
 """
 Training parameters
 """
-import json
+import copy
+
+from pathlib import Path
+from typing import Union, List, Optional
+from dataclasses import dataclass, field
 import re
-from collections import OrderedDict
+from marshmallow_dataclass import class_schema
 
-from miso.models.transfer_learning import TRANSFER_LEARNING_PARAMS
-
-
-class Parameters(object):
-    def asdict(self):
-        d = OrderedDict()
-        for name in dir(self):
-            v = getattr(self, name)
-            if not name.startswith('__') and not callable(v):
-                if isinstance(v, Parameters):
-                    d[name] = v.asdict()
-                else:
-                    d[name] = v
-        return d
-
-    def to_json(self):
-        d = self.asdict()
-        return json.dumps(d)
+from miso.models.keras_models import KERAS_MODEL_PARAMETERS
+from miso.utils.compact_json import CompactJSONEncoder
 
 
-class CNNParameters(Parameters):
-    id = "base_cyclic"
-    img_shape = [128, 128, 1]
-    img_type = "greyscale"
-    filters = 4
-    blocks = None
-    dense = None
-    use_batch_norm = True
-    global_pooling = None
-    activation = "relu"
-    use_asoftmax = False
+def default_field(obj):
+    return field(default_factory=lambda: copy.copy(obj))
+
+@dataclass
+class BaseParameters(object):
+    class Meta:
+        ordered = True
+
+    def dumps(self):
+        return class_schema(self.__class__)().dumps(self, indent=4, cls=CompactJSONEncoder)
+
+    def save(self, path: str):
+        with open(path, "w") as fp:
+            metadata = class_schema(self.__class__)().dumps(self, indent=4)
+            fp.write(metadata)
+
+    @classmethod
+    def loads(cls, json):
+        instance = class_schema(cls)().loads(json)
+        return instance
+    @classmethod
+    def load(cls, path: Union[Path, str]):
+        if isinstance(path, str):
+            path = Path(path)
+        instance = class_schema(cls)().loads(path.read_text())
+        return instance
 
 
-class TrainingParameters(Parameters):
-    batch_size = 64
-    max_epochs = 10000
-    alr_epochs = 10
-    alr_drops = 4
-    monitor_val_loss = False
-    use_class_weights = True
-    use_class_undersampling = False
-    use_augmentation = True
+@dataclass
+class ModelParameters(BaseParameters):
+    # Common values
+    id: str = "base_cyclic"
+    img_shape: List[int] = field(default=(128, 128, 1))
+    img_type: str = "greyscale"
+
+    # Transfer learning cyclic layers
+    use_cyclic: bool = False
+    use_cyclic_gain: bool = False
+
+    # Parameters for custom networks
+    filters: Optional[int] = 4
+    blocks: Optional[int] = None
+    dense: Optional[int] = None
+    use_batch_norm: bool = True
+    global_pooling: bool = None
+    activation: str = "relu"
+    use_asoftmax: bool = False
 
 
-class DatasetParameters(Parameters):
-    num_classes = None
-    source = None
-    min_count = 10
-    val_split = 0.2
-    map_others = False
-    random_seed = 0
-    memmap_directory = None
+@dataclass
+class TrainingParameters(BaseParameters):
+    batch_size: int = 64
+    max_epochs: int = 10000
+    alr_epochs: int = 10
+    alr_drops: int = 4
+    monitor_val_loss: bool = False
+    use_class_weights: bool = True
+    use_class_undersampling: bool = False
+    use_augmentation: bool = True
+    use_transfer_learning: bool = False
+    transfer_learning_augmentation_factor: int = 0
 
 
-class AugmentationParameters(Parameters):
-    rotation = [0, 360]
-    gain = [0.8, 1, 1.2]
-    gamma = [0.5, 1, 2]
-    bias = None
-    zoom = [0.9, 1, 1.1]
-    gaussian_noise = None
-    random_crop = None
-    orig_img_shape = [256, 256, 3]
+@dataclass
+class OptimizerParameters(BaseParameters):
+    name: str = "adam"
+    learning_rate: float = 0.001
+    momentum: float = 0.9
+    decay: float = 0.0
+    nesterov: bool = False
 
 
-class OutputParameters(Parameters):
-    output_dir = None
-    save_model = True
-    save_mislabeled = True
+@dataclass
+class DatasetParameters(BaseParameters):
+    num_classes: Optional[int] = None
+    source: Optional[str] = None
+    min_count: Optional[int] = 10
+    train_split: Optional[float] = None
+    val_split: Optional[float] = 0.2
+    map_others: bool = False
+    random_seed: int = 0
+    memmap_directory: str = None
 
 
-class MisoParameters(Parameters):
-    name = ""
-    description = ""
-    cnn = CNNParameters()
-    dataset = DatasetParameters()
-    training = TrainingParameters()
-    augmentation = AugmentationParameters()
-    output = OutputParameters()
+@dataclass
+class AugmentationParameters(BaseParameters):
+    rotation: List[float] = field(default=(0, 360))
+    gain: Optional[List[float]] = field(default=(0.8, 1, 1.2))
+    gamma: Optional[List[float]] = field(default=(0.5, 1, 2))
+    bias: Optional[List[float]] = None
+    zoom: Optional[List[float]] = field(default=(0.9, 1, 1.1))
+    gaussian_noise: Optional[List[float]] = field(default=(0.01, 0.1))
+    random_crop: Optional[List[int]] = None
+    orig_img_shape: Optional[List[int]] = field(default=(256, 256, 3))
+
+
+@dataclass
+class OutputParameters(BaseParameters):
+    save_dir: str = None
+    save_model: bool = True
+    save_mislabeled: bool = False
+
+
+@dataclass
+class MisoParameters(BaseParameters):
+    name: str = ""
+    description: str = ""
+    cnn: ModelParameters = default_field(ModelParameters())
+    dataset: DatasetParameters = default_field(DatasetParameters())
+    training: TrainingParameters = default_field(TrainingParameters())
+    augmentation: AugmentationParameters = default_field(AugmentationParameters())
+    output: OutputParameters = default_field(OutputParameters())
+    optimizer: OptimizerParameters = default_field(OptimizerParameters())
 
     def sanitise(self):
         if self.name == "":
@@ -91,7 +133,7 @@ class MisoParameters(Parameters):
             self.name = re.sub('[^A-Za-z0-9]+', '-', self.name)
         if self.cnn.img_shape is None:
             if self.cnn.id.endswith("_tl"):
-                shape = TRANSFER_LEARNING_PARAMS[self.cnn.id.split('_')[0]].default_input_shape
+                shape = KERAS_MODEL_PARAMETERS[self.cnn.id.split('_')[0]].default_input_shape
             else:
                 if self.cnn.id.startswith("base_cyclic") or self.cnn.id.startswith("resnet_cyclic"):
                     shape = [128, 128, 3]
@@ -104,21 +146,22 @@ class MisoParameters(Parameters):
                     shape[2] = 1
                     self.augmentation.orig_img_shape[2] = 3
             self.cnn.img_shape = shape
-        elif self.cnn.id.endswith("_tl"):
+        elif self.cnn.id.startswith("base_cyclic") or self.cnn.id.startswith("resnet_cyclic"):
+            pass
+        else:
             self.cnn.img_shape[2] = 3
 
 
 def get_default_shape(cnn_type):
     if cnn_type.endswith("_tl"):
-        return TRANSFER_LEARNING_PARAMS[cnn_type.split('_')[0]].default_input_shape
+        return KERAS_MODEL_PARAMETERS[cnn_type.split('_')[0]].default_input_shape
     else:
         return [224, 224, None]
 
 
 if __name__ == "__main__":
     m = MisoParameters()
-    print(m.asdict())
-    print(m.to_json())
+    print(m.dumps())
 
 
 

@@ -107,7 +107,8 @@ def load_from_xml(filename, session=None):
     project = ET.parse(filename).getroot()
 
     protobuf = project.find('protobuf').text
-    print("protobuf: " + protobuf)
+    print(f"Loading model from {filename}")
+    print("- protobuf: " + protobuf)
 
     input = None
     output = None
@@ -115,9 +116,11 @@ def load_from_xml(filename, session=None):
     cls_labels = []
 
     list_xml = project.find('labels')
+    print("- labels:")
     for i, entry_xml in enumerate(list_xml.iter('label')):
         code = entry_xml.find('code').text
         cls_labels.append(code)
+        print(f"  - {code}")
 
     list_xml = project.find('inputs')
     for i, entry_xml in enumerate(list_xml.iter('input')):
@@ -133,6 +136,14 @@ def load_from_xml(filename, session=None):
             output_name = entry_xml.find('operation').text + ":0"
 
     full_protobuf_path = os.path.join(os.path.dirname(filename), protobuf)
+
+    print(f"- input: {input_name}")
+    print(f"  - height: {img_size[0]}")
+    print(f"  - width: {img_size[1]}")
+    print(f"  - channels: {img_size[2]}")
+    print(f"- output: {output_name}")
+
+
     if int(tf.__version__[0]) == 2:
         model = load_frozen_model_tf2(full_protobuf_path, input_name, output_name)
         return model, img_size, cls_labels
@@ -213,9 +224,9 @@ def load_frozen_model_tf2(filepath, inputs, outputs):
                                         inputs=inputs,
                                         outputs=outputs,
                                         print_graph=False)
-    print("-" * 80)
-    print("Frozen model inputs: ")
-    print(frozen_func.inputs)
-    print("Frozen model outputs: ")
-    print(frozen_func.outputs)
+    # print("-" * 80)
+    # print("Frozen model inputs: ")
+    # print(frozen_func.inputs)
+    # print("Frozen model outputs: ")
+    # print(frozen_func.outputs)
     return frozen_func

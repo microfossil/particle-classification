@@ -1,7 +1,7 @@
 from typing import NamedTuple
 
 from sklearn.model_selection import train_test_split
-from tensorflow.keras.utils import to_categorical
+from keras.utils import to_categorical
 import numpy as np
 from scipy.stats.mstats import gmean
 
@@ -17,6 +17,7 @@ class TrainingDataset(object):
                  img_type='rgb',
                  min_count=0,
                  map_others=False,
+                 train_split=None,
                  test_split=0.2,
                  random_seed=0,
                  memmap_directory=None):
@@ -28,6 +29,7 @@ class TrainingDataset(object):
         self.min_count = min_count
         self.map_others = map_others
         self.test_split = test_split
+        self.train_split = train_split
         self.random_seed = random_seed
         self.memmap_directory = memmap_directory
 
@@ -67,10 +69,15 @@ class TrainingDataset(object):
         self.class_weights = weights
 
         # Create split
-        self.train_idx, self.test_idx = train_test_split(np.arange(len(self.filenames.filenames)),
-                                                         stratify=self.cls,
-                                                         test_size=self.test_split,
-                                                         random_state=self.random_seed)
+        if self.test_split > 0:
+            self.train_idx, self.test_idx = train_test_split(np.arange(len(self.filenames.filenames)),
+                                                             stratify=self.cls,
+                                                             test_size=self.test_split,
+                                                             train_size=self.train_split,
+                                                             random_state=self.random_seed)
+        else:
+            self.train_idx = np.arange(len(self.filenames.filenames))
+            self.test_idx = []
 
         # Load images
         to_greyscale = False

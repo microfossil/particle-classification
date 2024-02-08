@@ -14,7 +14,7 @@ name: Publish package to PyPI
 on:
   push:
     branches:
-      - master
+      - final
 
 permissions:
   contents: read
@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: pypi
-      url: https://pypi.org/p/miso2
+      url: https://pypi.org/p/miso
     permissions:
       id-token: write
     steps:
