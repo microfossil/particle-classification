@@ -11,39 +11,35 @@ from miso.deploy.model_info import ModelInfo
 from miso.deploy.saving import load_frozen_model_tf2, load_from_xml
 import tensorflow as tf
 
-def get_image_paths_and_samples(base_path, in_sample_folders, sample_name="unknown"):
+
+def get_image_paths_and_samples(base_path, sample_name="unknown"):
     base_path = Path(base_path)
     image_paths = []
     samples = []
-    if in_sample_folders:
-        for subdir in base_path.iterdir():
-            if subdir.is_dir():
-                for file in subdir.glob('*'):
-                    if file.suffix.lower() in ('.png', '.jpg', '.jpeg', '.bmp', '.gif', '.tiff', '.tif'):
-                        image_paths.append(str(file))
-                        samples.append(subdir.name)
-    else:
-        for file in base_path.glob('*'):
+    for subdir in base_path.iterdir():
+        if subdir.is_dir():
+            for file in subdir.rglob('*'):
+                if file.suffix.lower() in ('.png', '.jpg', '.jpeg', '.bmp', '.gif', '.tiff', '.tif'):
+                    image_paths.append(str(file))
+                    samples.append(subdir.name)
+        else:
+            file = subdir
             if file.suffix.lower() in ('.png', '.jpg', '.jpeg', '.bmp', '.gif', '.tiff', '.tif'):
                 image_paths.append(str(file))
                 samples.append(sample_name)
     return image_paths, samples
 
 
-
-
-
 def classify_folder(model_info_path,
                     images_path,
                     output_path,
                     batch_size,
-                    in_sample_folders=False,
                     sample_name="unknown",
                     unsure_threshold=0.0):
     model, img_size, labels = load_from_xml(model_info_path)
 
     # Create a dataset of image paths
-    image_paths, sample_names = get_image_paths_and_samples(images_path, in_sample_folders, sample_name)
+    image_paths, sample_names = get_image_paths_and_samples(images_path, sample_name)
     image_dataset = tf.data.Dataset.from_tensor_slices(image_paths)
 
     # Map the preprocessing function to each element, and set the number of parallel calls
@@ -98,7 +94,7 @@ def classify_folder(model_info_path,
 
     df = pd.DataFrame({
         "filename": image_paths,
-        "short_filename": [Path(f).name for f in image_paths],
+        "short_filename": [Path(f).relative_to(images_path) for f in image_paths],
         "sample": sample_names,
         "class_index": idxs,
         "class": cls,
