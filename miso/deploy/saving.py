@@ -112,7 +112,7 @@ def load_from_xml(filename, session=None):
 
     input = None
     output = None
-    img_size = np.zeros(3, dtype=np.int32)
+    img_size = np.zeros(3, dtype=int)
     cls_labels = []
 
     list_xml = project.find('labels')
