@@ -170,7 +170,7 @@ def segment_folder(model_info_path,
     # Loop through the images again, loading greyscale and then calculating the morphology
     datas = []
     idx = 0
-    for image_path, sample_name, contour in tqdm(zip(image_paths, sample_names, contours)):
+    for image_path, sample_name, contour in tqdm(list(zip(image_paths, sample_names, contours))):
         idx += 1
         image = Image.open(image_path)
         greyscale = np.array(image.convert('L'), dtype=np.float32)
