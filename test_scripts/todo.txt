@@ -1,3 +1,0 @@
-SSL
-MSoftmax
-Anamoly detection

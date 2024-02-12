@@ -6,7 +6,7 @@ long_description = (here / 'README.md').read_text(encoding='utf-8')
 
 setup(
     name='miso',
-    version='3.1.17',
+    version='3.1.18',
     description='Python scripts for training CNNs for particle classification',
     long_description=long_description,
     long_description_content_type='text/markdown',
@@ -43,7 +43,9 @@ setup(
                       'cleanlab==2.5.0',
                       'packaging==23.2',
                       'tensorflow_addons==0.19.0',
-                      'marshmallow_dataclass==8.6.0'],
+                      'marshmallow_dataclass==8.6.0',
+                      'opencv-python==4.9.0.80',
+                      'onnxruntime-gpu==1.17.0'],
     url='https://github.com/microfossil/particle-classification',
     license='MIT',
     project_urls={  # Optional

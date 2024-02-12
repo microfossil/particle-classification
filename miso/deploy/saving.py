@@ -1,5 +1,7 @@
 import os
 import shutil
+from pathlib import Path
+
 import tensorflow as tf
 from tensorflow.python.platform import gfile
 from tensorflow.python.tools import freeze_graph
@@ -150,6 +152,57 @@ def load_from_xml(filename, session=None):
     else:
         session, input, output = load_frozen_model(full_protobuf_path, input_name, output_name)
         return session, input, output, img_size, cls_labels
+
+
+import onnxruntime as rt
+
+def load_onnx_from_xml(filename):
+    project = ET.parse(filename).getroot()
+
+    protobuf = str(list(Path(filename).parent.glob("*.onnx"))[0])
+    print(f"Loading model from {filename}")
+    print(f"- protobuf: {protobuf}")
+
+
+
+    input = None
+    output = None
+    img_size = np.zeros(3, dtype=int)
+    cls_labels = []
+
+    list_xml = project.find('labels')
+    print("- labels:")
+    for i, entry_xml in enumerate(list_xml.iter('label')):
+        code = entry_xml.find('code').text
+        cls_labels.append(code)
+        print(f"  - {code}")
+
+    list_xml = project.find('inputs')
+    for i, entry_xml in enumerate(list_xml.iter('input')):
+        if i == 0:
+            input_name = entry_xml.find('operation').text + ":0"
+            img_size[0] = int(entry_xml.find('height').text)
+            img_size[1] = int(entry_xml.find('width').text)
+            img_size[2] = int(entry_xml.find('channels').text)
+
+    list_xml = project.find('outputs')
+    for i, entry_xml in enumerate(list_xml.iter('output')):
+        if i == 0:
+            output_name = entry_xml.find('operation').text + ":0"
+
+    full_protobuf_path = os.path.join(os.path.dirname(filename), protobuf)
+
+    print(f"- input: {input_name}")
+    print(f"  - height: {img_size[0]}")
+    print(f"  - width: {img_size[1]}")
+    print(f"  - channels: {img_size[2]}")
+    print(f"- output: {output_name}")
+
+
+    sess = rt.InferenceSession(str(protobuf))
+
+    return sess, img_size, cls_labels
+
 
 
 

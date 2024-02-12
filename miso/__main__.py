@@ -1,7 +1,8 @@
 import click
 
 # Cant have name same as cli method name
-from miso.inference.classify import classify_folder as miso_classify_folder
+from miso.inference.classify import classify_folder as miso_classify_folder, segment_folder
+from miso.inference.classify import segment_folder as miso_segment_folder
 
 
 @click.group()
@@ -21,6 +22,22 @@ def classify_folder(model, input, output, batch_size, sample, unsure_threshold):
     Classify images in a folder and output the results to a CSV file.
     """
     miso_classify_folder(model, input, output, batch_size, sample, unsure_threshold)
+
+
+@cli.command()
+@click.option('--model', '-m', type=click.Path(exists=True), required=True, help='Path to the model information.')
+@click.option('--input', '-i', type=click.Path(exists=True), required=True, help='Path to the folder containing images.')
+@click.option('--output', '-o', type=click.Path(), required=True, help='Path where the morphology csv will be saved.')
+@click.option('--batch_size', '-b', type=int, default=32, show_default=True, help='Batch size for processing images.')
+@click.option('--sample', '-s', type=str, default='unknown', show_default=True, help='Default sample name')
+@click.option('--threshold', '-t', type=float, default=0.5, show_default=True, help='Threshold for segmentation.')
+@click.option('--save-contours', is_flag=True, default=False, help='Whether to save contours or not.')
+def segment_folder(model, input, output, batch_size, sample, threshold, save_contours):
+    """
+    Segment images in a folder and output the results.
+    """
+    miso_segment_folder(model, input, output, batch_size, sample, threshold, save_contours)
+
 
 
 if __name__ == "__main__":

@@ -48,3 +48,27 @@ Options:
   -u, --unsure_threshold FLOAT  Threshold below which predictions are
                                 considered unsure.  [default: 0.0]
 ```
+
+### Morphology of a folder of plankton images
+
+Does morphology on a folder of plankton images and saves the result in a CSV. This CSV can be imported into Particle Trieur as parameters. If the images are organised by sample into subfolders it will use the subfolder name as the sample name, else specify the sample name manually.
+
+The plankton model must first be downloaded from here: https://1drv.ms/f/s!AiQM7sVIv7fanuNzfcw2O8kAnDU26Q?e=NA5ztG
+
+Make sure to put the `model.onnx` and the `model_info.xml` files in the same folder
+
+```
+Usage: python -m miso segment-folder [OPTIONS]
+
+  Segment images in a folder and output the results.
+
+Options:
+  -m, --model PATH          Path to the model information.  [required]
+  -i, --input PATH          Path to the folder containing images.  [required]
+  -o, --output PATH         Path where the morphology csv will be saved.
+                            [required]
+  -b, --batch_size INTEGER  Batch size for processing images.  [default: 32]
+  -s, --sample TEXT         Default sample name  [default: unknown]
+  -t, --threshold FLOAT     Threshold for segmentation.  [default: 0.5]
+  --save-contours           Whether to save contours or not.
+```
