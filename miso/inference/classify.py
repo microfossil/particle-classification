@@ -59,8 +59,28 @@ def classify_folder(model_info_path,
                 image = np.array(image.convert('RGB'), dtype=np.float32)
             else:
                 image = np.array(image.convert('L'), dtype=np.float32)[..., np.newaxis]
+            # Padding needed
+            orig_size = image.shape[:2]
+            diff = abs(orig_size[0] - orig_size[1])
+            d1 = diff // 2
+            d2 = diff - d1
+            padding = ((d1, d2), (0, 0)) if orig_size[0] < orig_size[1] else ((0, 0), (d1, d2))
+            # Median of border
+            square_image = np.zeros((max(orig_size), max(orig_size), img_size[2]), dtype=np.float32)
+            for i in range(image.shape[2]):
+                im_channel = image[..., i]
+                border_pixels = np.concatenate(
+                    [im_channel[0, :],
+                     im_channel[-1, :],
+                     im_channel[:, 0],
+                     im_channel[:, -1]]
+                )
+                border_mean = np.median(border_pixels)
+                im_channel = np.pad(im_channel, padding, mode='constant', constant_values=border_mean)
+                square_image[..., i] = im_channel
+
             # Resize and normalize the image
-            image = tf.image.resize(image, [img_size[0], img_size[1]])
+            image = tf.image.resize(square_image, [img_size[0], img_size[1]])
             image = image / 255.0  # Normalize to [0,1] range
             return image
 
@@ -226,6 +246,7 @@ def segment_folder(model_info_path,
 
 
 if __name__ == "__main__":
+    pass
     # def _load_image(image_path):
     #     image_path = image_path
     #     image = Image.open(image_path)
@@ -255,13 +276,14 @@ if __name__ == "__main__":
     # plt.imshow(image[..., 0], cmap='gray')
     # plt.show()
 
-    os.environ['TF_CUDNN_DETERMINISTIC'] = '1'
+    # os.environ['TF_CUDNN_DETERMINISTIC'] = '1'
+    #
+    # segment_folder(
+    #     r"C:\Users\ross.marchant\code\Microfossil\particle-trieur\target\classes\trained_networks\plankton_segmenter\model_info.xml",
+    #     r"C:\Users\ross.marchant\data\_Zooscan_centering_NOprocess\_inputs\_images\train_processed",
+    #     r"F:\morphology.csv",
+    #     64,
+    #     sample_name="unknown",
+    #     threshold=0.8,
+    #     save_contours=True)
 
-    segment_folder(
-        r"C:\Users\ross.marchant\code\Microfossil\particle-trieur\target\classes\trained_networks\plankton_segmenter\model_info.xml",
-        r"C:\Users\ross.marchant\data\_Zooscan_centering_NOprocess\_inputs\_images\train_processed",
-        r"F:\morphology.csv",
-        64,
-        sample_name="unknown",
-        threshold=0.8,
-        save_contours=True)
