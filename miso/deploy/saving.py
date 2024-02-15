@@ -1,3 +1,4 @@
+import ast
 import os
 import shutil
 from pathlib import Path
@@ -137,6 +138,22 @@ def load_from_xml(filename, session=None):
         if i == 0:
             output_name = entry_xml.find('operation').text + ":0"
 
+    # Find the 'cnn' tag within 'params'
+    cnn_tag = project.find('.//params/cnn')
+
+    # Function to safely evaluate the OrderedDict string
+    def eval_ordered_dict(od_str):
+        try:
+            return ast.literal_eval(od_str)
+        except ValueError as e:
+            print(f"Error evaluating OrderedDict: {e}")
+            return None
+
+    # Evaluate and store the OrderedDict from the 'cnn' tag, if it exists
+    cnn_params = None
+    if cnn_tag is not None and cnn_tag.text:
+        cnn_params = eval_ordered_dict(cnn_tag.text.strip())
+
     full_protobuf_path = os.path.join(os.path.dirname(filename), protobuf)
 
     print(f"- input: {input_name}")
@@ -145,13 +162,8 @@ def load_from_xml(filename, session=None):
     print(f"  - channels: {img_size[2]}")
     print(f"- output: {output_name}")
 
-
-    if int(tf.__version__[0]) == 2:
-        model = load_frozen_model_tf2(full_protobuf_path, input_name, output_name)
-        return model, img_size, cls_labels
-    else:
-        session, input, output = load_frozen_model(full_protobuf_path, input_name, output_name)
-        return session, input, output, img_size, cls_labels
+    model = load_frozen_model_tf2(full_protobuf_path, input_name, output_name)
+    return model, img_size, cnn_params["img_type"], cls_labels
 
 
 import onnxruntime as rt
@@ -190,6 +202,22 @@ def load_onnx_from_xml(filename):
         if i == 0:
             output_name = entry_xml.find('operation').text + ":0"
 
+    # Find the 'cnn' tag within 'params'
+    cnn_tag = project.find('.//params/cnn')
+
+    # Function to safely evaluate the OrderedDict string
+    def eval_ordered_dict(od_str):
+        try:
+            return ast.literal_eval(od_str)
+        except ValueError as e:
+            print(f"Error evaluating OrderedDict: {e}")
+            return None
+
+    # Evaluate and store the OrderedDict from the 'cnn' tag, if it exists
+    cnn_params = None
+    if cnn_tag is not None and cnn_tag.text:
+        cnn_params = eval_ordered_dict(cnn_tag.text.strip())
+
     full_protobuf_path = os.path.join(os.path.dirname(filename), protobuf)
 
     print(f"- input: {input_name}")
@@ -201,7 +229,7 @@ def load_onnx_from_xml(filename):
 
     sess = rt.InferenceSession(str(protobuf))
 
-    return sess, img_size, cls_labels
+    return sess, img_size, cnn_params["img_type"], cls_labels
 
 
 
