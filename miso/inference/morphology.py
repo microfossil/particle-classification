@@ -156,9 +156,9 @@ class MorphologyProcessor:
 
         # Approximating ellipse
         if len(contour) >= 5:
-            (center, (major_axis_length, minor_axis_length), angle) = cv2.fitEllipse(contour)
-            m.major_axis_length = major_axis_length
-            m.minor_axis_length = minor_axis_length
+            (center, (l1, l2), angle) = cv2.fitEllipse(contour)
+            m.major_axis_length = max(l1, l2)
+            m.minor_axis_length = min(l1, l2)
             m.eccentricity = np.sqrt(1 - np.power(m.minor_axis_length / m.major_axis_length, 2))
             m.angle = angle
             m.roundness = 4.0 * m.area / np.pi / np.power(m.major_axis_length, 2)

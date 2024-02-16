@@ -55,8 +55,10 @@ def classify_folder(model_info_path,
             image_path = image_path.numpy().decode('utf-8')
             image = load_image(image_path, img_size, img_type)
             image = tf.convert_to_tensor(image, dtype=tf.float32)
-            image = image / 255.0
             return image
+        image = tf.py_function(_load_image, [image_path], tf.float32)
+        image.set_shape(img_size)
+        return image
 
     # Map using the image dataset
     image_dataset = image_dataset.map(load_and_preprocess_image, num_parallel_calls=tf.data.AUTOTUNE)
@@ -106,6 +108,12 @@ def segment_folder(model_info_path,
 
     sess, img_size, img_type, _ = load_onnx_from_xml(model_info_path)
 
+    # Make sure the number of input channels is correct
+    num_channels = sess.get_inputs()[0].shape[-1]
+    img_size[-1] = num_channels
+    if num_channels == 1:
+        img_type = "k"
+
     image_paths, sample_names = get_image_paths_and_samples(images_path, sample_name)
     image_dataset = tf.data.Dataset.from_tensor_slices(image_paths)
 
@@ -114,10 +122,9 @@ def segment_folder(model_info_path,
             image_path = image_path.numpy().decode('utf-8')
             image = load_image(image_path, img_size, img_type)
             image = tf.convert_to_tensor(image, dtype=tf.float32)
-            image = image / 255.0
             return image
         image = tf.py_function(_load_image, [image_path], tf.float32)
-        image.set_shape([img_size[0], img_size[1], 1])
+        image.set_shape(img_size)
         return image
 
     image_dataset = image_dataset.map(load_and_preprocess_image, num_parallel_calls=tf.data.AUTOTUNE)
