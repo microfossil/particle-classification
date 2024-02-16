@@ -335,7 +335,7 @@ def train_image_classification_model(tp: MisoParameters):
         y_true = ds.cls[ds.test_idx]
         gen = ds.test_generator(32, shuffle=False, one_shot=True)
         y_prob = []
-        model, img_size, cls_labels = load_from_xml(
+        model, img_size, img_type, cls_labels = load_from_xml(
             os.path.join(save_dir, "model_tf2", "network_info.xml")
         )
         for b in iter(gen.to_tfdataset()):

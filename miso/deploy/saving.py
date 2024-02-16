@@ -1,3 +1,4 @@
+import ast
 import os
 import shutil
 from pathlib import Path
@@ -137,6 +138,14 @@ def load_from_xml(filename, session=None):
         if i == 0:
             output_name = entry_xml.find('operation').text + ":0"
 
+    # Find the 'cnn' tag within 'params'
+    cnn_tag = project.find('.//params/cnn')
+    img_type = "rgb"
+    if cnn_tag is not None and cnn_tag.text:
+        txt = cnn_tag.text
+        if "'k'" in txt or "'greyscale'" in txt:
+            img_type = "k"
+
     full_protobuf_path = os.path.join(os.path.dirname(filename), protobuf)
 
     print(f"- input: {input_name}")
@@ -145,13 +154,8 @@ def load_from_xml(filename, session=None):
     print(f"  - channels: {img_size[2]}")
     print(f"- output: {output_name}")
 
-
-    if int(tf.__version__[0]) == 2:
-        model = load_frozen_model_tf2(full_protobuf_path, input_name, output_name)
-        return model, img_size, cls_labels
-    else:
-        session, input, output = load_frozen_model(full_protobuf_path, input_name, output_name)
-        return session, input, output, img_size, cls_labels
+    model = load_frozen_model_tf2(full_protobuf_path, input_name, output_name)
+    return model, img_size, img_type, cls_labels
 
 
 import onnxruntime as rt
@@ -162,8 +166,6 @@ def load_onnx_from_xml(filename):
     protobuf = str(list(Path(filename).parent.glob("*.onnx"))[0])
     print(f"Loading model from {filename}")
     print(f"- protobuf: {protobuf}")
-
-
 
     input = None
     output = None
@@ -190,6 +192,14 @@ def load_onnx_from_xml(filename):
         if i == 0:
             output_name = entry_xml.find('operation').text + ":0"
 
+    # Find the 'cnn' tag within 'params'
+    cnn_tag = project.find('.//params/cnn')
+    img_type = "rgb"
+    if cnn_tag is not None and cnn_tag.text:
+        txt = cnn_tag.text
+        if "'k'" in txt or "'greyscale'" in txt:
+            img_type = "k"
+
     full_protobuf_path = os.path.join(os.path.dirname(filename), protobuf)
 
     print(f"- input: {input_name}")
@@ -201,7 +211,7 @@ def load_onnx_from_xml(filename):
 
     sess = rt.InferenceSession(str(protobuf))
 
-    return sess, img_size, cls_labels
+    return sess, img_size, img_type, cls_labels
 
 
 

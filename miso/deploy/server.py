@@ -118,7 +118,7 @@ if __name__ == '__main__':
     parser.add_argument("-p", "--port", required=True, help="Server port")
     args = parser.parse_args()
 
-    app_model, app_img_size, app_cls_labels = load_from_xml(args.info)
+    app_model, app_img_size, _, app_cls_labels = load_from_xml(args.info)
     app_df = pd.DataFrame(columns=['sample'] + app_cls_labels)
     print("MISO Classification Server - port {}".format(args.port))
     print("--------------------------")

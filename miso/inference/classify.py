@@ -11,6 +11,7 @@ import skimage.io
 from PIL import Image
 from tqdm import tqdm
 
+from miso.data.image_utils import load_image
 from miso.deploy.model_info import ModelInfo
 from miso.deploy.saving import load_frozen_model_tf2, load_from_xml, load_onnx_from_xml
 import tensorflow as tf
@@ -42,7 +43,7 @@ def classify_folder(model_info_path,
                     batch_size,
                     sample_name="unknown",
                     unsure_threshold=0.0):
-    model, img_size, labels = load_from_xml(model_info_path)
+    model, img_size, img_type, labels = load_from_xml(model_info_path)
 
     # Create a dataset of image paths
     image_paths, sample_names = get_image_paths_and_samples(images_path, sample_name)
@@ -51,23 +52,11 @@ def classify_folder(model_info_path,
     # Image loading functions
     def load_and_preprocess_image(image_path):
         def _load_image(image_path):
-            # Convert image_path from tensor to string
             image_path = image_path.numpy().decode('utf-8')
-            # Use Pillow to open the TIFF image and convert it to an RGB array
-            image = Image.open(image_path)
-            if img_size[2] == 3:
-                image = np.array(image.convert('RGB'), dtype=np.float32)
-            else:
-                image = np.array(image.convert('L'), dtype=np.float32)[..., np.newaxis]
-            # Resize and normalize the image
-            image = tf.image.resize(image, [img_size[0], img_size[1]])
-            image = image / 255.0  # Normalize to [0,1] range
+            image = load_image(image_path, img_size, img_type)
+            image = tf.convert_to_tensor(image, dtype=tf.float32)
+            image = image / 255.0
             return image
-
-        # Wrap the custom loading function using tf.py_function
-        image = tf.py_function(_load_image, [image_path], tf.float32)
-        image.set_shape([img_size[0], img_size[1], img_size[2]])
-        return image
 
     # Map using the image dataset
     image_dataset = image_dataset.map(load_and_preprocess_image, num_parallel_calls=tf.data.AUTOTUNE)
@@ -115,7 +104,7 @@ def segment_folder(model_info_path,
                    threshold=0.5,
                    save_contours=False):
 
-    sess, img_size, _ = load_onnx_from_xml(model_info_path)
+    sess, img_size, img_type, _ = load_onnx_from_xml(model_info_path)
 
     image_paths, sample_names = get_image_paths_and_samples(images_path, sample_name)
     image_dataset = tf.data.Dataset.from_tensor_slices(image_paths)
@@ -123,27 +112,10 @@ def segment_folder(model_info_path,
     def load_and_preprocess_image(image_path):
         def _load_image(image_path):
             image_path = image_path.numpy().decode('utf-8')
-            image = Image.open(image_path)
-            greyscale = np.array(image.convert('L'), dtype=np.float32)[..., np.newaxis]
-            border_pixels = np.concatenate(
-                [greyscale[0, :, 0],
-                 greyscale[-1, :, 0],
-                 greyscale[:, 0, 0],
-                 greyscale[:, -1, 0]]
-            )
-            border_mean = np.median(border_pixels)
-            orig_size = greyscale.shape[:2]
-            diff = abs(orig_size[0] - orig_size[1])
-            d1 = diff // 2
-            d2 = diff - d1
-            padding = ((d1, d2), (0, 0), (0, 0)) if orig_size[0] < orig_size[1] else ((0, 0), (d1, d2), (0, 0))
-            image = np.pad(greyscale, padding, mode='constant', constant_values=border_mean)
-            # if img_size[2] == 3:
-            #     image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
-            image = tf.image.resize(image, [img_size[0], img_size[1]])
+            image = load_image(image_path, img_size, img_type)
+            image = tf.convert_to_tensor(image, dtype=tf.float32)
             image = image / 255.0
             return image
-
         image = tf.py_function(_load_image, [image_path], tf.float32)
         image.set_shape([img_size[0], img_size[1], 1])
         return image
@@ -226,6 +198,7 @@ def segment_folder(model_info_path,
 
 
 if __name__ == "__main__":
+    pass
     # def _load_image(image_path):
     #     image_path = image_path
     #     image = Image.open(image_path)
@@ -255,13 +228,14 @@ if __name__ == "__main__":
     # plt.imshow(image[..., 0], cmap='gray')
     # plt.show()
 
-    os.environ['TF_CUDNN_DETERMINISTIC'] = '1'
+    # os.environ['TF_CUDNN_DETERMINISTIC'] = '1'
+    #
+    # segment_folder(
+    #     r"C:\Users\ross.marchant\code\Microfossil\particle-trieur\target\classes\trained_networks\plankton_segmenter\model_info.xml",
+    #     r"C:\Users\ross.marchant\data\_Zooscan_centering_NOprocess\_inputs\_images\train_processed",
+    #     r"F:\morphology.csv",
+    #     64,
+    #     sample_name="unknown",
+    #     threshold=0.8,
+    #     save_contours=True)
 
-    segment_folder(
-        r"C:\Users\ross.marchant\code\Microfossil\particle-trieur\target\classes\trained_networks\plankton_segmenter\model_info.xml",
-        r"C:\Users\ross.marchant\data\_Zooscan_centering_NOprocess\_inputs\_images\train_processed",
-        r"F:\morphology.csv",
-        64,
-        sample_name="unknown",
-        threshold=0.8,
-        save_contours=True)
