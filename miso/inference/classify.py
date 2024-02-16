@@ -202,6 +202,8 @@ def segment_folder(model_info_path,
         if idx % 1000 == 0:
             df = pd.DataFrame(datas)
             df.to_csv(output_path, index=False)
+        df = pd.DataFrame(datas)
+        df.to_csv(output_path, index=False)
 
 
 if __name__ == "__main__":
