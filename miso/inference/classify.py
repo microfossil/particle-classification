@@ -199,15 +199,14 @@ def segment_folder(model_info_path,
             cv2.drawContours(rgb, [contour.astype(int)], -1, (255, 0, 0), 1)
             skimage.io.imsave(contour_image_path / f"{Path(image_path).stem}_contour.png", rgb, check_contrast=False)
 
-        if idx % 1000 == 0:
+        if idx % 10000 == 0:
             df = pd.DataFrame(datas)
             df.to_csv(output_path, index=False)
-        df = pd.DataFrame(datas)
-        df.to_csv(output_path, index=False)
+    df = pd.DataFrame(datas)
+    df.to_csv(output_path, index=False)
 
 
 if __name__ == "__main__":
-    pass
     # def _load_image(image_path):
     #     image_path = image_path
     #     image = Image.open(image_path)
@@ -239,12 +238,12 @@ if __name__ == "__main__":
 
     # os.environ['TF_CUDNN_DETERMINISTIC'] = '1'
     #
-    # segment_folder(
-    #     r"C:\Users\ross.marchant\code\Microfossil\particle-trieur\target\classes\trained_networks\plankton_segmenter\model_info.xml",
-    #     r"C:\Users\ross.marchant\data\_Zooscan_centering_NOprocess\_inputs\_images\train_processed",
-    #     r"F:\morphology.csv",
-    #     64,
-    #     sample_name="unknown",
-    #     threshold=0.8,
-    #     save_contours=True)
+    segment_folder(
+        r"C:\Users\ross.marchant\code\Microfossil\particle-trieur\target\classes\trained_networks\plankton_segmenter\model_info.xml",
+        r"C:\Users\ross.marchant\data\_Zooscan_centering_NOprocess\_inputs\_images\test_processed",
+        r"F:\morphology.csv",
+        64,
+        sample_name="unknown",
+        threshold=0.8,
+        save_contours=True)
 
