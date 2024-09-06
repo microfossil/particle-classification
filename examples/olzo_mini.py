@@ -44,11 +44,11 @@ tp.dataset.memmap_directory = None
 # - resnet[18,34,50]
 # - vgg[16,19]
 # - efficientnetB[0-7]
-tp.cnn.id = "mobilenetV2_tl"
+tp.cnn.id = "resnet50_tl"
 # Input image shape, set to None to use default size ([128, 128, 1] for custom, [224, 224, 3] for others)
-tp.cnn.img_shape = [128, 128, 1]
+tp.cnn.img_shape = [224, 224, 3]
 # Input image colour space [greyscale/rgb]
-tp.cnn.img_type = "greyscale"
+tp.cnn.img_type = "rgb"
 # Number of filters in first block (custom networks)
 tp.cnn.filters = 4
 # Number of blocks (custom networks), set to None for automatic selection

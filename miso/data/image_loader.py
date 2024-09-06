@@ -53,7 +53,7 @@ class ParallelImageLoader:
         self.producer_queue = Queue()
         self.consumer_queue = Queue(cpu_count() * 4)
         self.workers = None
-        self.NUMBER_OF_PROCESSES = cpu_count()
+        self.NUMBER_OF_PROCESSES = min(cpu_count(), 8)
 
     def load(self):
         print("Starting queue with {} workers".format(self.NUMBER_OF_PROCESSES))
